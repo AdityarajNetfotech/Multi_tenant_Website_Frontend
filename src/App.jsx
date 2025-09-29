@@ -9,20 +9,30 @@ import {
 } from "react-router-dom";
 
 import LandingPage from './components/LandingPage/LandingPage';
+import RecruiterRejister from './Recruiter/RecruiterRejister';
+import RecruiterProfile from './Recruiter/RecruiterProfile';
+import RecruiterLayout from './Recruiter/RecruiterLayout';
 
 
 const App = () => {
   return (
-   
 
-      <Router>
-        <Routes>
+
+    <Router>
+      <Routes>
 
         <Route path="/landingpage" element={<LandingPage />} />
-        </Routes>
-      </Router>
-  
-    
+        <Route path="/RecruiterRejister" element={<RecruiterRejister />} />
+
+        <Route path="/Recruiter-Dashboard" element={<RecruiterLayout />}>
+          {/* <Route index element={<RecruiterDashboard />} /> */}
+          <Route path="RecruiterProfile" element={<RecruiterProfile />} />
+        </Route>
+
+      </Routes>
+    </Router>
+
+
   )
 }
 
