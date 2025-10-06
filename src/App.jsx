@@ -31,7 +31,7 @@ const App = () => {
     <Router>
       <Routes>
 
-        <Route path="/landingpage" element={<LandingPage />} />
+        <Route path="/" element={<LandingPage />} />
         <Route path="/RecruiterRejister" element={<RecruiterRejister />} />
 
         <Route path="/SuperAdmin-Dashboard" element={<SuperAdminLayout />}>
