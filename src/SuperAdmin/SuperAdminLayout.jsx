@@ -3,7 +3,7 @@ import RecruiterSidebar from "./Component/RecruiterSidebar";
 import RecruiterHeader from "./Component/RecruiterHeader";
 import { Outlet } from "react-router-dom";
 
-const RecruiterLayout = () => {
+const SuperAdminLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     const toggleSidebar = () => {
@@ -27,4 +27,4 @@ const RecruiterLayout = () => {
     );
 };
 
-export default RecruiterLayout;
+export default SuperAdminLayout;
