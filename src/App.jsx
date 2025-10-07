@@ -22,6 +22,7 @@ import QuestionsList from './RecruiterAdmin/QuestionsList';
 import RecruiterAdminLayout from './RecruiterAdmin/RecruiterAdminLayout';
 import Results from './RecruiterAdmin/Results';
 import ViewResults from './RecruiterAdmin/ViewResults';
+import JDDetails from './RecruiterAdmin/JDDetails';
 
 
 const App = () => {
@@ -50,6 +51,7 @@ const App = () => {
           <Route path="QuestionsList" element={<QuestionsList />} />
           <Route path="Results" element={<Results />} />
           <Route path="ViewResults" element={<ViewResults />} />
+          <Route path="JDDetails" element={<JDDetails />} />
         </Route>
 
       </Routes>
