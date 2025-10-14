@@ -23,6 +23,10 @@ import RecruiterAdminLayout from './RecruiterAdmin/RecruiterAdminLayout';
 import Results from './RecruiterAdmin/Results';
 import ViewResults from './RecruiterAdmin/ViewResults';
 import JDDetails from './RecruiterAdmin/JDDetails';
+import GenerateAssessment from './RecruiterAdmin/GenerateAssessment';
+import NonCandidateList from './RecruiterAdmin/NonCandidateList';
+import QuestionCreated from './RecruiterAdmin/Component/QuestionCreated';
+import RejisteredRecruiters from './SuperAdmin/RejisteredRecruiters';
 
 
 const App = () => {
@@ -41,6 +45,7 @@ const App = () => {
           <Route path="Companies" element={<Companies />} />
           <Route path="Companies/CompanieDetail" element={<CompanyDetail />} />
           <Route path="Tickets" element={<Tickets />} />
+          <Route path="RejisteredRecruiters" element={<RejisteredRecruiters />} />
         </Route>
 
         <Route path="/RecruiterAdmin-Dashboard" element={<RecruiterAdminLayout />}>
@@ -52,6 +57,9 @@ const App = () => {
           <Route path="Results" element={<Results />} />
           <Route path="ViewResults" element={<ViewResults />} />
           <Route path="JDDetails" element={<JDDetails />} />
+          <Route path="GenerateAssessment" element={<GenerateAssessment />} />
+          <Route path="GenerateAssessment/Created" element={<QuestionCreated />} />
+          <Route path="NonCandidateList" element={<NonCandidateList />} />
         </Route>
 
       </Routes>
