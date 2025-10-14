@@ -27,6 +27,8 @@ import GenerateAssessment from './RecruiterAdmin/GenerateAssessment';
 import NonCandidateList from './RecruiterAdmin/NonCandidateList';
 import QuestionCreated from './RecruiterAdmin/Component/QuestionCreated';
 import RejisteredRecruiters from './SuperAdmin/RejisteredRecruiters';
+import AllJDs from './Candidate/Pages/AllJDs';
+import CandidateLayout from './Candidate/Pages/CandidateLayout';
 
 
 const App = () => {
@@ -38,6 +40,15 @@ const App = () => {
 
         <Route path="/" element={<LandingPage />} />
         <Route path="/RecruiterRejister" element={<RecruiterRejister />} />
+
+        <Route path="/Candidate-Dashboard" element={<CandidateLayout />}>
+          {/* <Route index element={<RecruiterDashboard />} /> */}
+          <Route path="AllJDs" element={<AllJDs />} />
+          <Route path="Companies" element={<Companies />} />
+          <Route path="Companies/CompanieDetail" element={<CompanyDetail />} />
+          <Route path="Tickets" element={<Tickets />} />
+          <Route path="RejisteredRecruiters" element={<RejisteredRecruiters />} />
+        </Route>
 
         <Route path="/SuperAdmin-Dashboard" element={<SuperAdminLayout />}>
           {/* <Route index element={<RecruiterDashboard />} /> */}
