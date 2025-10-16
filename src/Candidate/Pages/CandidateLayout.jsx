@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
-import CandidateSidebar from "../Component.jsx/CandidateSidebar";
-import CandidateHeader from "../Component.jsx/CandidateHeader";
+import CandidateSidebar from "../Component/CandidateSidebar";
+import CandidateHeader from "../Component/CandidateHeader";
 
 const CandidateLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);

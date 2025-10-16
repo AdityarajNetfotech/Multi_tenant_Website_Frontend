@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Upload, FileText, Copy, Eye, Trash2, Filter, Search, Trash } from "lucide-react";
 import Pagination from "../components/LandingPage/Pagination";
 import ResumeSummary from "./ResumeSummary";
+import { useNavigate } from "react-router-dom";
 
 function JDDetails() {
+      const navigate = useNavigate();
     const [searchTerm, setSearchTerm] = useState("");
     const [activeTab, setActiveTab] = useState("all");
     const [showResumeSummary, setShowResumeSummary] = useState(false);
@@ -466,7 +468,7 @@ function JDDetails() {
                     </div>
 
                     <div className="my-6 flex justify-center">
-                        <button className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors">
+                        <button  onClick={() => navigate("/RecruiterAdmin-Dashboard/JDDetails/GenerateAssessment")} className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors">
                             Generate Assessment
                         </button>
                     </div>

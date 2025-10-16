@@ -29,6 +29,10 @@ import QuestionCreated from './RecruiterAdmin/Component/QuestionCreated';
 import RejisteredRecruiters from './SuperAdmin/RejisteredRecruiters';
 import AllJDs from './Candidate/Pages/AllJDs';
 import CandidateLayout from './Candidate/Pages/CandidateLayout';
+import Report from './Candidate/Pages/Report';
+import AppliedJD from './Candidate/Pages/AppliedJD';
+import Examination from './Candidate/Pages/Examination';
+import StartExam from './Candidate/Pages/StartExam';
 
 
 const App = () => {
@@ -44,9 +48,10 @@ const App = () => {
         <Route path="/Candidate-Dashboard" element={<CandidateLayout />}>
           {/* <Route index element={<RecruiterDashboard />} /> */}
           <Route path="AllJDs" element={<AllJDs />} />
-          <Route path="Companies" element={<Companies />} />
-          <Route path="Companies/CompanieDetail" element={<CompanyDetail />} />
-          <Route path="Tickets" element={<Tickets />} />
+          <Route path="Report" element={<Report />} />
+          <Route path="AppliedJD" element={<AppliedJD />} />
+          <Route path="Examination" element={<Examination />} />
+          <Route path="Examination/TestDetails" element={<StartExam />} />
           <Route path="RejisteredRecruiters" element={<RejisteredRecruiters />} />
         </Route>
 
@@ -62,14 +67,13 @@ const App = () => {
         <Route path="/RecruiterAdmin-Dashboard" element={<RecruiterAdminLayout />}>
           {/* <Route index element={<RecruiterDashboard />} /> */}
           <Route path="JD" element={<JD />} />
-          <Route path="CreateJD" element={<CreateJD />} />
+          <Route path="JD/CreateJD" element={<CreateJD />} />
           <Route path="Assessment" element={<Assessment />} />
-          <Route path="QuestionsList" element={<QuestionsList />} />
+          <Route path="Assessment/QuestionsList" element={<QuestionsList />} />
           <Route path="Results" element={<Results />} />
-          <Route path="ViewResults" element={<ViewResults />} />
           <Route path="JDDetails" element={<JDDetails />} />
-          <Route path="GenerateAssessment" element={<GenerateAssessment />} />
-          <Route path="GenerateAssessment/Created" element={<QuestionCreated />} />
+          <Route path="JDDetails/GenerateAssessment" element={<GenerateAssessment />} />
+          <Route path="JDDetails/GenerateAssessment/Created" element={<QuestionCreated />} />
           <Route path="NonCandidateList" element={<NonCandidateList />} />
         </Route>
 

@@ -11,7 +11,7 @@ import {
   X
 } from 'lucide-react';
 
-const RecruiterAdminSidebar = ({ isOpen, onToggle }) => {
+const CandidateAdminSidebar = ({ isOpen, onToggle }) => {
   const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState('Dashboard');
   const [activeSubNav, setActiveSubNav] = useState('');
@@ -69,12 +69,12 @@ const RecruiterAdminSidebar = ({ isOpen, onToggle }) => {
 
             <li>
               <button
-                onClick={() => handleNavClick('Job Description', '/RecruiterAdmin-Dashboard/JD')}
+                onClick={() => handleNavClick('Examination', '/Candidate-Dashboard/Examination')}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
-                  ${activeNav === 'Job Description' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
+                  ${activeNav === 'Examination' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <UserPlus size={20} />
-                <span>All JDs</span>
+                <span>Examination</span>
               </button>
             </li>
 
@@ -141,4 +141,4 @@ const RecruiterAdminSidebar = ({ isOpen, onToggle }) => {
   );
 };
 
-export default RecruiterAdminSidebar;
+export default CandidateAdminSidebar;
