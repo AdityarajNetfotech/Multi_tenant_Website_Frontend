@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { FileText, Filter, X, Eye, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-react';
 import Pagination from '../components/LandingPage/Pagination';
+import { useNavigate } from 'react-router-dom';
 
 function JD() {
   const [currentPage, setCurrentPage] = useState(1);
+  const navigate = useNavigate();
+
   const rowsPerPage = 5;
 
   const stats = [
@@ -27,7 +30,6 @@ function JD() {
     { id: '#145803', company: 'Netflexch Solution', jobTitle: 'Project Manager', createdOn: '8/09/2025', skills: 'View', filtered: '18', unfiltered: '35' },
   ];
 
-  // Calculate pagination
   const totalPages = Math.ceil(tableData.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
@@ -40,7 +42,7 @@ function JD() {
   return (
     <div className="min-h-screen">
       <div className="max-w-7xl mx-auto">
-        
+
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-4">
           {stats.map((stat, index) => {
             const Icon = stat.icon;
@@ -61,14 +63,17 @@ function JD() {
         </div>
 
         <div className="flex justify-end mb-4">
-          <button className="bg-gray-900 hover:bg-gray-800 text-white px-4 sm:px-6 py-2.5 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 text-sm sm:text-base shadow-sm">
+          <button
+            onClick={() => navigate("/RecruiterAdmin-Dashboard/JD/CreateJD")}
+            className="bg-gray-900 hover:bg-gray-800 text-white px-4 sm:px-6 py-2.5 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 text-sm sm:text-base shadow-sm"
+          >
             <span className="text-lg">+</span>
             Create
           </button>
         </div>
 
         <div className="bg-white rounded-4xl shadow-sm border border-gray-300 overflow-hidden">
-   
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -114,7 +119,7 @@ function JD() {
               </tbody>
             </table>
             {totalPages > 1 && (
-              <Pagination 
+              <Pagination
                 currentPage={currentPage}
                 totalPages={totalPages}
                 onPageChange={handlePageChange}

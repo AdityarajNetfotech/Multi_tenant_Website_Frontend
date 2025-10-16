@@ -235,7 +235,7 @@ export default function ReviewFinalise({ formData, questions }) {
 
       <div className='flex justify-center'>
        <button 
-        onClick={() => navigate('/RecruiterAdmin-Dashboard/GenerateAssessment/Created')} 
+        onClick={() => navigate('/RecruiterAdmin-Dashboard/JDDetails/GenerateAssessment/Created')} 
         className='bg-[#0496FF] rounded-3xl py-2 px-6 sm:px-8 text-sm sm:text-base text-white mt-6 hover:bg-blue-600 transition-colors'
       >
           Publish
