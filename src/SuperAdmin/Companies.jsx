@@ -7,6 +7,7 @@ import {
   Trash2
 } from 'lucide-react';
 import Pagination from '../components/LandingPage/Pagination';
+import { useNavigate } from 'react-router-dom';
 
 const mockData = Array.from({ length: 22 }, (_, i) => ({
   id: i + 1,
@@ -22,6 +23,7 @@ function Companies() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
+  const navigate = useNavigate()
 
   const filteredData = mockData.filter(company =>
     company.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -117,7 +119,7 @@ function Companies() {
 
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-2">
-                      <button className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors">
+                      <button onClick={()=>navigate("/SuperAdmin-Dashboard/Companies/CompanieDetail")} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors">
                         <Eye className="w-4 h-4" />
                       </button>
                       <button className="p-1.5 text-red-600 hover:bg-red-50 rounded-md transition-colors">

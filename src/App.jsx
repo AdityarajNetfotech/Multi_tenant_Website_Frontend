@@ -33,6 +33,7 @@ import Report from './Candidate/Pages/Report';
 import AppliedJD from './Candidate/Pages/AppliedJD';
 import Examination from './Candidate/Pages/Examination';
 import StartExam from './Candidate/Pages/StartExam';
+import CandidateProfile from './Candidate/Pages/CandidateProfile';
 
 
 const App = () => {
@@ -52,12 +53,12 @@ const App = () => {
           <Route path="AppliedJD" element={<AppliedJD />} />
           <Route path="Examination" element={<Examination />} />
           <Route path="Examination/TestDetails" element={<StartExam />} />
-          <Route path="RejisteredRecruiters" element={<RejisteredRecruiters />} />
+          <Route path="CandidateProfile" element={<CandidateProfile />} />
         </Route>
 
         <Route path="/SuperAdmin-Dashboard" element={<SuperAdminLayout />}>
           {/* <Route index element={<RecruiterDashboard />} /> */}
-          <Route path="SuperAdminProfile" element={<SuperAdminProfile />} />
+          <Route path="Profile" element={<SuperAdminProfile />} />
           <Route path="Companies" element={<Companies />} />
           <Route path="Companies/CompanieDetail" element={<CompanyDetail />} />
           <Route path="Tickets" element={<Tickets />} />
