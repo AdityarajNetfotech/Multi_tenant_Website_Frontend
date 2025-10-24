@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import RecruiterSidebar from "./Component/RecruiterSidebar";
-import RecruiterHeader from "./Component/RecruiterHeader";
 import { Outlet } from "react-router-dom";
+import SuperAdminSidebar from "./Component/SuperAdminSidebar";
+import SuperAdminHeader from "./Component/SuperAdminHeader";
 
 const SuperAdminLayout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -12,12 +12,12 @@ const SuperAdminLayout = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 flex relative">
-            <RecruiterSidebar isOpen={sidebarOpen} onToggle={toggleSidebar} />
+            <SuperAdminSidebar isOpen={sidebarOpen} onToggle={toggleSidebar} />
 
             <div className="hidden lg:block w-64 flex-shrink-0" />
 
             <div className="flex-1 flex flex-col min-w-0">
-                <RecruiterHeader onMenuToggle={toggleSidebar} />
+                <SuperAdminHeader onMenuToggle={toggleSidebar} />
 
                 <main className="p-4 lg:p-6 flex-1">
                     <Outlet />

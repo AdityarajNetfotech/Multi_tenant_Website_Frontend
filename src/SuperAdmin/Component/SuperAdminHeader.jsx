@@ -1,11 +1,10 @@
 import React from 'react';
 import { Search, Bell, MessageCircle, Menu, ChevronDown } from 'lucide-react';
 
-const RecruiterHeader = ({ onMenuToggle }) => {
+const SuperAdminHeader = ({ onMenuToggle }) => {
     return (
         <header className="bg-white border-b border-gray-200 px-4 py-3">
             <div className="flex items-center justify-between">
-                {/* Mobile menu button and welcome text */}
                 <div className="flex items-center space-x-4">
                     <button
                         onClick={onMenuToggle}
@@ -52,4 +51,4 @@ const RecruiterHeader = ({ onMenuToggle }) => {
     );
 };
 
-export default RecruiterHeader;
+export default SuperAdminHeader;
