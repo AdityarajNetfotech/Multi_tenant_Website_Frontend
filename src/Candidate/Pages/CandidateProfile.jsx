@@ -68,7 +68,7 @@ function CandidateProfile() {
         experience: false,
         documents: false
     });
-``
+
     const profileImageRef = useRef(null);
     const resumeRef = useRef(null);
     const coverLetterRef = useRef(null);
