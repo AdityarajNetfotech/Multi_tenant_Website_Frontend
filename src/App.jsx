@@ -34,6 +34,13 @@ import AppliedJD from './Candidate/Pages/AppliedJD';
 import Examination from './Candidate/Pages/Examination';
 import StartExam from './Candidate/Pages/StartExam';
 import CandidateProfile from './Candidate/Pages/CandidateProfile';
+import RMGLayout from './RMGAdmin/Pages/RMGLayout';
+import Requirement from './RMGAdmin/Pages/Requirement';
+import RequirementForm from './RMGAdmin/Pages/RequirementForm';
+import AdminLayout from './Admin/Pages/AdminLayout';
+import RecruiterManagement from './Admin/Pages/RecruiterManagement';
+import AssignedRecruiters from './RMGAdmin/Pages/AssignedRecruiters';
+import RMGManagement from './Admin/Pages/RMGManagement';
 import Review from './RecruiterAdmin/Review'; // ✅ NEW: Import Review component
 
 
@@ -46,6 +53,19 @@ const App = () => {
 
         <Route path="/" element={<LandingPage />} />
         <Route path="/RecruiterRejister" element={<RecruiterRejister />} />
+
+        <Route path="/Admin-Dashboard" element={<AdminLayout />}>
+          {/* <Route index element={<RecruiterDashboard />} /> */}
+          <Route path='RecruiterManagement' element={<RecruiterManagement />} />
+          <Route path='RMGManagement' element={<RMGManagement />} />
+        </Route>
+
+        <Route path="/RMGAdmin-Dashboard" element={<RMGLayout />}>
+          {/* <Route index element={<RecruiterDashboard />} /> */}
+          <Route path="RequirementForm" element={<RequirementForm />} />
+          <Route path="Requirement" element={<Requirement />} />
+          <Route path="AssignedRecruiters" element={<AssignedRecruiters />} />
+        </Route>
 
         <Route path="/Candidate-Dashboard" element={<CandidateLayout />}>
           {/* <Route index element={<RecruiterDashboard />} /> */}
