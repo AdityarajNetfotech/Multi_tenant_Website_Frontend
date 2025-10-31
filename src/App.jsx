@@ -41,6 +41,7 @@ import AdminLayout from './Admin/Pages/AdminLayout';
 import RecruiterManagement from './Admin/Pages/RecruiterManagement';
 import AssignedRecruiters from './RMGAdmin/Pages/AssignedRecruiters';
 import RMGManagement from './Admin/Pages/RMGManagement';
+import Review from './RecruiterAdmin/Review'; // ✅ NEW: Import Review component
 
 
 const App = () => {
@@ -94,7 +95,11 @@ const App = () => {
           <Route path="Results" element={<Results />} />
           <Route path="JDDetails" element={<JDDetails />} />
           <Route path="JDDetails/GenerateAssessment" element={<GenerateAssessment />} />
+          {/* ✅ NEW ROUTE: Questions editing page after generation */}
+          <Route path="JDDetails/GenerateAssessment/QuestionsList" element={<QuestionsList />} />
           <Route path="JDDetails/GenerateAssessment/Created" element={<QuestionCreated />} />
+          {/* ✅ NEW ROUTE: Standalone Review page (optional) */}
+          <Route path="Review" element={<Review />} />
           <Route path="NonCandidateList" element={<NonCandidateList />} />
         </Route>
 

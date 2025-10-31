@@ -1,7 +1,7 @@
 import { Info, X } from 'lucide-react';
 import { useState } from 'react';
 
-export default function TestDetail({ formData, onUpdate, onNext, onCancel }) {
+export default function TestDetail({ formData, onUpdate, onNext, onCancel, loading }) {
     const [newSkill, setNewSkill] = useState('');
 
     const addSkill = () => {
@@ -12,7 +12,7 @@ export default function TestDetail({ formData, onUpdate, onNext, onCancel }) {
                 skills: updatedSkills,
                 skillLevels: [
                     ...formData.skillLevels,
-                    { skill: newSkill.trim(), level: 'Any', mcq: 0, essay: 0, video: 0 }
+                    { skill: newSkill.trim(), level: 'Any', mcq: 0, coding: 0, audio: 0, video: 0 }
                 ]
             });
             setNewSkill('');
@@ -37,7 +37,9 @@ export default function TestDetail({ formData, onUpdate, onNext, onCancel }) {
     };
 
     const getTotalQuestions = () => {
-        return formData.skillLevels.reduce((sum, sl) => sum + sl.mcq + sl.essay + sl.video, 0);
+        return formData.skillLevels.reduce((sum, sl) => 
+            sum + (sl.mcq || 0) + (sl.coding || 0) + (sl.audio || 0) + (sl.video || 0), 0
+        );
     };
 
     return (
@@ -180,7 +182,7 @@ export default function TestDetail({ formData, onUpdate, onNext, onCancel }) {
                 <div className="bg-white rounded-xl shadow-md p-3 sm:p-4 border border-gray-300">
                     <div className="border border-gray-300 shadow-md rounded-xl overflow-hidden">
                         <div className="overflow-x-auto">
-                            <table className="w-full min-w-[500px]">
+                            <table className="w-full min-w-[600px]">
                                 <thead className="bg-[#D9D9D978] rounded-t-xl">
                                     <tr>
                                         <th className="px-3 sm:px-6 py-2 sm:py-3 text-left text-xs sm:text-sm font-semibold text-gray-900 whitespace-nowrap">
@@ -193,7 +195,10 @@ export default function TestDetail({ formData, onUpdate, onNext, onCancel }) {
                                             MCQ
                                         </th>
                                         <th className="px-3 sm:px-6 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-gray-900 whitespace-nowrap">
-                                            Essay
+                                            Coding
+                                        </th>
+                                        <th className="px-3 sm:px-6 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-gray-900 whitespace-nowrap">
+                                            Audio
                                         </th>
                                         <th className="px-3 sm:px-6 py-2 sm:py-3 text-center text-xs sm:text-sm font-semibold text-gray-900 whitespace-nowrap">
                                             Video
@@ -224,7 +229,7 @@ export default function TestDetail({ formData, onUpdate, onNext, onCancel }) {
                                                 <input
                                                     type="number"
                                                     min="0"
-                                                    value={skillLevel.mcq}
+                                                    value={skillLevel.mcq || 0}
                                                     onChange={(e) =>
                                                         updateSkillLevel(skillLevel.skill, 'mcq', parseInt(e.target.value) || 0)
                                                     }
@@ -235,9 +240,9 @@ export default function TestDetail({ formData, onUpdate, onNext, onCancel }) {
                                                 <input
                                                     type="number"
                                                     min="0"
-                                                    value={skillLevel.essay}
+                                                    value={skillLevel.coding || 0}
                                                     onChange={(e) =>
-                                                        updateSkillLevel(skillLevel.skill, 'essay', parseInt(e.target.value) || 0)
+                                                        updateSkillLevel(skillLevel.skill, 'coding', parseInt(e.target.value) || 0)
                                                     }
                                                     className="w-12 sm:w-16 px-1 sm:px-2 py-1 border border-gray-300 rounded text-xs sm:text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                 />
@@ -246,7 +251,18 @@ export default function TestDetail({ formData, onUpdate, onNext, onCancel }) {
                                                 <input
                                                     type="number"
                                                     min="0"
-                                                    value={skillLevel.video}
+                                                    value={skillLevel.audio || 0}
+                                                    onChange={(e) =>
+                                                        updateSkillLevel(skillLevel.skill, 'audio', parseInt(e.target.value) || 0)
+                                                    }
+                                                    className="w-12 sm:w-16 px-1 sm:px-2 py-1 border border-gray-300 rounded text-xs sm:text-sm text-center focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                />
+                                            </td>
+                                            <td className="px-3 sm:px-6 py-2 sm:py-4 text-center">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    value={skillLevel.video || 0}
                                                     onChange={(e) =>
                                                         updateSkillLevel(skillLevel.skill, 'video', parseInt(e.target.value) || 0)
                                                     }
@@ -262,21 +278,23 @@ export default function TestDetail({ formData, onUpdate, onNext, onCancel }) {
 
                     <div className="px-3 sm:px-6 py-3 sm:py-4 bg-gray-50 mt-2 flex flex-col sm:flex-row justify-between items-center gap-3 rounded-b-xl">
                         <span className="text-xs sm:text-sm font-semibold text-gray-900 text-center sm:text-left">
-                            Total Question: {getTotalQuestions()}
+                            Total Questions: {getTotalQuestions()}
                         </span>
 
                         <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 w-full sm:w-auto">
                             <button
                                 onClick={onCancel}
-                                className="px-4 sm:px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium text-sm sm:text-base transition-colors w-full sm:w-auto"
+                                disabled={loading}
+                                className="px-4 sm:px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 font-medium text-sm sm:text-base transition-colors w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={onNext}
-                                className="px-4 sm:px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium text-sm sm:text-base transition-colors w-full sm:w-auto"
+                                disabled={loading || getTotalQuestions() === 0}
+                                className="px-4 sm:px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium text-sm sm:text-base transition-colors w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Generate
+                                {loading ? 'Generating...' : 'Generate'}
                             </button>
                         </div>
                     </div>
