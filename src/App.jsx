@@ -46,6 +46,8 @@ import SupportTickets from './Admin/Pages/SupportTickets';
 import EyeButton from './RMGAdmin/Pages/EyeButton';
 import FilteredCandidate from './RMGAdmin/Pages/FilteredCandidate';
 import UnfilteredCandidate from './RMGAdmin/Pages/UnfilteredCandidate';
+import Review from './RecruiterAdmin/Review';
+
 
 
 const App = () => {
@@ -104,7 +106,11 @@ const App = () => {
           <Route path="Results" element={<Results />} />
           <Route path="JDDetails" element={<JDDetails />} />
           <Route path="JDDetails/GenerateAssessment" element={<GenerateAssessment />} />
+          {/* ✅ NEW ROUTE: Questions editing page after generation */}
+          <Route path="JDDetails/GenerateAssessment/QuestionsList" element={<QuestionsList />} />
           <Route path="JDDetails/GenerateAssessment/Created" element={<QuestionCreated />} />
+          {/* ✅ NEW ROUTE: Standalone Review page (optional) */}
+          <Route path="Review" element={<Review />} />
           <Route path="NonCandidateList" element={<NonCandidateList />} />
         </Route>
 
