@@ -11,7 +11,7 @@ const SuperAdminLayout = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex relative">
+        <div className="min-h-screen flex relative">
             <SuperAdminSidebar isOpen={sidebarOpen} onToggle={toggleSidebar} />
 
             <div className="hidden lg:block w-64 flex-shrink-0" />

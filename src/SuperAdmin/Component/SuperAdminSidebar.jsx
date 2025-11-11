@@ -11,7 +11,7 @@ import {
   X
 } from 'lucide-react';
 
-const SuperAdminSidebar = ({ isOpen, onToggle }) => {
+const AdminSidebar = ({ isOpen, onToggle }) => {
   const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState('Dashboard');
   const [activeSubNav, setActiveSubNav] = useState('');
@@ -58,7 +58,7 @@ const SuperAdminSidebar = ({ isOpen, onToggle }) => {
           <ul className="space-y-2">
             <li>
               <button
-                onClick={() => handleNavClick('Dashboard', '/RecruiterAdmin-Dashboard')}
+                onClick={() => handleNavClick('Dashboard', '/SuperAdmin-Dashboard')}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
                   ${activeNav === 'Dashboard' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
@@ -69,12 +69,23 @@ const SuperAdminSidebar = ({ isOpen, onToggle }) => {
 
             <li>
               <button
+                onClick={() => handleNavClick('RegisteredCompanies', '/SuperAdmin-Dashboard/CompaniesRegister')}
+                className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
+                  ${activeNav === 'RegisteredCompanies' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
+              >
+                <Home size={20} />
+                <span>Register Companies Form</span>
+              </button>
+            </li>
+
+            <li>
+              <button
                 onClick={() => handleNavClick('Companies', '/SuperAdmin-Dashboard/Companies')}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
                   ${activeNav === 'Companies' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <UserPlus size={20} />
-                <span>Companies</span>
+                <span>Recently Registered</span>
               </button>
             </li>
 
@@ -97,7 +108,7 @@ const SuperAdminSidebar = ({ isOpen, onToggle }) => {
                   ${activeNav === 'RejisteredRecruiters' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <Building2 size={20} />
-                <span>Recently Rejistered</span>
+                <span>Recently Applied Companies</span>
               </button>
             </li>
 
@@ -131,4 +142,4 @@ const SuperAdminSidebar = ({ isOpen, onToggle }) => {
   );
 };
 
-export default SuperAdminSidebar;
+export default AdminSidebar;

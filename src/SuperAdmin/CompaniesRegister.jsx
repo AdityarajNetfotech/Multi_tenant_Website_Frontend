@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Upload, ChevronDown, Trash2 } from 'lucide-react';
-import img from '../img/RRejister.png'
+import { Upload, ChevronDown, Trash2, CheckCircle, AlertCircle, Loader2, Mail, Globe, Key } from 'lucide-react';
+import img from '../img/RRejister.png';
 
-function RecruiterRejister() {
+function CompaniesRegister() {
     const [formData, setFormData] = useState({
         companyName: '',
         companyType: '',
@@ -22,6 +22,11 @@ function RecruiterRejister() {
     });
 
     const [selectedCountryCode, setSelectedCountryCode] = useState('+91');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitStatus, setSubmitStatus] = useState(null);
+    const [message, setMessage] = useState('');
+    const [tenantDetails, setTenantDetails] = useState(null);
+    const [showSuccessDetails, setShowSuccessDetails] = useState(false);
 
     const countryCode = ['+91', '+1', '+44', '+86', '+81'];
     const states = [
@@ -42,6 +47,10 @@ function RecruiterRejister() {
             ...formData,
             [e.target.name]: e.target.value
         });
+        if (submitStatus === 'error') {
+            setSubmitStatus(null);
+            setMessage('');
+        }
     };
 
     const handleFileUpload = (e) => {
@@ -54,25 +63,191 @@ function RecruiterRejister() {
         }
     };
 
-    const handleSubmit = (e) => {
+    const validateForm = () => {
+        const errors = [];
+
+        if (!formData.companyName.trim()) errors.push('Company name is required');
+        if (!formData.email.trim()) errors.push('Email is required');
+        if (!formData.contactPerson.trim()) errors.push('Contact person is required');
+        if (!formData.phoneNumber.trim()) errors.push('Phone number is required');
+        if (!formData.address1.trim()) errors.push('Address is required');
+        if (!formData.city.trim()) errors.push('City is required');
+        if (formData.state === 'Select State' || !formData.state) errors.push('Please select a state');
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (formData.email && !emailRegex.test(formData.email)) {
+            errors.push('Please enter a valid email address');
+        }
+
+        const phoneRegex = /^\d{10}$/;
+        if (formData.phoneNumber && !phoneRegex.test(formData.phoneNumber)) {
+            errors.push('Please enter a valid 10-digit phone number');
+        }
+
+        return errors;
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log('Form submitted:', formData);
+
+        setSubmitStatus(null);
+        setMessage('');
+        setTenantDetails(null);
+        setShowSuccessDetails(false);
+
+        const validationErrors = validateForm();
+        if (validationErrors.length > 0) {
+            setSubmitStatus('error');
+            setMessage(validationErrors.join(', '));
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try {
+            const apiData = {
+                companyName: formData.companyName,
+                email: formData.email,
+                phone: `${selectedCountryCode}${formData.phoneNumber}`,
+                address: `${formData.address1}, ${formData.address2 ? formData.address2 + ', ' : ''}${formData.city}, ${formData.state}`,
+                subscription: {
+                    plan: 'basic',
+                    maxUsers: 10,
+                    maxRecruiters: 5
+                }
+            };
+
+            // console.log('Sending data:', apiData); 
+
+            const response = await fetch('http://localhost:5000/api/super-admin/tenants', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(apiData)
+            });
+
+            // console.log('Response status:', response.status); 
+
+            const data = await response.json();
+            if (response.ok && data.success) {
+                setSubmitStatus('success');
+                setMessage('Registration successful! Check your email for login credentials.');
+                setTenantDetails(data.data);
+                setShowSuccessDetails(true);
+
+                setTimeout(() => {
+                    setFormData({
+                        companyName: '',
+                        companyType: '',
+                        contactPerson: '',
+                        email: '',
+                        phoneNumber: '',
+                        employeeCount: '',
+                        gstNumber: '',
+                        panNumber: '',
+                        staffingType: '',
+                        address1: '',
+                        address2: '',
+                        city: '',
+                        state: '',
+                        logo: null,
+                        themeColor: '#8B5CF6'
+                    });
+                    setShowSuccessDetails(false);
+                    setSubmitStatus(null);
+                }, 5000);
+            } else {
+                setSubmitStatus('error');
+                setMessage(data.message || 'Registration failed. Please try again.');
+            }
+        } catch (error) {
+            setSubmitStatus('error');
+            setMessage('Network error. Please check your connection and try again.');
+            console.log('Registration error:', error);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
-        <div className="min-h-screen py-6 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-[45%_55%] gap-6 items-start">
+        <div className="min-h-screen py-6 px-4 sm:px-6 lg:px-8 items-start">
+            {/* <div className="min-h-screen py-6 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-[45%_55%] gap-6 items-start">
             <div className="hidden lg:flex justify-center items-start pt-20">
                 <img
                     src={img}
                     alt=""
                     className="max-h-full max-w-full object-contain"
                 />
-            </div>
+            </div> */}
 
             <div className="">
                 <div className="text-center mb-6">
                     <h1 className="text-4xl font-bold text-purple-600 mb-2">AIRecruit</h1>
                 </div>
+
+                {submitStatus && (
+                    <div className={`mb-4 p-4 rounded-lg ${submitStatus === 'success'
+                        ? 'bg-green-50 border border-green-200'
+                        : 'bg-red-50 border border-red-200'
+                        }`}>
+                        <div className="flex items-start gap-3">
+                            {submitStatus === 'success' ? (
+                                <CheckCircle className="h-5 w-5 mt-0.5 flex-shrink-0 text-green-600" />
+                            ) : (
+                                <AlertCircle className="h-5 w-5 mt-0.5 flex-shrink-0 text-red-600" />
+                            )}
+                            <div className="flex-1">
+                                <p className={`font-medium ${submitStatus === 'success' ? 'text-green-800' : 'text-red-800'}`}>
+                                    {message}
+                                </p>
+
+                                {showSuccessDetails && tenantDetails && (
+                                    <div className="mt-4 space-y-3 bg-white p-4 rounded-lg border border-green-200">
+                                        <div className="flex items-start gap-3">
+                                            <Mail className="h-4 w-4 text-purple-600 mt-0.5" />
+                                            <div className="text-sm">
+                                                <p className="font-medium text-gray-700">Email Sent To:</p>
+                                                <p className="text-gray-600">{tenantDetails.tenant.email}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-start gap-3">
+                                            <Globe className="h-4 w-4 text-purple-600 mt-0.5" />
+                                            <div className="text-sm">
+                                                <p className="font-medium text-gray-700">Your Subdomain:</p>
+                                                <p className="text-gray-900 font-mono bg-gray-100 px-2 py-1 rounded inline-block">
+                                                    {tenantDetails.tenant.subdomain}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-start gap-3">
+                                            <Key className="h-4 w-4 text-purple-600 mt-0.5" />
+                                            <div className="text-sm">
+                                                <p className="font-medium text-gray-700">Login Credentials:</p>
+                                                <p className="text-gray-600">Username: <span className="font-mono">{tenantDetails.credentials.username}</span></p>
+                                                <p className="text-xs text-gray-500 mt-1">Password has been sent to your email</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="pt-3 border-t border-gray-200">
+                                            <a
+                                                href={tenantDetails.credentials.loginUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-block px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
+                                            >
+                                                Go to Login Page →
+                                            </a>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="bg-white border-gray-500 border rounded-4xl">
@@ -83,7 +258,7 @@ function RecruiterRejister() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 px-6 sm:px-8 pb-4">
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    Company Name
+                                    Company Name <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -91,7 +266,9 @@ function RecruiterRejister() {
                                     value={formData.companyName}
                                     onChange={handleInputChange}
                                     placeholder="Enter Company Name"
-                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                                    required
+                                    disabled={isSubmitting}
+                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
 
@@ -105,13 +282,14 @@ function RecruiterRejister() {
                                     value={formData.companyType}
                                     onChange={handleInputChange}
                                     placeholder="Enter Company Type"
-                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                                    disabled={isSubmitting}
+                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    Contact Person
+                                    Contact Person <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -119,13 +297,15 @@ function RecruiterRejister() {
                                     value={formData.contactPerson}
                                     onChange={handleInputChange}
                                     placeholder="Enter Contact Person"
-                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                                    required
+                                    disabled={isSubmitting}
+                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    Email
+                                    Email <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="email"
@@ -133,20 +313,23 @@ function RecruiterRejister() {
                                     value={formData.email}
                                     onChange={handleInputChange}
                                     placeholder="Enter Email"
-                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                                    required
+                                    disabled={isSubmitting}
+                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    Phone Number
+                                    Phone Number <span className="text-red-500">*</span>
                                 </label>
                                 <div className="flex flex-col sm:flex-row">
                                     <div className="relative w-full sm:w-20">
                                         <select
                                             value={selectedCountryCode}
                                             onChange={(e) => setSelectedCountryCode(e.target.value)}
-                                            className="appearance-none border bg-gray-100 border-gray-300 border-r-0 rounded-l-lg px-4 py-1 pr-8 w-full focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                                            disabled={isSubmitting}
+                                            className="appearance-none border bg-gray-100 border-gray-300 border-r-0 rounded-l-lg px-4 py-1 pr-8 w-full focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
                                             {countryCode.map((code) => (
                                                 <option key={code} value={code}>
@@ -163,7 +346,11 @@ function RecruiterRejister() {
                                         value={formData.phoneNumber}
                                         onChange={handleInputChange}
                                         placeholder="Enter Phone Number"
-                                        className="w-full sm:flex-1 px-4 py-1 border border-gray-300 bg-gray-100 rounded-r-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                                        required
+                                        disabled={isSubmitting}
+                                        pattern="[0-9]{10}"
+                                        maxLength="10"
+                                        className="w-full sm:flex-1 px-4 py-1 border border-gray-300 bg-gray-100 rounded-r-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                     />
                                 </div>
                             </div>
@@ -178,7 +365,8 @@ function RecruiterRejister() {
                                     value={formData.employeeCount}
                                     onChange={handleInputChange}
                                     placeholder="Number of Employees"
-                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                                    disabled={isSubmitting}
+                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
 
@@ -192,7 +380,8 @@ function RecruiterRejister() {
                                     value={formData.gstNumber}
                                     onChange={handleInputChange}
                                     placeholder="Enter GST Number"
-                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                                    disabled={isSubmitting}
+                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
 
@@ -206,7 +395,8 @@ function RecruiterRejister() {
                                     value={formData.panNumber}
                                     onChange={handleInputChange}
                                     placeholder="Enter PAN Number"
-                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                                    disabled={isSubmitting}
+                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
 
@@ -220,7 +410,8 @@ function RecruiterRejister() {
                                     value={formData.staffingType}
                                     onChange={handleInputChange}
                                     placeholder="Enter Type of Staffing"
-                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                                    disabled={isSubmitting}
+                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
                         </div>
@@ -234,7 +425,7 @@ function RecruiterRejister() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 pb-4 px-6 sm:px-8">
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    Address 1
+                                    Address 1 <span className="text-red-500">*</span>
                                 </label>
                                 <textarea
                                     name="address1"
@@ -242,7 +433,9 @@ function RecruiterRejister() {
                                     onChange={handleInputChange}
                                     placeholder="Enter Address 1"
                                     rows="2"
-                                    className="w-full px-4 pt-2 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none"
+                                    required
+                                    disabled={isSubmitting}
+                                    className="w-full px-4 pt-2 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
 
@@ -256,13 +449,14 @@ function RecruiterRejister() {
                                     onChange={handleInputChange}
                                     placeholder="Enter Address 2"
                                     rows="2"
-                                    className="w-full px-4 pt-2 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none"
+                                    disabled={isSubmitting}
+                                    className="w-full px-4 pt-2 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 resize-none disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    City
+                                    City <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -270,23 +464,27 @@ function RecruiterRejister() {
                                     value={formData.city}
                                     onChange={handleInputChange}
                                     placeholder="Enter City"
-                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
+                                    required
+                                    disabled={isSubmitting}
+                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
                             </div>
 
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    State
+                                    State <span className="text-red-500">*</span>
                                 </label>
                                 <div className="relative">
                                     <select
                                         name="state"
                                         value={formData.state}
                                         onChange={handleInputChange}
-                                        className="w-full appearance-none px-4 py-1 bg-gray-100 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 pr-10"
+                                        required
+                                        disabled={isSubmitting}
+                                        className="w-full appearance-none px-4 py-1 bg-gray-100 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 pr-10 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {states.map((state) => (
-                                            <option key={state} value={state}>
+                                            <option key={state} value={state} disabled={state === 'Select State'}>
                                                 {state}
                                             </option>
                                         ))}
@@ -323,11 +521,12 @@ function RecruiterRejister() {
                                             type="file"
                                             accept="image/*"
                                             onChange={handleFileUpload}
+                                            disabled={isSubmitting}
                                             className="hidden"
                                         />
                                         <label
                                             htmlFor="logo-upload"
-                                            className="inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full border border-gray-500 bg-white text-sm text-gray-800 hover:bg-gray-50 cursor-pointer"
+                                            className={`inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full border border-gray-500 bg-white text-sm text-gray-800 hover:bg-gray-50 cursor-pointer ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
                                         >
                                             <Upload className="h-4 w-4" />
                                             Upload a file
@@ -343,9 +542,9 @@ function RecruiterRejister() {
                                                 const input = document.getElementById('logo-upload');
                                                 if (input) input.value = '';
                                             }}
-                                            disabled={!formData.logo}
+                                            disabled={!formData.logo || isSubmitting}
                                             className={`inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full border text-sm
-              ${formData.logo
+              ${formData.logo && !isSubmitting
                                                     ? 'bg-red-50 text-red-700 border-red-500 hover:bg-red-100'
                                                     : 'bg-red-50/50 text-red-400 cursor-not-allowed'
                                                 }`}
@@ -368,8 +567,9 @@ function RecruiterRejister() {
                                             key={color}
                                             type="button"
                                             onClick={() => setFormData({ ...formData, themeColor: color })}
+                                            disabled={isSubmitting}
                                             title={color}
-                                            className={`h-12 w-16 rounded-md border-2 transition-all
+                                            className={`h-12 w-16 rounded-md border-2 transition-all ${isSubmitting ? 'cursor-not-allowed opacity-50' : ''}
               ${formData.themeColor === color
                                                     ? 'border-purple-600 shadow-[inset_0_0_0_2px_rgba(255,255,255,0.75)]'
                                                     : 'border-gray-300 hover:border-gray-400'
@@ -385,9 +585,21 @@ function RecruiterRejister() {
                     <div className="text-center">
                         <button
                             type="submit"
-                            className="bg-[#6D28D9] text-white font-semibold py-3 px-12 rounded-4xl transform transition-all duration-200 hover:scale-105 shadow-lg hover:shadow-xl"
+                            disabled={isSubmitting}
+                            className={`bg-[#6D28D9] text-white font-semibold py-3 px-12 rounded-4xl transform transition-all duration-200 shadow-lg inline-flex items-center justify-center
+                                ${isSubmitting
+                                    ? 'opacity-50 cursor-not-allowed'
+                                    : 'hover:scale-105 hover:shadow-xl'
+                                }`}
                         >
-                            Register
+                            {isSubmitting ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                    Registering...
+                                </>
+                            ) : (
+                                'Register'
+                            )}
                         </button>
                     </div>
                 </form>
@@ -396,4 +608,4 @@ function RecruiterRejister() {
     );
 }
 
-export default RecruiterRejister;
+export default CompaniesRegister;
