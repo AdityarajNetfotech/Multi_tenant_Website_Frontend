@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import img from "../assets/SALogin.png";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const SuperAdminLogin = () => {
     const [email, setEmail] = useState("");
@@ -9,6 +10,7 @@ const SuperAdminLogin = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
+    const navigate = useNavigate();
 
     const handleLogin = async () => {
         setLoading(true);
@@ -31,6 +33,7 @@ const SuperAdminLogin = () => {
             console.log("Login success:", response.data);
             
             if (response.data.success) {
+                navigate("/SuperAdmin-Dashboard");
                 localStorage.setItem('token', response.data.data.token);
                 localStorage.setItem('superAdmin', JSON.stringify(response.data.data.superAdmin));
             }
