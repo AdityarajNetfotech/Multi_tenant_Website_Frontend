@@ -9,7 +9,7 @@ import {
 } from "react-router-dom";
 
 import LandingPage from './components/LandingPage/LandingPage';
-import RecruiterRejister from './SuperAdmin/RecruiterRejister';
+import CompaniesRegister from './SuperAdmin/CompaniesRegister';
 import SuperAdminProfile from './SuperAdmin/SuperAdminProfile';
 import SuperAdminLayout from './SuperAdmin/SuperAdminLayout';
 import Companies from './SuperAdmin/Companies';
@@ -47,6 +47,8 @@ import EyeButton from './RMGAdmin/Pages/EyeButton';
 import FilteredCandidate from './RMGAdmin/Pages/FilteredCandidate';
 import UnfilteredCandidate from './RMGAdmin/Pages/UnfilteredCandidate';
 import Review from './RecruiterAdmin/Review';
+import SuperAdminLogin from './SuperAdmin/SuperAdminLogin';
+import SuperAdminRegister from './SuperAdmin/SuperAdminRegister';
 
 
 
@@ -58,7 +60,8 @@ const App = () => {
       <Routes>
 
         <Route path="/" element={<LandingPage />} />
-        <Route path="/RecruiterRejister" element={<RecruiterRejister />} />
+        <Route path="/SuperAdminLogin" element={<SuperAdminLogin />} />
+        <Route path="/SuperAdminRegister" element={<SuperAdminRegister />} />
 
         <Route path="/Admin-Dashboard" element={<AdminLayout />}>
           {/* <Route index element={<RecruiterDashboard />} /> */}
@@ -90,6 +93,7 @@ const App = () => {
 
         <Route path="/SuperAdmin-Dashboard" element={<SuperAdminLayout />}>
           {/* <Route index element={<RecruiterDashboard />} /> */}
+          <Route path="CompaniesRegister" element={<CompaniesRegister />} />
           <Route path="Profile" element={<SuperAdminProfile />} />
           <Route path="Companies" element={<Companies />} />
           <Route path="Companies/CompanieDetail" element={<CompanyDetail />} />
