@@ -1,19 +1,116 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Edit2, Save, X } from "lucide-react";
+import axios from "axios";
 
 const CompanyDetail = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const tenant = location.state?.tenant;
-    console.log(tenant);
-    
+    const [tenant, setTenant] = useState(location.state?.tenant || null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState({});
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
 
     useEffect(() => {
         if (!tenant) {
             navigate('/companies');
+        } else {
+            setFormData({
+                companyName: tenant.companyName || '',
+                phone: tenant.phone || '',
+                email: tenant.email || '',
+                address: {
+                    street: tenant.address?.street || '',
+                    city: tenant.address?.city || '',
+                    state: tenant.address?.state || '',
+                    country: tenant.address?.country || '',
+                    zipCode: tenant.address?.zipCode || ''
+                },
+                subscription: {
+                    maxUsers: tenant.subscription?.maxUsers || '',
+                    maxRecruiters: tenant.subscription?.maxRecruiters || ''
+                },
+                settings: {
+                    maxApplicationsPerCandidate: tenant.settings?.maxApplicationsPerCandidate || ''
+                }
+            });
         }
     }, [tenant, navigate]);
+
+    const handleInputChange = (field, value) => {
+        if (field.includes('.')) {
+            const [parent, child] = field.split('.');
+            setFormData(prev => ({
+                ...prev,
+                [parent]: {
+                    ...prev[parent],
+                    [child]: value
+                }
+            }));
+        } else {
+            setFormData(prev => ({
+                ...prev,
+                [field]: value
+            }));
+        }
+    };
+
+    const handleSave = async () => {
+        setLoading(true);
+        setError("");
+
+        try {
+            const token = localStorage.getItem('token');
+
+            const response = await axios.put(
+                `http://localhost:5000/api/super-admin/tenants/${tenant._id}`,
+                formData,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            console.log(response.data);
+
+            if (response.data.success) {
+                setTenant(response.data.data.tenant);
+                setIsEditing(false);
+                alert('Company details updated successfully!');
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Error updating company details');
+            console.error('Update error:', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleCancel = () => {
+        setIsEditing(false);
+        setError("");
+        setFormData({
+            companyName: tenant.companyName || '',
+            phone: tenant.phone || '',
+            email: tenant.email || '',
+            address: {
+                street: tenant.address?.street || '',
+                city: tenant.address?.city || '',
+                state: tenant.address?.state || '',
+                country: tenant.address?.country || '',
+                zipCode: tenant.address?.zipCode || ''
+            },
+            subscription: {
+                maxUsers: tenant.subscription?.maxUsers || '',
+                maxRecruiters: tenant.subscription?.maxRecruiters || ''
+            },
+            settings: {
+                maxApplicationsPerCandidate: tenant.settings?.maxApplicationsPerCandidate || ''
+            }
+        });
+    };
 
     const formatDate = (dateString) => {
         if (!dateString) return '-';
@@ -48,7 +145,7 @@ const CompanyDetail = () => {
 
     return (
         <div className="max-w-5xl mx-auto p-6">
-            <button 
+            <button
                 onClick={() => navigate(-1)}
                 className="mb-4 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
             >
@@ -57,21 +154,69 @@ const CompanyDetail = () => {
             </button>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-10">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">Company Details</h2>
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-bold text-gray-900">Company Details</h2>
+                    {!isEditing ? (
+                        <button
+                            onClick={() => setIsEditing(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                            <Edit2 className="w-4 h-4" />
+                            Edit
+                        </button>
+                    ) : (
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleSave}
+                                disabled={loading}
+                                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                            >
+                                <Save className="w-4 h-4" />
+                                {loading ? 'Saving...' : 'Save'}
+                            </button>
+                            <button
+                                onClick={handleCancel}
+                                disabled={loading}
+                                className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors disabled:opacity-50"
+                            >
+                                <X className="w-4 h-4" />
+                                Cancel
+                            </button>
+                        </div>
+                    )}
+                </div>
+
+                {error && (
+                    <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                        {error}
+                    </div>
+                )}
 
                 <div className="flex flex-col sm:flex-row items-center gap-4 mb-8">
                     <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
                         <span className="text-blue-600 font-bold text-2xl">
-                            {getInitial(tenant.companyName)}
+                            {getInitial(isEditing ? formData.companyName : tenant.companyName)}
                         </span>
                     </div>
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                            {tenant.companyName || 'N/A'}
-                        </h3>
-                        <p className="text-sm text-gray-500">
-                            {tenant.subdomain ? `Subdomain: ${tenant.subdomain}` : ''}
-                        </p>
+                    <div className="flex-1">
+                        {isEditing ? (
+                            <input
+                                type="text"
+                                value={formData.companyName}
+                                onChange={(e) => handleInputChange('companyName', e.target.value)}
+                                className="text-lg font-semibold text-gray-900 border rounded-lg px-3 py-2 w-full"
+                                placeholder="Company Name"
+                            />
+                        ) : (
+                            <>
+                                <h3 className="text-lg font-semibold text-gray-900">
+                                    {tenant.companyName || 'N/A'}
+                                </h3>
+                                <p className="text-sm text-gray-500">
+                                    {tenant.subdomain ? `Subdomain: ${tenant.subdomain}` : ''}
+                                </p>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -116,9 +261,10 @@ const CompanyDetail = () => {
                             </label>
                             <input
                                 type="text"
-                                value={tenant.phone || 'N/A'}
-                                readOnly
-                                className="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50"
+                                value={isEditing ? formData.phone : tenant.phone || 'N/A'}
+                                onChange={isEditing ? (e) => handleInputChange('phone', e.target.value) : undefined}
+                                readOnly={!isEditing}
+                                className={`mt-1 w-full border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}
                             />
                         </div>
 
@@ -151,11 +297,10 @@ const CompanyDetail = () => {
                                     Subscription Plan
                                 </label>
                                 <div className="mt-1">
-                                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${
-                                        tenant.subscription?.status === 'active' 
-                                            ? 'bg-green-100 text-green-700' 
+                                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${tenant.subscription?.status === 'active'
+                                            ? 'bg-green-100 text-green-700'
                                             : 'bg-gray-100 text-gray-700'
-                                    }`}>
+                                        }`}>
                                         {tenant.subscription?.plan || 'Free Trial'} - {tenant.subscription?.status || 'N/A'}
                                     </span>
                                 </div>
@@ -168,9 +313,10 @@ const CompanyDetail = () => {
                             </label>
                             <input
                                 type="email"
-                                value={tenant.email || 'N/A'}
-                                readOnly
-                                className="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50"
+                                value={isEditing ? formData.email : tenant.email || 'N/A'}
+                                onChange={isEditing ? (e) => handleInputChange('email', e.target.value) : undefined}
+                                readOnly={!isEditing}
+                                className={`mt-1 w-full border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}
                             />
                         </div>
 
@@ -190,18 +336,58 @@ const CompanyDetail = () => {
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Company Address
                             </label>
-                            <div className="border rounded-lg px-3 py-2 bg-gray-50">
-                                <p className="text-gray-700">
-                                    {tenant.address?.street || ''}{tenant.address?.street ? ', ' : ''}
-                                    {tenant.address?.city || ''}{tenant.address?.city ? ', ' : ''}
-                                    {tenant.address?.state || ''}{tenant.address?.state ? ', ' : ''}
-                                    {tenant.address?.country || ''}{tenant.address?.country ? ' - ' : ''}
-                                    {tenant.address?.zipCode || ''}
-                                </p>
-                                {!tenant.address?.street && !tenant.address?.city && (
-                                    <p className="text-gray-500">No address provided</p>
-                                )}
-                            </div>
+                            {isEditing ? (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Street"
+                                        value={formData.address.street}
+                                        onChange={(e) => handleInputChange('address.street', e.target.value)}
+                                        className="border rounded-lg px-3 py-2"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="City"
+                                        value={formData.address.city}
+                                        onChange={(e) => handleInputChange('address.city', e.target.value)}
+                                        className="border rounded-lg px-3 py-2"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="State"
+                                        value={formData.address.state}
+                                        onChange={(e) => handleInputChange('address.state', e.target.value)}
+                                        className="border rounded-lg px-3 py-2"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Country"
+                                        value={formData.address.country}
+                                        onChange={(e) => handleInputChange('address.country', e.target.value)}
+                                        className="border rounded-lg px-3 py-2"
+                                    />
+                                    <input
+                                        type="text"
+                                        placeholder="Zip Code"
+                                        value={formData.address.zipCode}
+                                        onChange={(e) => handleInputChange('address.zipCode', e.target.value)}
+                                        className="border rounded-lg px-3 py-2"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="border rounded-lg px-3 py-2 bg-gray-50">
+                                    <p className="text-gray-700">
+                                        {tenant.address?.street || ''}{tenant.address?.street ? ', ' : ''}
+                                        {tenant.address?.city || ''}{tenant.address?.city ? ', ' : ''}
+                                        {tenant.address?.state || ''}{tenant.address?.state ? ', ' : ''}
+                                        {tenant.address?.country || ''}{tenant.address?.country ? ' - ' : ''}
+                                        {tenant.address?.zipCode || ''}
+                                    </p>
+                                    {!tenant.address?.street && !tenant.address?.city && (
+                                        <p className="text-gray-500">No address provided</p>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <div className="md:col-span-2">
@@ -209,17 +395,44 @@ const CompanyDetail = () => {
                                 Settings & Limits
                             </label>
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="border rounded-lg px-3 py-2 bg-gray-50">
+                                <div className={`border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}>
                                     <p className="text-xs text-gray-500">Max Users</p>
-                                    <p className="font-semibold">{tenant.subscription?.maxUsers || 'N/A'}</p>
+                                    {isEditing ? (
+                                        <input
+                                            type="number"
+                                            value={formData.subscription.maxUsers}
+                                            onChange={(e) => handleInputChange('subscription.maxUsers', e.target.value)}
+                                            className="font-semibold w-full border-0 focus:outline-none"
+                                        />
+                                    ) : (
+                                        <p className="font-semibold">{tenant.subscription?.maxUsers || 'N/A'}</p>
+                                    )}
                                 </div>
-                                <div className="border rounded-lg px-3 py-2 bg-gray-50">
+                                <div className={`border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}>
                                     <p className="text-xs text-gray-500">Max Recruiters</p>
-                                    <p className="font-semibold">{tenant.subscription?.maxRecruiters || 'N/A'}</p>
+                                    {isEditing ? (
+                                        <input
+                                            type="number"
+                                            value={formData.subscription.maxRecruiters}
+                                            onChange={(e) => handleInputChange('subscription.maxRecruiters', e.target.value)}
+                                            className="font-semibold w-full border-0 focus:outline-none"
+                                        />
+                                    ) : (
+                                        <p className="font-semibold">{tenant.subscription?.maxRecruiters || 'N/A'}</p>
+                                    )}
                                 </div>
-                                <div className="border rounded-lg px-3 py-2 bg-gray-50">
+                                <div className={`border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}>
                                     <p className="text-xs text-gray-500">Max Applications/Candidate</p>
-                                    <p className="font-semibold">{tenant.settings?.maxApplicationsPerCandidate || 'N/A'}</p>
+                                    {isEditing ? (
+                                        <input
+                                            type="number"
+                                            value={formData.settings.maxApplicationsPerCandidate}
+                                            onChange={(e) => handleInputChange('settings.maxApplicationsPerCandidate', e.target.value)}
+                                            className="font-semibold w-full border-0 focus:outline-none"
+                                        />
+                                    ) : (
+                                        <p className="font-semibold">{tenant.settings?.maxApplicationsPerCandidate || 'N/A'}</p>
+                                    )}
                                 </div>
                             </div>
                         </div>
