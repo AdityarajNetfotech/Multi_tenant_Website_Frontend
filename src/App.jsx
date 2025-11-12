@@ -49,6 +49,8 @@ import UnfilteredCandidate from './RMGAdmin/Pages/UnfilteredCandidate';
 import Review from './RecruiterAdmin/Review';
 import SuperAdminLogin from './SuperAdmin/SuperAdminLogin';
 import SuperAdminRegister from './SuperAdmin/SuperAdminRegister';
+import SuperAdminDashboard from './SuperAdmin/SuperAdminDashboard';
+import RecruiterDashboard from './RecruiterAdmin/RecruiterDashboard';
 
 
 
@@ -92,7 +94,7 @@ const App = () => {
         </Route>
 
         <Route path="/SuperAdmin-Dashboard" element={<SuperAdminLayout />}>
-          {/* <Route index element={<RecruiterDashboard />} /> */}
+          <Route index element={<SuperAdminDashboard />} />
           <Route path="CompaniesRegister" element={<CompaniesRegister />} />
           <Route path="Profile" element={<SuperAdminProfile />} />
           <Route path="Companies" element={<Companies />} />
@@ -102,7 +104,7 @@ const App = () => {
         </Route>
 
         <Route path="/RecruiterAdmin-Dashboard" element={<RecruiterAdminLayout />}>
-          {/* <Route index element={<RecruiterDashboard />} /> */}
+          <Route index element={<RecruiterDashboard />} />
           <Route path="JD" element={<JD />} />
           <Route path="JD/CreateJD" element={<CreateJD />} />
           <Route path="Assessment" element={<Assessment />} />
