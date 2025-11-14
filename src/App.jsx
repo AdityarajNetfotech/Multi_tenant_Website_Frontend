@@ -51,6 +51,11 @@ import SuperAdminLogin from './SuperAdmin/SuperAdminLogin';
 import SuperAdminRegister from './SuperAdmin/SuperAdminRegister';
 import SuperAdminDashboard from './SuperAdmin/SuperAdminDashboard';
 import RecruiterDashboard from './RecruiterAdmin/RecruiterDashboard';
+import CandidateDashboard from './Candidate/Pages/CandidateDashboard';
+import RMGDashboard from './RMGAdmin/Pages/RMGDashboard';
+import SeeHistory from './RMGAdmin/Pages/SeeHistory';
+import CandidateLogin from './Candidate/CandidateLogin';
+import RecruiterLogin from './RecruiterAdmin/RecruiterLogin';
 
 
 
@@ -63,6 +68,8 @@ const App = () => {
 
         <Route path="/" element={<LandingPage />} />
         <Route path="/SuperAdminLogin" element={<SuperAdminLogin />} />
+        <Route path="/CandidateLogin" element={<CandidateLogin />} />
+        <Route path="/RecruiterLogin" element={<RecruiterLogin />} />
         <Route path="/SuperAdminRegister" element={<SuperAdminRegister />} />
 
         <Route path="/Admin-Dashboard" element={<AdminLayout />}>
@@ -74,17 +81,18 @@ const App = () => {
         </Route>
 
         <Route path="/RMGAdmin-Dashboard" element={<RMGLayout />}>
-          {/* <Route index element={<RecruiterDashboard />} /> */}
+          <Route index element={<RMGDashboard />} />
           <Route path="RequirementForm" element={<RequirementForm />} />
           <Route path="Requirement" element={<Requirement />} />
           <Route path="AssignedRecruiters" element={<AssignedRecruiters />} />
           <Route path="EyeButton" element={<EyeButton />} />
           <Route path="FilteredCandidate" element={<FilteredCandidate />} />
           <Route path="UnfilteredCandidate" element={<UnfilteredCandidate />} />
+          <Route path="SeeHistory" element={<SeeHistory />} />
         </Route>
 
         <Route path="/Candidate-Dashboard" element={<CandidateLayout />}>
-          {/* <Route index element={<RecruiterDashboard />} /> */}
+          <Route index element={<CandidateDashboard />} />
           <Route path="AllJDs" element={<AllJDs />} />
           <Route path="Report" element={<Report />} />
           <Route path="AppliedJD" element={<AppliedJD />} />
