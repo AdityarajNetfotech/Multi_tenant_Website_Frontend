@@ -1,29 +1,34 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Home,
   UserPlus,
   Building2,
-  Settings,
-  User,
-  Ticket,
   LogOut,
   X
 } from 'lucide-react';
 
 const AdminSidebar = ({ isOpen, onToggle }) => {
   const navigate = useNavigate();
-  const [activeNav, setActiveNav] = useState('Dashboard');
-  const [activeSubNav, setActiveSubNav] = useState('');
+  const location = useLocation();
+
+  const [activeNav, setActiveNav] = useState('');
+
+  useEffect(() => {
+    const path = location.pathname;
+
+    if (path.includes("/CompaniesRegister")) setActiveNav("RegisteredCompanies");
+    else if (path.includes("/Companies")) setActiveNav("Companies");
+    else if (path.includes("/Tickets")) setActiveNav("Tickets");
+    else if (path.includes("/RejisteredRecruiters")) setActiveNav("RejisteredRecruiters");
+    else if (path.includes("/Profile")) setActiveNav("Profile");
+    else if (path.includes("/logout")) setActiveNav("Logout");
+    else setActiveNav("Dashboard");
+
+  }, [location.pathname]);
 
   const handleNavClick = (name, path) => {
     setActiveNav(name);
-    setActiveSubNav('');
-    navigate(path);
-  };
-
-  const handleSubNavClick = (name, path) => {
-    setActiveSubNav(name);
     navigate(path);
   };
 
@@ -56,21 +61,33 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
 
         <nav className="py-4 flex-1 overflow-y-auto">
           <ul className="space-y-2">
+
             <li>
               <button
                 onClick={() => handleNavClick('Dashboard', '/SuperAdmin-Dashboard')}
-                className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
+                className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors
                   ${activeNav === 'Dashboard' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <Home size={20} />
                 <span>Dashboard</span>
               </button>
             </li>
+            
+            <li>
+              <button
+                onClick={() => handleNavClick('EnquiryMessages', '/SuperAdmin-Dashboard/EnquiryMessages')}
+                className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors
+                  ${activeNav === 'EnquiryMessages' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
+              >
+                <Home size={20} />
+                <span>Enquiry Messages</span>
+              </button>
+            </li>
 
             <li>
               <button
                 onClick={() => handleNavClick('RegisteredCompanies', '/SuperAdmin-Dashboard/CompaniesRegister')}
-                className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
+                className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors
                   ${activeNav === 'RegisteredCompanies' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <Home size={20} />
@@ -81,7 +98,7 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
             <li>
               <button
                 onClick={() => handleNavClick('Companies', '/SuperAdmin-Dashboard/Companies')}
-                className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
+                className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors
                   ${activeNav === 'Companies' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <UserPlus size={20} />
@@ -92,7 +109,7 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
             <li>
               <button
                 onClick={() => handleNavClick('Tickets', '/SuperAdmin-Dashboard/Tickets')}
-                className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
+                className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors
                   ${activeNav === 'Tickets' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <UserPlus size={20} />
@@ -100,11 +117,10 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
               </button>
             </li>
 
-
             <li>
               <button
                 onClick={() => handleNavClick('RejisteredRecruiters', '/SuperAdmin-Dashboard/RejisteredRecruiters')}
-                className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
+                className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors
                   ${activeNav === 'RejisteredRecruiters' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <Building2 size={20} />
@@ -112,11 +128,10 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
               </button>
             </li>
 
-
             <li>
               <button
                 onClick={() => handleNavClick('Profile', '/SuperAdmin-Dashboard/Profile')}
-                className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
+                className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors
                   ${activeNav === 'Profile' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <Building2 size={20} />
@@ -124,17 +139,17 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
               </button>
             </li>
 
-
             <li>
               <button
                 onClick={() => handleNavClick('Logout', '/logout')}
-                className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
+                className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors
                   ${activeNav === 'Logout' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <LogOut size={20} />
                 <span>Logout</span>
               </button>
             </li>
+
           </ul>
         </nav>
       </div>

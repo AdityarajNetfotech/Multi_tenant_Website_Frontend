@@ -1,8 +1,9 @@
 import { Search, Filter, CreditCard as Edit2, Trash2, Edit } from 'lucide-react';
 import { useState } from 'react';
+import Pagination from '../components/LandingPage/Pagination';
 
 function Tickets() {
-  const [currentPage, setCurrentPage] = useState(2);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const tickets = [
     {
@@ -69,6 +70,17 @@ function Tickets() {
       dueDate: '28.04.2025'
     }
   ];
+
+  const itemsPerPage = 5;
+  const totalPages = Math.ceil(tickets.length / itemsPerPage);
+  
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = tickets.slice(indexOfFirstItem, indexOfLastItem);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
 
   const stats = [
     { label: 'Total Tickets', value: '4004', icon: '🎫', bgColor: 'bg-blue-100', iconColor: 'text-blue-500' },
@@ -150,7 +162,7 @@ function Tickets() {
               </thead>
 
               <tbody className="bg-white divide-y divide-gray-200">
-                {tickets.map((ticket, index) => (
+                {currentItems.map((ticket, index) => (
                   <tr key={index} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{ticket.id}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -190,41 +202,13 @@ function Tickets() {
           </div>
         </div>
 
-
-
-
-        <div className="mt-6 flex justify-center">
-
-          <div className="flex items-center gap-1 bg-white rounded-lg shadow-sm px-2 py-2">
-            <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-              className="p-2 hover:bg-gray-100 rounded"
-            >
-              <span className="text-sm">{'<'}</span>
-            </button>
-
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((page) => (
-              <button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                className={`px-3 py-1 rounded text-sm ${currentPage === page
-                    ? 'bg-blue-600 text-white'
-                    : 'hover:bg-gray-100 text-gray-700'
-                  }`}
-              >
-                {page}
-              </button>
-            ))}
-
-            <button
-              onClick={() => setCurrentPage(Math.min(9, currentPage + 1))}
-              className="p-2 hover:bg-gray-100 rounded"
-            >
-              <span className="text-sm">{'>'}</span>
-            </button>
-
-          </div>
-        </div>
+        {tickets.length > 0 && (
+          <Pagination 
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
+        )}
       </div>
     </div>
   );

@@ -1,29 +1,33 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Home,
   UserPlus,
   Building2,
-  Settings,
-  User,
-  Ticket,
   LogOut,
   X
 } from 'lucide-react';
 
 const AdminSidebar = ({ isOpen, onToggle }) => {
   const navigate = useNavigate();
-  const [activeNav, setActiveNav] = useState('Dashboard');
-  const [activeSubNav, setActiveSubNav] = useState('');
+  const location = useLocation();
+
+  const [activeNav, setActiveNav] = useState('');
+
+  useEffect(() => {
+    const path = location.pathname;
+
+    if (path.includes("/RecruiterManagement")) setActiveNav("RecruiterManagement");
+    else if (path.includes("/RMGManagement")) setActiveNav("RMGManagement");
+    else if (path.includes("/Tickets")) setActiveNav("RaiseTickets");
+    else if (path.includes("/SupportTickets")) setActiveNav("CreateTickets");
+    else if (path.includes("/logout")) setActiveNav("Logout");
+    else setActiveNav("Admin-Dashboard");
+
+  }, [location.pathname]);
 
   const handleNavClick = (name, path) => {
     setActiveNav(name);
-    setActiveSubNav('');
-    navigate(path);
-  };
-
-  const handleSubNavClick = (name, path) => {
-    setActiveSubNav(name);
     navigate(path);
   };
 
@@ -56,11 +60,12 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
 
         <nav className="py-4 flex-1 overflow-y-auto">
           <ul className="space-y-2">
+
             <li>
               <button
-                onClick={() => handleNavClick('Dashboard', '/RecruiterAdmin-Dashboard')}
+                onClick={() => handleNavClick('Admin-Dashboard', '/Admin-Dashboard')}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
-                  ${activeNav === 'Dashboard' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
+                  ${activeNav === 'Admin-Dashboard' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <Home size={20} />
                 <span>Dashboard</span>
@@ -69,50 +74,47 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
 
             <li>
               <button
-                onClick={() => handleNavClick('Companies', '/SuperAdmin-Dashboard/Companies')}
+                onClick={() => handleNavClick('RecruiterManagement', '/Admin-Dashboard/RecruiterManagement')}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
-                  ${activeNav === 'Companies' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
+                  ${activeNav === 'RecruiterManagement' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <UserPlus size={20} />
-                <span>Companies</span>
+                <span>Recruiter Management</span>
               </button>
             </li>
 
             <li>
               <button
-                onClick={() => handleNavClick('Tickets', '/SuperAdmin-Dashboard/Tickets')}
+                onClick={() => handleNavClick('RMGManagement', '/Admin-Dashboard/RMGManagement')}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
-                  ${activeNav === 'Tickets' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
+                  ${activeNav === 'RMGManagement' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <UserPlus size={20} />
-                <span>Tickets</span>
+                <span>RMG Management</span>
               </button>
             </li>
-
 
             <li>
               <button
-                onClick={() => handleNavClick('RejisteredRecruiters', '/SuperAdmin-Dashboard/RejisteredRecruiters')}
+                onClick={() => handleNavClick('RaiseTickets', '/Admin-Dashboard/Tickets')}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
-                  ${activeNav === 'RejisteredRecruiters' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
+                  ${activeNav === 'RaiseTickets' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <Building2 size={20} />
-                <span>Recently Rejistered</span>
+                <span>Raise Tickets</span>
               </button>
             </li>
-
 
             <li>
               <button
-                onClick={() => handleNavClick('Profile', '/SuperAdmin-Dashboard/Profile')}
+                onClick={() => handleNavClick('CreateTickets', '/Admin-Dashboard/SupportTickets')}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
-                  ${activeNav === 'Profile' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
+                  ${activeNav === 'CreateTickets' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <Building2 size={20} />
-                <span>Profile</span>
+                <span>Create Tickets</span>
               </button>
             </li>
-
 
             <li>
               <button
@@ -124,6 +126,7 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
                 <span>Logout</span>
               </button>
             </li>
+
           </ul>
         </nav>
       </div>

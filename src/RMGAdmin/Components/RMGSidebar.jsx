@@ -1,29 +1,34 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Home,
   UserPlus,
   Building2,
-  Settings,
-  User,
-  Ticket,
   LogOut,
   X
 } from 'lucide-react';
 
 const RMGSidebar = ({ isOpen, onToggle }) => {
   const navigate = useNavigate();
-  const [activeNav, setActiveNav] = useState('Dashboard');
-  const [activeSubNav, setActiveSubNav] = useState('');
+  const location = useLocation();
+
+  const [activeNav, setActiveNav] = useState('');
+
+  useEffect(() => {
+    const path = location.pathname;
+
+    if (path.includes("/RMGAdmin-Dashboard/RequirementForm")) setActiveNav("RequirementForm");
+    else if (path.includes("/RMGAdmin-Dashboard/Requirement")) setActiveNav("Requirement");
+    else if (path.includes("/RMGAdmin-Dashboard/RMGRaiseTickets")) setActiveNav("RaiseTickets");
+    else if (path.includes("/RMGAdmin-Dashboard/RMGSupportTickets")) setActiveNav("SupportTickets");
+    else if (path.includes("/logout")) setActiveNav("Logout");
+    else if (path.includes("/RMGAdmin-Dashboard")) setActiveNav("RMGDashboard");
+    else setActiveNav("");
+  }, [location.pathname]);
+
 
   const handleNavClick = (name, path) => {
     setActiveNav(name);
-    setActiveSubNav('');
-    navigate(path);
-  };
-
-  const handleSubNavClick = (name, path) => {
-    setActiveSubNav(name);
     navigate(path);
   };
 
@@ -56,11 +61,12 @@ const RMGSidebar = ({ isOpen, onToggle }) => {
 
         <nav className="py-4 flex-1 overflow-y-auto">
           <ul className="space-y-2">
+
             <li>
               <button
-                onClick={() => handleNavClick('Dashboard', '/RecruiterAdmin-Dashboard')}
+                onClick={() => handleNavClick('RMGDashboard', '/RMGAdmin-Dashboard')}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
-                  ${activeNav === 'Dashboard' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
+                  ${activeNav === 'RMGDashboard' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <Home size={20} />
                 <span>Dashboard</span>
@@ -69,50 +75,48 @@ const RMGSidebar = ({ isOpen, onToggle }) => {
 
             <li>
               <button
-                onClick={() => handleNavClick('Companies', '/SuperAdmin-Dashboard/Companies')}
+                onClick={() => handleNavClick('RequirementForm', '/RMGAdmin-Dashboard/RequirementForm')}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
-                  ${activeNav === 'Companies' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
+                  ${activeNav === 'RequirementForm' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <UserPlus size={20} />
-                <span>Companies</span>
+                <span>Requirement Form</span>
               </button>
             </li>
 
             <li>
               <button
-                onClick={() => handleNavClick('Tickets', '/SuperAdmin-Dashboard/Tickets')}
+                onClick={() => handleNavClick('Requirement', '/RMGAdmin-Dashboard/Requirement')}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
-                  ${activeNav === 'Tickets' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
+                  ${activeNav === 'Requirement' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <UserPlus size={20} />
-                <span>Tickets</span>
+                <span>Requirement</span>
               </button>
             </li>
 
 
             <li>
               <button
-                onClick={() => handleNavClick('RejisteredRecruiters', '/SuperAdmin-Dashboard/RejisteredRecruiters')}
+                onClick={() => handleNavClick('RaiseTickets', '/RMGAdmin-Dashboard/RMGRaiseTickets')}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
-                  ${activeNav === 'RejisteredRecruiters' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
+                  ${activeNav === 'RaiseTickets' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <Building2 size={20} />
-                <span>Recently Rejistered</span>
+                <span>Raise Tickets</span>
               </button>
             </li>
-
 
             <li>
               <button
-                onClick={() => handleNavClick('Profile', '/SuperAdmin-Dashboard/Profile')}
+                onClick={() => handleNavClick('SupportTickets', '/RMGAdmin-Dashboard/RMGSupportTickets')}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
-                  ${activeNav === 'Profile' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
+                  ${activeNav === 'SupportTickets' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <Building2 size={20} />
-                <span>Profile</span>
+                <span>Support Tickets</span>
               </button>
             </li>
-
 
             <li>
               <button
@@ -124,6 +128,7 @@ const RMGSidebar = ({ isOpen, onToggle }) => {
                 <span>Logout</span>
               </button>
             </li>
+
           </ul>
         </nav>
       </div>

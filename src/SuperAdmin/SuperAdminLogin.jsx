@@ -18,7 +18,7 @@ const SuperAdminLogin = () => {
 
         try {
             const response = await axios.post(
-                "http://localhost:5000/api/super-admin/login", 
+                "http://localhost:5000/api/superadmin/login", 
                 { 
                     email, 
                     password 
@@ -32,10 +32,11 @@ const SuperAdminLogin = () => {
 
             console.log("Login success:", response.data);
             
-            if (response.data.success) {
+            if (response.data.status === "success") {
+                localStorage.setItem('token', response.data.token);
+                localStorage.setItem('superadmin', JSON.stringify(response.data.data));
+                
                 navigate("/SuperAdmin-Dashboard");
-                localStorage.setItem('token', response.data.data.token);
-                localStorage.setItem('superAdmin', JSON.stringify(response.data.data.superAdmin));
             }
         } catch (err) {
             console.error("Login failed:", err.response?.data || err.message);

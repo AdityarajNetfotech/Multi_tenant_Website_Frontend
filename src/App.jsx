@@ -56,6 +56,10 @@ import RMGDashboard from './RMGAdmin/Pages/RMGDashboard';
 import SeeHistory from './RMGAdmin/Pages/SeeHistory';
 import CandidateLogin from './Candidate/CandidateLogin';
 import RecruiterLogin from './RecruiterAdmin/RecruiterLogin';
+import AdminDashboard from './Admin/Components/AdminDashboard';
+import RMGSupportTickets from './RMGAdmin/Pages/RMGSupportTickets';
+import RMGRaiseTickets from './RMGAdmin/Pages/RMGRaiseTickets';
+import EnquiryMessages from './SuperAdmin/EnquiryMessages';
 
 
 
@@ -73,7 +77,7 @@ const App = () => {
         <Route path="/SuperAdminRegister" element={<SuperAdminRegister />} />
 
         <Route path="/Admin-Dashboard" element={<AdminLayout />}>
-          {/* <Route index element={<RecruiterDashboard />} /> */}
+          <Route index element={<AdminDashboard />} />
           <Route path='RecruiterManagement' element={<RecruiterManagement />} />
           <Route path='RMGManagement' element={<RMGManagement />} />
           <Route path='Tickets' element={<AdminTickets />} />
@@ -89,6 +93,8 @@ const App = () => {
           <Route path="FilteredCandidate" element={<FilteredCandidate />} />
           <Route path="UnfilteredCandidate" element={<UnfilteredCandidate />} />
           <Route path="SeeHistory" element={<SeeHistory />} />
+          <Route path="RMGSupportTickets" element={<RMGSupportTickets />} />
+          <Route path="RMGRaiseTickets" element={<RMGRaiseTickets />} />
         </Route>
 
         <Route path="/Candidate-Dashboard" element={<CandidateLayout />}>
@@ -109,6 +115,7 @@ const App = () => {
           <Route path="Companies/CompanieDetail" element={<CompanyDetail />} />
           <Route path="Tickets" element={<Tickets />} />
           <Route path="RejisteredRecruiters" element={<RejisteredRecruiters />} />
+          <Route path="EnquiryMessages" element={<EnquiryMessages />} />
         </Route>
 
         <Route path="/RecruiterAdmin-Dashboard" element={<RecruiterAdminLayout />}>
