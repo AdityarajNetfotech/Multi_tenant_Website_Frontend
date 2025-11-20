@@ -1,29 +1,33 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Home,
   UserPlus,
   Building2,
-  Settings,
-  User,
-  Ticket,
   LogOut,
   X
 } from 'lucide-react';
 
 const RecruiterAdminSidebar = ({ isOpen, onToggle }) => {
   const navigate = useNavigate();
-  const [activeNav, setActiveNav] = useState('Dashboard');
-  const [activeSubNav, setActiveSubNav] = useState('');
+  const location = useLocation();
+
+  const [activeNav, setActiveNav] = useState('');
+
+  useEffect(() => {
+    const path = location.pathname;
+
+    if (path.includes("/JDDetails")) setActiveNav("JDDetails");
+    else if (path.includes("/JD")) setActiveNav("JobDescription");
+    else if (path.includes("/Assessment")) setActiveNav("Assessment");
+    else if (path.includes("/Results")) setActiveNav("Results");
+    else if (path.includes("/NonCandidateList")) setActiveNav("NonCandidateList");
+    else if (path.includes("/logout")) setActiveNav("Logout");
+    else setActiveNav("Dashboard");
+  }, [location.pathname]);
 
   const handleNavClick = (name, path) => {
     setActiveNav(name);
-    setActiveSubNav('');
-    navigate(path);
-  };
-
-  const handleSubNavClick = (name, path) => {
-    setActiveSubNav(name);
     navigate(path);
   };
 
@@ -56,6 +60,7 @@ const RecruiterAdminSidebar = ({ isOpen, onToggle }) => {
 
         <nav className="py-4 flex-1 overflow-y-auto">
           <ul className="space-y-2">
+
             <li>
               <button
                 onClick={() => handleNavClick('Dashboard', '/RecruiterAdmin-Dashboard')}
@@ -69,9 +74,9 @@ const RecruiterAdminSidebar = ({ isOpen, onToggle }) => {
 
             <li>
               <button
-                onClick={() => handleNavClick('Job Description', '/RecruiterAdmin-Dashboard/JD')}
+                onClick={() => handleNavClick('JobDescription', '/RecruiterAdmin-Dashboard/JD')}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
-                  ${activeNav === 'Job Description' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
+                  ${activeNav === 'JobDescription' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <UserPlus size={20} />
                 <span>All JDs</span>
@@ -80,15 +85,14 @@ const RecruiterAdminSidebar = ({ isOpen, onToggle }) => {
 
             <li>
               <button
-                onClick={() => handleNavClick('Job /JDDetails', '/RecruiterAdmin-Dashboard/JDDetails')}
+                onClick={() => handleNavClick('JDDetails', '/RecruiterAdmin-Dashboard/JDDetails')}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
-                  ${activeNav === 'Job /JDDetails' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
+                  ${activeNav === 'JDDetails' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <UserPlus size={20} />
                 <span>JD Details</span>
               </button>
             </li>
-
 
             <li>
               <button
@@ -123,7 +127,6 @@ const RecruiterAdminSidebar = ({ isOpen, onToggle }) => {
               </button>
             </li>
 
-
             <li>
               <button
                 onClick={() => handleNavClick('Logout', '/logout')}
@@ -134,6 +137,7 @@ const RecruiterAdminSidebar = ({ isOpen, onToggle }) => {
                 <span>Logout</span>
               </button>
             </li>
+
           </ul>
         </nav>
       </div>

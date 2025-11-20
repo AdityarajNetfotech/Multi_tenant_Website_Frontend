@@ -2,11 +2,16 @@ import React, { useState } from 'react';
 import { Search, SlidersHorizontal, Edit, Eye, Trash2 } from 'lucide-react';
 import Pagination from '../../components/LandingPage/Pagination';
 import RequirementAddNote from './RequirementAddNote';
+import EyeButton from './EyeButton';
+import { useNavigate } from 'react-router-dom';
 
 export default function Requirement() {
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [showAddNote, setShowAddNote] = useState(false);
+    const [showEyePopup, setShowEyePopup] = useState(false);
+    const navigate = useNavigate();
+
     const jobsPerPage = 5;
 
     const jobs = [
@@ -120,19 +125,26 @@ export default function Requirement() {
                                             <button className="p-2 border border-green-300 text-green-600 rounded hover:bg-green-50 transition-colors">
                                                 <Edit size={16} />
                                             </button>
-                                            <button className="p-2 border border-blue-300 text-blue-600 rounded hover:bg-blue-50 transition-colors">
+                                            <button
+                                                onClick={() => setShowEyePopup(true)}
+                                                className="p-2 border border-blue-300 text-blue-600 rounded hover:bg-blue-50"
+                                            >
                                                 <Eye size={16} />
                                             </button>
+
                                             <button className="p-2 border border-red-300 text-red-600 rounded hover:bg-red-50 transition-colors">
                                                 <Trash2 size={16} />
                                             </button>
-                                               <button
-                        onClick={() => setShowAddNote(true)} 
-                        className="px-3 py-1.5 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors whitespace-nowrap"
-                      >
-                        Add Note
-                      </button>
-                                            <button className="px-3 py-1.5 bg-orange-500 text-white rounded text-sm hover:bg-orange-600 transition-colors whitespace-nowrap">
+                                            <button
+                                                onClick={() => setShowAddNote(true)}
+                                                className="px-3 py-1.5 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors whitespace-nowrap"
+                                            >
+                                                Add Note
+                                            </button>
+                                            <button
+                                                onClick={() => navigate('/RMGAdmin-Dashboard/SeeHistory')}
+                                                className="px-3 py-1.5 bg-orange-500 text-white rounded text-sm hover:bg-orange-600 transition-colors whitespace-nowrap"
+                                            >
                                                 See History
                                             </button>
                                         </div>
@@ -150,6 +162,8 @@ export default function Requirement() {
                 />
 
                 {showAddNote && <RequirementAddNote onClose={() => setShowAddNote(false)} />}
+                {showEyePopup && (<EyeButton onClose={() => setShowEyePopup(false)} />)}
+
             </div>
         </div>
     );

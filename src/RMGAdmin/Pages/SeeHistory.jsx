@@ -5,8 +5,14 @@ import {
     Eye,
 } from "lucide-react";
 import Pagination from "../../components/LandingPage/Pagination";
+import FilteredCandidate from "./FilteredCandidate"; 
+import UnfilteredCandidate from "./UnfilteredCandidate";
 
 const SeeHistory = () => {
+    const [showFilteredPopup, setShowFilteredPopup] = useState(false);
+    const [showUnfilteredPopup, setShowUnfilteredPopup] = useState(false);
+    const [selectedCandidate, setSelectedCandidate] = useState(null);
+
     const jobData = [
         {
             id: 1,
@@ -71,7 +77,7 @@ const SeeHistory = () => {
     const [currentJobIndex, setCurrentJobIndex] = useState(0);
     const [filteredPage, setFilteredPage] = useState(1);
     const [unfilteredPage, setUnfilteredPage] = useState(1);
-    
+
     const itemsPerPage = 4;
     const currentJob = jobData[currentJobIndex];
 
@@ -93,8 +99,38 @@ const SeeHistory = () => {
         setCurrentJobIndex((prev) => (prev === jobData.length - 1 ? 0 : prev + 1));
     };
 
+    const handleFilteredEyeClick = (candidate) => {
+        setSelectedCandidate(candidate);
+        setShowFilteredPopup(true);
+    };
+
+    const handleUnfilteredEyeClick = (candidate) => {
+        setSelectedCandidate(candidate);
+        setShowUnfilteredPopup(true);
+    };
+
     return (
         <div className="space-y-6">
+            {showFilteredPopup && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <FilteredCandidate
+                        candidate={selectedCandidate}
+                        jobTitle={currentJob.title}
+                        onClose={() => setShowFilteredPopup(false)}
+                    />
+                </div>
+            )}
+
+            {showUnfilteredPopup && (
+                <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <UnfilteredCandidate
+                        candidate={selectedCandidate}
+                        jobTitle={currentJob.title}
+                        onClose={() => setShowUnfilteredPopup(false)}
+                    />
+                </div>
+            )}
+
             <div className="bg-white shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] rounded-xl p-5">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -103,7 +139,7 @@ const SeeHistory = () => {
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
-                        <button 
+                        <button
                             onClick={handlePrevious}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                             title="Previous Job"
@@ -113,7 +149,7 @@ const SeeHistory = () => {
                         <span className="text-sm text-gray-500">
                             {currentJobIndex + 1} / {jobData.length}
                         </span>
-                        <button 
+                        <button
                             onClick={handleNext}
                             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                             title="Next Job"
@@ -151,7 +187,7 @@ const SeeHistory = () => {
                                 </span>
                             </p>
                         </div>
-                        
+
                         <div>
                             <div className="flex space-x-3.5">
                                 <p className="text-gray-700 font-semibold mt-2">Current Status :</p>
@@ -230,7 +266,10 @@ const SeeHistory = () => {
                                         </td>
 
                                         <td className="py-3 px-2">
-                                            <button className="p-2 border rounded-lg hover:bg-gray-100">
+                                            <button
+                                                onClick={() => handleFilteredEyeClick(candidate)}
+                                                className="p-2 border rounded-lg hover:bg-gray-100"
+                                            >
                                                 <Eye className="w-5 h-5 text-blue-600" />
                                             </button>
                                         </td>
@@ -274,7 +313,7 @@ const SeeHistory = () => {
                                     <tr key={candidate.id} className="border-b border-gray-400 text-gray-700">
                                         <td className="py-3 px-4">{unfilteredStartIndex + idx + 1}.</td>
                                         <td className="py-3 px-4">{candidate.name}</td>
-                                                                                <td className="py-3 px-4">{candidate.email}</td>
+                                        <td className="py-3 px-4">{candidate.email}</td>
                                         <td className="py-3 px-4">{currentJob.title}</td>
                                         <td className="py-3 px-4">{candidate.skills}</td>
 
@@ -286,7 +325,10 @@ const SeeHistory = () => {
                                         </td>
 
                                         <td className="py-3 px-2">
-                                            <button className="p-2 border rounded-lg hover:bg-gray-100">
+                                            <button
+                                                onClick={() => handleUnfilteredEyeClick(candidate)}
+                                                className="p-2 border rounded-lg hover:bg-gray-100"
+                                            >
                                                 <Eye className="w-5 h-5 text-red-600" />
                                             </button>
                                         </td>
@@ -296,7 +338,7 @@ const SeeHistory = () => {
                         </table>
                     </div>
 
-                    <Pagination 
+                    <Pagination
                         currentPage={unfilteredPage}
                         totalPages={unfilteredTotalPages}
                         onPageChange={setUnfilteredPage}

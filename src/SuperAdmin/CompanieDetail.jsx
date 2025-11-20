@@ -6,37 +6,38 @@ import axios from "axios";
 const CompanyDetail = () => {
     const location = useLocation();
     const navigate = useNavigate();
-    const [tenant, setTenant] = useState(location.state?.tenant || null);
+    const [company, setCompany] = useState(location.state?.company || null);
     const [isEditing, setIsEditing] = useState(false);
     const [formData, setFormData] = useState({});
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
     useEffect(() => {
-        if (!tenant) {
-            navigate('/companies');
+        if (!company) {
+            navigate('/SuperAdmin-Dashboard/Companies');
         } else {
             setFormData({
-                companyName: tenant.companyName || '',
-                phone: tenant.phone || '',
-                email: tenant.email || '',
+                id: company._id,
+                companyName: company.companyName || '',
+                phone: company.phone || '',
+                email: company.email || '',
                 address: {
-                    street: tenant.address?.street || '',
-                    city: tenant.address?.city || '',
-                    state: tenant.address?.state || '',
-                    country: tenant.address?.country || '',
-                    zipCode: tenant.address?.zipCode || ''
+                    street: company.address?.street || '',
+                    city: company.address?.city || '',
+                    state: company.address?.state || '',
+                    country: company.address?.country || '',
+                    zipCode: company.address?.zipCode || ''
                 },
                 subscription: {
-                    maxUsers: tenant.subscription?.maxUsers || '',
-                    maxRecruiters: tenant.subscription?.maxRecruiters || ''
+                    maxUsers: company.subscription?.maxUsers || '',
+                    maxRecruiters: company.subscription?.maxRecruiters || ''
                 },
                 settings: {
-                    maxApplicationsPerCandidate: tenant.settings?.maxApplicationsPerCandidate || ''
+                    maxApplicationsPerCandidate: company.settings?.maxApplicationsPerCandidate || ''
                 }
             });
         }
-    }, [tenant, navigate]);
+    }, [company, navigate]);
 
     const handleInputChange = (field, value) => {
         if (field.includes('.')) {
@@ -64,7 +65,7 @@ const CompanyDetail = () => {
             const token = localStorage.getItem('token');
 
             const response = await axios.put(
-                `http://localhost:5000/api/super-admin/tenants/${tenant._id}`,
+                `http://localhost:5000/api/super-admin/tenants/${company._id}`,
                 formData,
                 {
                     headers: {
@@ -76,7 +77,7 @@ const CompanyDetail = () => {
             console.log(response.data);
 
             if (response.data.success) {
-                setTenant(response.data.data.tenant);
+                setCompany(response.data.data.tenant);
                 setIsEditing(false);
                 alert('Company details updated successfully!');
             }
@@ -92,22 +93,22 @@ const CompanyDetail = () => {
         setIsEditing(false);
         setError("");
         setFormData({
-            companyName: tenant.companyName || '',
-            phone: tenant.phone || '',
-            email: tenant.email || '',
+            companyName: company.companyName || '',
+            phone: company.phone || '',
+            email: company.email || '',
             address: {
-                street: tenant.address?.street || '',
-                city: tenant.address?.city || '',
-                state: tenant.address?.state || '',
-                country: tenant.address?.country || '',
-                zipCode: tenant.address?.zipCode || ''
+                street: company.address?.street || '',
+                city: company.address?.city || '',
+                state: company.address?.state || '',
+                country: company.address?.country || '',
+                zipCode: company.address?.zipCode || ''
             },
             subscription: {
-                maxUsers: tenant.subscription?.maxUsers || '',
-                maxRecruiters: tenant.subscription?.maxRecruiters || ''
+                maxUsers: company.subscription?.maxUsers || '',
+                maxRecruiters: company.subscription?.maxRecruiters || ''
             },
             settings: {
-                maxApplicationsPerCandidate: tenant.settings?.maxApplicationsPerCandidate || ''
+                maxApplicationsPerCandidate: company.settings?.maxApplicationsPerCandidate || ''
             }
         });
     };
@@ -133,7 +134,7 @@ const CompanyDetail = () => {
         return name?.charAt(0)?.toUpperCase() || 'N';
     };
 
-    if (!tenant) {
+    if (!company) {
         return (
             <div className="max-w-5xl mx-auto p-6">
                 <div className="flex items-center justify-center py-20">
@@ -195,7 +196,7 @@ const CompanyDetail = () => {
                 <div className="flex flex-col sm:flex-row items-center gap-4 mb-8">
                     <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
                         <span className="text-blue-600 font-bold text-2xl">
-                            {getInitial(isEditing ? formData.companyName : tenant.companyName)}
+                            {getInitial(isEditing ? formData.companyName : company.companyName)}
                         </span>
                     </div>
                     <div className="flex-1">
@@ -210,10 +211,10 @@ const CompanyDetail = () => {
                         ) : (
                             <>
                                 <h3 className="text-lg font-semibold text-gray-900">
-                                    {tenant.companyName || 'N/A'}
+                                    {company.companyName || 'N/A'}
                                 </h3>
                                 <p className="text-sm text-gray-500">
-                                    {tenant.subdomain ? `Subdomain: ${tenant.subdomain}` : ''}
+                                    {company.subdomain ? `Subdomain: ${company.subdomain}` : ''}
                                 </p>
                             </>
                         )}
@@ -228,7 +229,7 @@ const CompanyDetail = () => {
                             </label>
                             <input
                                 type="text"
-                                value={formatDate(tenant.createdAt)}
+                                value={formatDate(company.createdAt)}
                                 readOnly
                                 className="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50"
                             />
@@ -239,7 +240,7 @@ const CompanyDetail = () => {
                             </label>
                             <input
                                 type="text"
-                                value={calculateValidTill(tenant.createdAt)}
+                                value={calculateValidTill(company.createdAt)}
                                 readOnly
                                 className="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50"
                             />
@@ -250,7 +251,7 @@ const CompanyDetail = () => {
                             </label>
                             <input
                                 type="text"
-                                value={tenant.createdBy?.name || 'N/A'}
+                                value={company.createdBy?.name || 'N/A'}
                                 readOnly
                                 className="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50"
                             />
@@ -261,7 +262,7 @@ const CompanyDetail = () => {
                             </label>
                             <input
                                 type="text"
-                                value={isEditing ? formData.phone : tenant.phone || 'N/A'}
+                                value={isEditing ? formData.phone : company.phone || 'N/A'}
                                 onChange={isEditing ? (e) => handleInputChange('phone', e.target.value) : undefined}
                                 readOnly={!isEditing}
                                 className={`mt-1 w-full border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}
@@ -274,7 +275,7 @@ const CompanyDetail = () => {
                             </label>
                             <input
                                 type="text"
-                                value={formatDate(tenant.subscription?.startDate || tenant.createdAt)}
+                                value={formatDate(company.subscription?.startDate || company.createdAt)}
                                 readOnly
                                 className="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50"
                             />
@@ -297,11 +298,11 @@ const CompanyDetail = () => {
                                     Subscription Plan
                                 </label>
                                 <div className="mt-1">
-                                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${tenant.subscription?.status === 'active'
-                                            ? 'bg-green-100 text-green-700'
-                                            : 'bg-gray-100 text-gray-700'
+                                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${company.subscription?.status === 'active'
+                                        ? 'bg-green-100 text-green-700'
+                                        : 'bg-gray-100 text-gray-700'
                                         }`}>
-                                        {tenant.subscription?.plan || 'Free Trial'} - {tenant.subscription?.status || 'N/A'}
+                                        {company.subscription?.plan || 'Free Trial'} - {company.subscription?.status || 'N/A'}
                                     </span>
                                 </div>
                             </div>
@@ -313,7 +314,7 @@ const CompanyDetail = () => {
                             </label>
                             <input
                                 type="email"
-                                value={isEditing ? formData.email : tenant.email || 'N/A'}
+                                value={isEditing ? formData.email : company.email || 'N/A'}
                                 onChange={isEditing ? (e) => handleInputChange('email', e.target.value) : undefined}
                                 readOnly={!isEditing}
                                 className={`mt-1 w-full border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}
@@ -326,7 +327,7 @@ const CompanyDetail = () => {
                             </label>
                             <input
                                 type="text"
-                                value={tenant.adminCredentials?.username || 'N/A'}
+                                value={company.adminCredentials?.username || 'N/A'}
                                 readOnly
                                 className="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50"
                             />
@@ -377,13 +378,13 @@ const CompanyDetail = () => {
                             ) : (
                                 <div className="border rounded-lg px-3 py-2 bg-gray-50">
                                     <p className="text-gray-700">
-                                        {tenant.address?.street || ''}{tenant.address?.street ? ', ' : ''}
-                                        {tenant.address?.city || ''}{tenant.address?.city ? ', ' : ''}
-                                        {tenant.address?.state || ''}{tenant.address?.state ? ', ' : ''}
-                                        {tenant.address?.country || ''}{tenant.address?.country ? ' - ' : ''}
-                                        {tenant.address?.zipCode || ''}
+                                        {company.address?.street || ''}{company.address?.street ? ', ' : ''}
+                                        {company.address?.city || ''}{company.address?.city ? ', ' : ''}
+                                        {company.address?.state || ''}{company.address?.state ? ', ' : ''}
+                                        {company.address?.country || ''}{company.address?.country ? ' - ' : ''}
+                                        {company.address?.zipCode || ''}
                                     </p>
-                                    {!tenant.address?.street && !tenant.address?.city && (
+                                    {!company.address?.street && !company.address?.city && (
                                         <p className="text-gray-500">No address provided</p>
                                     )}
                                 </div>
@@ -405,7 +406,7 @@ const CompanyDetail = () => {
                                             className="font-semibold w-full border-0 focus:outline-none"
                                         />
                                     ) : (
-                                        <p className="font-semibold">{tenant.subscription?.maxUsers || 'N/A'}</p>
+                                        <p className="font-semibold">{company.subscription?.maxUsers || 'N/A'}</p>
                                     )}
                                 </div>
                                 <div className={`border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}>
@@ -418,7 +419,7 @@ const CompanyDetail = () => {
                                             className="font-semibold w-full border-0 focus:outline-none"
                                         />
                                     ) : (
-                                        <p className="font-semibold">{tenant.subscription?.maxRecruiters || 'N/A'}</p>
+                                        <p className="font-semibold">{company.subscription?.maxRecruiters || 'N/A'}</p>
                                     )}
                                 </div>
                                 <div className={`border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}>
@@ -431,7 +432,7 @@ const CompanyDetail = () => {
                                             className="font-semibold w-full border-0 focus:outline-none"
                                         />
                                     ) : (
-                                        <p className="font-semibold">{tenant.settings?.maxApplicationsPerCandidate || 'N/A'}</p>
+                                        <p className="font-semibold">{company.settings?.maxApplicationsPerCandidate || 'N/A'}</p>
                                     )}
                                 </div>
                             </div>
