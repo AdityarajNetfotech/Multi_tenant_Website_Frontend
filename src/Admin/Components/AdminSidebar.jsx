@@ -20,7 +20,7 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
     if (path.includes("/RecruiterManagement")) setActiveNav("RecruiterManagement");
     else if (path.includes("/RMGManagement")) setActiveNav("RMGManagement");
     else if (path.includes("/Tickets")) setActiveNav("RaiseTickets");
-    else if (path.includes("/SupportTickets")) setActiveNav("CreateTickets");
+    else if (path.includes("/RaiseTickets")) setActiveNav("CreateTickets");
     else if (path.includes("/logout")) setActiveNav("Logout");
     else setActiveNav("Admin-Dashboard");
 
@@ -107,7 +107,7 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
 
             <li>
               <button
-                onClick={() => handleNavClick('CreateTickets', '/Admin-Dashboard/SupportTickets')}
+                onClick={() => handleNavClick('CreateTickets', '/Admin-Dashboard/RaiseTickets')}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
                   ${activeNav === 'CreateTickets' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >

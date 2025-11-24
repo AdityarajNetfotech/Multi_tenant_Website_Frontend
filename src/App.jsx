@@ -42,7 +42,7 @@ import RecruiterManagement from './Admin/Pages/RecruiterManagement';
 import AssignedRecruiters from './RMGAdmin/Pages/AssignedRecruiters';
 import RMGManagement from './Admin/Pages/RMGManagement';
 import AdminTickets from './Admin/Pages/Tickets';
-import SupportTickets from './Admin/Pages/SupportTickets';
+import RaiseTickets from './Admin/Pages/RaiseTickets';
 import EyeButton from './RMGAdmin/Pages/EyeButton';
 import FilteredCandidate from './RMGAdmin/Pages/FilteredCandidate';
 import UnfilteredCandidate from './RMGAdmin/Pages/UnfilteredCandidate';
@@ -81,7 +81,7 @@ const App = () => {
           <Route path='RecruiterManagement' element={<RecruiterManagement />} />
           <Route path='RMGManagement' element={<RMGManagement />} />
           <Route path='Tickets' element={<AdminTickets />} />
-          <Route path='SupportTickets' element={<SupportTickets />} />
+          <Route path='RaiseTickets' element={<RaiseTickets />} />
         </Route>
 
         <Route path="/RMGAdmin-Dashboard" element={<RMGLayout />}>
