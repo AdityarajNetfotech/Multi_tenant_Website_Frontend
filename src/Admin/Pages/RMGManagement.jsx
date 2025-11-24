@@ -1,22 +1,56 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Trash2, Eye, EyeOff, User, SlidersVertical } from 'lucide-react';
+import { Search, Trash2, Eye, User, SlidersVertical } from 'lucide-react';
 import Pagination from '../../components/LandingPage/Pagination';
+import AddNewRMG from '../Components/AddNewRMG';
+import axios from 'axios';
 
 function RMGManagement() {
-  const [recruiters, setRecruiters] = useState([
-    { id: 1, name: 'Aniket Sharma', email: 'aniketsharma1@gmail.com', phone: '9876543210', status: 'Active', registerId: '#3244578', registerDate: '10 Apr, 2024', lastLogin: '10 Mar, 2024', associates: ['Priya Das', 'Neha Sharma'], totalRecruiterManaged: 2, totalJDHandled: 10, candidateSelected: 10, candidateNotSelected: 10, successRate: 75 },
-    { id: 2, name: 'Priya Verma', email: 'priyaverma@gmail.com', phone: '9876543211', status: 'Active', totalRecruiterManaged: 4, registerId: '#3244579', registerDate: '11 Apr, 2024', lastLogin: '11 Mar, 2024', associates: ['Rahul Kumar', 'Amit Singh'], totalJDHandled: 15, candidateSelected: 12, candidateNotSelected: 8, successRate: 80 },
-    { id: 3, name: 'Rahul Singh', email: 'rahulsingh@gmail.com', phone: '9876543212', status: 'Inactive', registerId: '#3244580', registerDate: '12 Apr, 2024', lastLogin: '12 Mar, 2024', associates: ['Sonia Kapoor'], totalRecruiterManaged: 1, totalJDHandled: 8, candidateSelected: 5, candidateNotSelected: 6, successRate: 62 },
-    { id: 4, name: 'Neha Gupta', email: 'nehagupta@gmail.com', phone: '9876543213', status: 'Active', registerId: '#3244581', registerDate: '13 Apr, 2024', lastLogin: '13 Mar, 2024', associates: ['Vikram Patel', 'Karan Malhotra'], totalRecruiterManaged: 2, totalJDHandled: 12, candidateSelected: 9, candidateNotSelected: 7, successRate: 70 },
-    { id: 5, name: 'Amit Kumar', email: 'amitkumar@gmail.com', phone: '9876543214', status: 'Active', registerId: '#3244582', registerDate: '14 Apr, 2024', lastLogin: '14 Mar, 2024', associates: ['Meera Reddy'], totalRecruiterManaged: 1, totalJDHandled: 20, candidateSelected: 18, candidateNotSelected: 5, successRate: 90 },
-    { id: 6, name: 'Pooja Sharma', email: 'poojasharma@gmail.com', phone: '9876543215', status: 'Active', registerId: '#3244583', registerDate: '15 Apr, 2024', lastLogin: '15 Mar, 2024', associates: ['Deepak Yadav', 'Anjali Mehta'], totalRecruiterManaged: 2, totalJDHandled: 14, candidateSelected: 11, candidateNotSelected: 9, successRate: 73 },
-    { id: 7, name: 'Vikram Patel', email: 'vikrampatel@gmail.com', phone: '9876543216', status: 'Inactive', registerId: '#3244584', registerDate: '16 Apr, 2024', lastLogin: '16 Mar, 2024', associates: ['Neha Gupta'], totalRecruiterManaged: 1, totalJDHandled: 7, candidateSelected: 4, candidateNotSelected: 8, successRate: 55 },
-    { id: 8, name: 'Anjali Mehta', email: 'anjalimehta@gmail.com', phone: '9876543217', status: 'Active', registerId: '#3244585', registerDate: '17 Apr, 2024', lastLogin: '17 Mar, 2024', associates: ['Pooja Sharma', 'Sonia Kapoor'], totalRecruiterManaged: 2, totalJDHandled: 16, candidateSelected: 13, candidateNotSelected: 7, successRate: 78 },
-    { id: 9, name: 'Karan Malhotra', email: 'karanmalhotra@gmail.com', phone: '9876543218', status: 'Active', registerId: '#3244586', registerDate: '18 Apr, 2024', lastLogin: '18 Mar, 2024', associates: ['Rahul Singh'], totalRecruiterManaged: 1, totalJDHandled: 11, candidateSelected: 8, candidateNotSelected: 6, successRate: 68 },
-    { id: 10, name: 'Sonia Kapoor', email: 'soniakapoor@gmail.com', phone: '9876543219', status: 'Active', registerId: '#3244587', registerDate: '19 Apr, 2024', lastLogin: '19 Mar, 2024', associates: ['Amit Kumar', 'Priya Verma'], totalRecruiterManaged: 2, totalJDHandled: 18, candidateSelected: 15, candidateNotSelected: 6, successRate: 85 },
-    { id: 11, name: 'Deepak Yadav', email: 'deepakyadav@gmail.com', phone: '9876543220', status: 'Inactive', registerId: '#3244588', registerDate: '20 Apr, 2024', lastLogin: '20 Mar, 2024', associates: ['Aniket Sharma'], totalRecruiterManaged: 1, totalJDHandled: 9, candidateSelected: 6, candidateNotSelected: 7, successRate: 60 },
-    { id: 12, name: 'Meera Reddy', email: 'meerareddy@gmail.com', phone: '9876543221', status: 'Active', registerId: '#3244589', registerDate: '21 Apr, 2024', lastLogin: '21 Mar, 2024', associates: ['Karan Malhotra', 'Vikram Patel'], totalRecruiterManaged: 2, totalJDHandled: 13, candidateSelected: 10, candidateNotSelected: 8, successRate: 72 },
-  ]);
+  const [recruiters, setRecruiters] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAllRMG = async () => {
+      try {
+        const res = await axios.get("http://localhost:4000/api/admin/allrmg", {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        console.log(res.data);
+        
+        
+        if (res.data.success && res.data.data) {
+          const mappedData = res.data.data.map((rmg, index) => ({
+            id: rmg._id || `temp_${index}`,
+            name: rmg.name || 'NA',
+            email: rmg.email || 'NA',
+            phone: rmg.phone || 'NA',
+            status: rmg.isActive ? 'Active' : 'Inactive',
+            registerId: rmg.registerId || 'NA',
+            registerDate: rmg.createdAt ? new Date(rmg.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'NA',
+            lastLogin: rmg.lastLogin ? new Date(rmg.lastLogin).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'NA',
+            associates: rmg.associates || [],
+            totalRecruiterManaged: rmg.totalRecruiterManaged || 0,
+            totalJDHandled: rmg.totalJDHandled || 0,
+            candidateSelected: rmg.candidateSelected || 0,
+            candidateNotSelected: rmg.candidateNotSelected || 0,
+            successRate: rmg.successRate || 0,
+            role: rmg.role || 'NA',
+            company: rmg.company || 'NA'
+          }));
+          
+          setRecruiters(mappedData);
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching RMG data:", error);
+        setLoading(false);
+      }
+    }
+
+    fetchAllRMG();
+  }, []);
 
   const activities = [
     { date: "10 Apr, 2024", action: "RMG Aniket Sharma Created", by: "Admin" },
@@ -25,15 +59,8 @@ function RMGManagement() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [selectedRecruiter, setSelectedRecruiter] = useState(null); 
-  const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    password: ''
-  });
+  const [selectedRecruiter, setSelectedRecruiter] = useState(null);
 
   const itemsPerPage = 5;
 
@@ -53,6 +80,10 @@ function RMGManagement() {
       setSelectedRecruiter(recruiters[0]);
     }
   }, [recruiters, selectedRecruiter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages) {
@@ -77,17 +108,12 @@ function RMGManagement() {
     setSelectedRecruiter(recruiter);
   };
 
-  const toggleAddForm = () => {
-    setShowAddForm(!showAddForm);
-  };
-
-  const handleSave = (e) => {
-    e.preventDefault();
+  const handleSaveRMG = (formData) => {
     const newRecruiter = {
-      id: recruiters.length + 1,
-      name: formData.fullName,
-      email: formData.email,
-      phone: formData.phone,
+      id: `temp_${Date.now()}`,
+      name: formData.fullName || 'NA',
+      email: formData.email || 'NA',
+      phone: formData.phone || 'NA',
       status: 'Active',
       registerId: `#324459${recruiters.length}`,
       registerDate: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
@@ -100,20 +126,27 @@ function RMGManagement() {
       successRate: 0
     };
     setRecruiters([...recruiters, newRecruiter]);
-    setFormData({ fullName: '', email: '', phone: '', password: '' });
-    setShowAddForm(false); 
+    setShowAddForm(false);
   };
 
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery]);
+  const handleCancelForm = () => {
+    setShowAddForm(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-gray-600">Loading RMG data...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
       <div className="space-y-6">
         <div className="flex flex-col lg:flex-row gap-2">
-          <div className='rounded-2xl shadow-md border border-gray-300 flex-1'>
-            <div className=" m-4 md:m-6">
+          <div className='rounded-2xl shadow-md border border-gray-300 flex-1 min-w-0'>
+            <div className="m-4 md:m-6">
               <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
                 <div className="relative w-full sm:w-96">
                   <input
@@ -130,7 +163,7 @@ function RMGManagement() {
 
                 <div className="flex gap-3 w-full sm:w-auto">
                   <button
-                    onClick={toggleAddForm}
+                    onClick={() => setShowAddForm(!showAddForm)}
                     className="flex-1 sm:flex-none px-6 py-2.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
                   >
                     {showAddForm ? 'Hide Form' : 'Add New'}
@@ -143,9 +176,9 @@ function RMGManagement() {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-md border border-gray-300 overflow-hidden">
+            <div className="overflow-hidden rounded-b-2xl">
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[640px]">
+                <table className="min-w-[900px] w-full">
                   <thead className="bg-gray-50 border-b border-gray-200">
                     <tr>
                       <th className="px-6 py-4 text-left text-sm font-semibold text-gray-900 whitespace-nowrap">Name</th>
@@ -165,8 +198,7 @@ function RMGManagement() {
                           <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">{recruiter.phone}</td>
                           <td className="px-6 py-4 text-sm whitespace-nowrap">
                             <span
-                              className={`font-medium ${recruiter.status === 'Active' ? 'text-green-600' : 'text-red-600'
-                                }`}
+                              className={`font-medium ${recruiter.status === 'Active' ? 'text-green-600' : 'text-red-600'}`}
                             >
                               {recruiter.status}
                             </span>
@@ -235,6 +267,9 @@ function RMGManagement() {
                 <p>
                   <span className="font-medium text-gray-800">Last Login :</span> {selectedRecruiter.lastLogin}
                 </p>
+                <p>
+                  <span className="font-medium text-gray-800">Role :</span> {selectedRecruiter.role}
+                </p>
               </div>
 
               <hr className="my-4 border-gray-300" />
@@ -297,94 +332,30 @@ function RMGManagement() {
         </div>
 
         {showAddForm && (
-          <div className="bg-white rounded-2xl shadow-md border border-gray-300 p-6">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Add RMG</h2>
-            <div className="space-y-5">
-              <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">Full Name</label>
-                <input
-                  type="text"
-                  placeholder="Enter Full Name"
-                  value={formData.fullName}
-                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-2">Email ID</label>
-                  <input
-                    type="email"
-                    placeholder="Enter Email ID"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-2">Phone Number</label>
-                  <input
-                    type="tel"
-                    placeholder="Enter Phone Number"
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-end">
-                <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-2">Password</label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      placeholder="Enter Password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent pr-12"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                    >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                    </button>
-                  </div>
-                </div>
-                <div>
-                  <button
-                    onClick={handleSave}
-                    className="w-full md:w-32 px-8 py-2.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium"
-                  >
-                    Save
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+          <AddNewRMG
+            onSave={handleSaveRMG}
+            onCancel={handleCancelForm}
+          />
         )}
 
-        <div className="w-full ">
+        <div className="w-full">
           <h1 className='text-3xl font-medium pl-1 mb-4'>Activity Logs</h1>
-            <div className="w-full space-y-3">
-              {activities.map((item, index) => (
-                <div
-                  key={index}
-                  className="border border-gray-300 shadow-md rounded-2xl flex justify-between items-center px-6 py-4"
-                >
-                  <span className="text-gray-700 font-medium w-1/3">{item.date}</span>
-                  <span className="text-gray-800 font-medium text-center flex-1">{item.action}</span>
-                  <span className="text-gray-700 font-semibold text-right w-1/4">{item.by}</span>
-                </div>
-              ))}
-            </div>
+          <div className="w-full space-y-3">
+            {activities.map((item, index) => (
+              <div
+                key={index}
+                className="border border-gray-300 shadow-md rounded-2xl flex justify-between items-center px-6 py-4"
+              >
+                <span className="text-gray-700 font-medium w-1/3">{item.date}</span>
+                <span className="text-gray-800 font-medium text-center flex-1">{item.action}</span>
+                <span className="text-gray-700 font-semibold text-right w-1/4">{item.by}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default RMGManagement
+export default RMGManagement;

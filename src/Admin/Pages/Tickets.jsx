@@ -1,12 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Search, SlidersHorizontal, Ticket, Clock, FileCheck, Trash2, ChevronDown } from 'lucide-react';
+import axios from 'axios';
 import Pagination from '../../components/LandingPage/Pagination';
+import SupportTicketDetail from '../Components/SupportTicketsDetail';
 
 const Tickets = () => {
     const [activeTab, setActiveTab] = useState('All');
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchId, setSearchId] = useState('');
+    const [allTickets, setAllTickets] = useState([]);
 
     const stats = [
         { icon: Ticket, label: 'Total Tickets', value: '4004', bgColor: 'bg-blue-100', iconColor: 'text-blue-500' },
@@ -15,18 +18,45 @@ const Tickets = () => {
         { icon: Trash2, label: 'Resolved Tickets', value: '5487', bgColor: 'bg-red-100', iconColor: 'text-red-500' },
     ];
 
-    const allTickets = [
-        { id: '#24574', reporter: 'Abhirup D.', avatar: '', subject: 'Issue with Candidate Selection', status: 'Open', startDate: '12.04.2025', dueDate: '28.04.2025' },
-        { id: '#24575', reporter: 'John Smith', avatar: '', subject: 'Login Authentication Problem', status: 'Closed', startDate: '10.04.2025', dueDate: '25.04.2025' },
-        { id: '#24576', reporter: 'Sarah Johnson', avatar: '', subject: 'Data Export Not Working', status: 'Open', startDate: '11.04.2025', dueDate: '26.04.2025' },
-        { id: '#24577', reporter: 'Mike Davis', avatar: '', subject: 'Profile Update Error', status: 'Resolved', startDate: '09.04.2025', dueDate: '24.04.2025' },
-        { id: '#24578', reporter: 'Emily Chen', avatar: '', subject: 'Payment Gateway Issue', status: 'Open', startDate: '13.04.2025', dueDate: '29.04.2025' },
-        { id: '#24579', reporter: 'Robert Wilson', avatar: '', subject: 'Dashboard Loading Slow', status: 'Closed', startDate: '08.04.2025', dueDate: '23.04.2025' },
-        { id: '#24580', reporter: 'Lisa Anderson', avatar: '', subject: 'Email Notifications Not Sending', status: 'Resolved', startDate: '14.04.2025', dueDate: '30.04.2025' },
-        { id: '#24581', reporter: 'Tom Brown', avatar: '', subject: 'Report Generation Failed', status: 'Open', startDate: '15.04.2025', dueDate: '01.05.2025' },
-        { id: '#24582', reporter: 'Jessica Lee', avatar: '', subject: 'Search Function Not Responsive', status: 'Closed', startDate: '07.04.2025', dueDate: '22.04.2025' },
-        { id: '#24583', reporter: 'David Martinez', avatar: '', subject: 'File Upload Size Limit', status: 'Resolved', startDate: '06.04.2025', dueDate: '21.04.2025' },
-    ];
+    useEffect(() => {
+        const fetchTickets = async () => {
+            try {
+                const res = await axios.get("http://localhost:4000/api/tickets/", {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                });
+                console.log("hii", res.data);
+                
+                
+                if (res.data.success && res.data.tickets) {
+                    const mappedTickets = res.data.tickets.map(ticket => ({
+                        id: `#${ticket._id.slice(-5)}`,
+                        reporter: ticket.raisedBy?.name || 'NA',
+                        avatar: '',
+                        subject: ticket.subject,
+                        status: ticket.status,
+                        startDate: new Date(ticket.createdAt).toLocaleDateString('en-GB').replace(/\//g, '.'),
+                        dueDate: new Date(ticket.updatedAt).toLocaleDateString('en-GB').replace(/\//g, '.'),
+                        role: ticket.role || ticket.raisedBy?.role || 'N/A',
+                        priority: ticket.priority,
+                        description: ticket.description,
+                        email: ticket.raisedBy?.email || '',
+                        assignedTo: ticket.assignedTo,
+                        _id: ticket._id,
+                        raisedBy: ticket.raisedBy
+                    }));
+                    setAllTickets(mappedTickets);
+                    console.log('Mapped tickets:', mappedTickets);
+                }
+            } catch (error) {
+                console.log('Error fetching tickets:', error);
+            }
+        }
+
+        fetchTickets();
+    }, [])
+
 
     const filteredTickets = useMemo(() => {
         let filtered = allTickets;
@@ -46,7 +76,7 @@ const Tickets = () => {
         }
 
         return filtered;
-    }, [activeTab, searchId]);
+    }, [activeTab, searchId, allTickets]);
 
     const itemsPerPage = 7;
     const totalPages = Math.ceil(filteredTickets.length / itemsPerPage);
@@ -66,7 +96,7 @@ const Tickets = () => {
             closed,
             resolved
         };
-    }, []);
+    }, [allTickets]);
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -185,10 +215,11 @@ const Tickets = () => {
                                     <tr>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reporter</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Subject</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Start Date</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Due Date</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                                     </tr>
                                 </thead>
@@ -209,17 +240,17 @@ const Tickets = () => {
                                                         <span className="text-sm text-gray-900 hidden sm:inline">{ticket.reporter}</span>
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-4 text-sm text-gray-900 hidden md:table-cell max-w-xs truncate">{ticket.subject}</td>
+                                                <td className="px-4 py-4 text-sm text-gray-900 max-w-xs truncate">{ticket.role}</td>
+                                                <td className="px-4 py-4 text-sm text-gray-900 max-w-xs truncate">{ticket.subject}</td>
                                                 <td className="px-4 py-4">
                                                     <div className="flex items-center gap-2">
                                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
                                                             {ticket.status}
                                                         </span>
-                                                        <ChevronDown className="w-4 h-4 text-gray-400" />
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-4 text-sm text-gray-500 hidden lg:table-cell">{ticket.startDate}</td>
-                                                <td className="px-4 py-4 text-sm text-gray-500 hidden lg:table-cell">{ticket.dueDate}</td>
+                                                <td className="px-4 py-4 text-sm text-gray-500">{ticket.startDate}</td>
+                                                <td className="px-4 py-4 text-sm text-gray-500">{ticket.dueDate}</td>
                                                 <td className="px-4 py-4">
                                                     <button
                                                         className="p-1 rounded-sm hover:bg-red-100 transition-colors group border border-red-500"
@@ -252,81 +283,10 @@ const Tickets = () => {
                         )}
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-sm p-6 h-fit">
-                        <h2 className="text-xl font-bold text-gray-900 mb-6">Support Ticket Details</h2>
-
-                        {selectedTicket ? (
-                            <div className="space-y-4">
-                                <div className="inline-block px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-xs font-medium">
-                                    Recruiter
-                                </div>
-
-                                <div>
-                                    <div className="text-sm font-medium text-gray-900 mb-1">Subject : {selectedTicket.subject}</div>
-                                    <div className="text-sm font-medium text-gray-900">Reporter : {selectedTicket.reporter}</div>
-                                </div>
-
-                                <div className="">
-                                    <div className='flex gap-3'>
-                                        <div className="text-sm font-medium text-gray-900 mb-1">Start Date :</div>
-                                        <div className="text-sm font-medium text-gray-900">{selectedTicket.startDate}</div>
-                                    </div>
-                                    <div className='flex gap-3'>
-                                        <div className="text-sm font-medium text-gray-900">Due Date :</div>
-                                        <div className="text-sm font-medium text-gray-900">{selectedTicket.dueDate}</div>
-                                    </div>
-                                </div>
-
-                                <div className='flex gap-3'>
-                                    <div className="text-sm font-medium text-gray-900 mb-2">Status :</div>
-                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedTicket.status)}`}>
-                                        {selectedTicket.status}
-                                    </span>
-                                </div>
-
-                                <hr />
-
-                                <div>
-                                    <div className="text-sm font-medium text-gray-900 mb-2">Description :</div>
-                                    <div className="text-sm text-gray-600 leading-relaxed">
-                                        I am experiencing an issue with selecting candidates. The select button doesn't seem to working.
-                                    </div>
-                                </div>
-
-                                <hr />
-                                
-                                <div>
-                                    <div className="text-sm font-medium text-gray-900 mb-3">Reply</div>
-                                    <textarea
-                                        placeholder="Your reply"
-                                        className="w-full px-3 py-2 border border-gray-400 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        rows={2}
-                                    />
-                                </div>
-
-                                <div className="bg-gray-50 rounded-lg mt-4">
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
-                                            <span className="text-xs font-medium text-gray-600">A</span>
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="text-sm font-medium text-gray-900">Admin</span>
-                                                <span className="text-xs text-gray-500">May 15, 2025</span>
-                                            </div>
-                                            <p className="text-sm text-gray-600 leading-relaxed">
-                                                Thank you for reporting this issue, we are looking into it and will update you shortly.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="text-center text-gray-500 py-8">
-                                <p className="text-sm">Select a ticket to view details</p>
-                            </div>
-                        )}
-                    </div>
+                    <SupportTicketDetail
+                        selectedTicket={selectedTicket} 
+                        getStatusColor={getStatusColor}
+                    />
                 </div>
             </div>
         </div>

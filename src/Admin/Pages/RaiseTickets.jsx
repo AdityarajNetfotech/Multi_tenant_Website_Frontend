@@ -2,7 +2,7 @@ import React from "react";
 import { Calendar, Download } from "lucide-react";
 import robot from '../../assets/robot.png'
 
-export default function SupportTickets() {
+export default function RaiseTickets() {
   const supportHistory = [
     {
       supportId: "#254798",
