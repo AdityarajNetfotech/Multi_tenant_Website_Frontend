@@ -1,12 +1,42 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Search, SlidersHorizontal, Ticket, Clock, FileCheck, Trash2, ChevronDown } from 'lucide-react';
 import Pagination from '../../components/LandingPage/Pagination';
+import axios from 'axios';
 
 const RMGRaiseTickets = () => {
     const [activeTab, setActiveTab] = useState('All');
     const [selectedTicket, setSelectedTicket] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [searchId, setSearchId] = useState('');
+    const [tickets, setTickets] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchTickets = async () => {
+            setLoading(true);
+            try {
+                const token = localStorage.getItem("token");
+                const res = await axios.get("http://localhost:4000/api/tickets/",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`
+                        }
+                    }
+                );
+                console.log(res.data);
+                if (res.data.success) {
+                    setTickets(res.data.tickets);
+                }
+            } catch (error) {
+                console.log(error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchTickets()
+    }, [])
+
 
     const stats = [
         { icon: Ticket, label: 'Total Tickets', value: '4004', bgColor: 'bg-blue-100', iconColor: 'text-blue-500' },
@@ -15,21 +45,8 @@ const RMGRaiseTickets = () => {
         { icon: Trash2, label: 'Resolved Tickets', value: '5487', bgColor: 'bg-red-100', iconColor: 'text-red-500' },
     ];
 
-    const allTickets = [
-        { id: '#24574', reporter: 'Abhirup D.', avatar: '', subject: 'Issue with Candidate Selection', status: 'Open', startDate: '12.04.2025', dueDate: '28.04.2025' },
-        { id: '#24575', reporter: 'John Smith', avatar: '', subject: 'Login Authentication Problem', status: 'Closed', startDate: '10.04.2025', dueDate: '25.04.2025' },
-        { id: '#24576', reporter: 'Sarah Johnson', avatar: '', subject: 'Data Export Not Working', status: 'Open', startDate: '11.04.2025', dueDate: '26.04.2025' },
-        { id: '#24577', reporter: 'Mike Davis', avatar: '', subject: 'Profile Update Error', status: 'Resolved', startDate: '09.04.2025', dueDate: '24.04.2025' },
-        { id: '#24578', reporter: 'Emily Chen', avatar: '', subject: 'Payment Gateway Issue', status: 'Open', startDate: '13.04.2025', dueDate: '29.04.2025' },
-        { id: '#24579', reporter: 'Robert Wilson', avatar: '', subject: 'Dashboard Loading Slow', status: 'Closed', startDate: '08.04.2025', dueDate: '23.04.2025' },
-        { id: '#24580', reporter: 'Lisa Anderson', avatar: '', subject: 'Email Notifications Not Sending', status: 'Resolved', startDate: '14.04.2025', dueDate: '30.04.2025' },
-        { id: '#24581', reporter: 'Tom Brown', avatar: '', subject: 'Report Generation Failed', status: 'Open', startDate: '15.04.2025', dueDate: '01.05.2025' },
-        { id: '#24582', reporter: 'Jessica Lee', avatar: '', subject: 'Search Function Not Responsive', status: 'Closed', startDate: '07.04.2025', dueDate: '22.04.2025' },
-        { id: '#24583', reporter: 'David Martinez', avatar: '', subject: 'File Upload Size Limit', status: 'Resolved', startDate: '06.04.2025', dueDate: '21.04.2025' },
-    ];
-
     const filteredTickets = useMemo(() => {
-        let filtered = allTickets;
+        let filtered = tickets;
 
         if (activeTab === 'Pending') {
             filtered = filtered.filter(ticket => ticket.status === 'Open');
@@ -41,12 +58,12 @@ const RMGRaiseTickets = () => {
 
         if (searchId) {
             filtered = filtered.filter(ticket =>
-                ticket.id.toLowerCase().includes(searchId.toLowerCase())
+                ticket._id.toLowerCase().includes(searchId.toLowerCase())
             );
         }
 
         return filtered;
-    }, [activeTab, searchId]);
+    }, [activeTab, searchId, tickets]);
 
     const itemsPerPage = 7;
     const totalPages = Math.ceil(filteredTickets.length / itemsPerPage);
@@ -56,17 +73,17 @@ const RMGRaiseTickets = () => {
     );
 
     const calculatedStats = useMemo(() => {
-        const pending = allTickets.filter(t => t.status === 'Open').length;
-        const closed = allTickets.filter(t => t.status === 'Closed').length;
-        const resolved = allTickets.filter(t => t.status === 'Resolved').length;
+        const pending = tickets.filter(t => t.status === 'Open').length;
+        const closed = tickets.filter(t => t.status === 'Closed').length;
+        const resolved = tickets.filter(t => t.status === 'Resolved').length;
 
         return {
-            total: allTickets.length,
+            total: tickets.length,
             pending,
             closed,
             resolved
         };
-    }, []);
+    }, [tickets]);
 
     const getStatusColor = (status) => {
         switch (status) {
@@ -81,8 +98,32 @@ const RMGRaiseTickets = () => {
         }
     };
 
+    const getPriorityColor = (priority) => {
+        switch (priority) {
+            case 'High':
+                return 'bg-red-100 text-red-600';
+            case 'Medium':
+                return 'bg-orange-100 text-orange-600';
+            case 'Low':
+                return 'bg-green-100 text-green-600';
+            default:
+                return 'bg-gray-100 text-gray-600';
+        }
+    };
+
     const getInitials = (name) => {
+        if (!name) return 'NA';
         return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    };
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        }).replace(/\//g, '.');
     };
 
     const handlePageChange = (page) => {
@@ -184,42 +225,59 @@ const RMGRaiseTickets = () => {
                                 <thead className="bg-gray-50 border-b border-gray-200">
                                     <tr>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reporter</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Raised By</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden md:table-cell">Subject</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Start Date</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Due Date</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Priority</th>
+                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Created Date</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
-                                    {paginatedTickets.length > 0 ? (
+                                    {loading ? (
+                                        <tr>
+                                            <td colSpan="7" className="px-4 py-8 text-center text-gray-500">
+                                                Loading tickets...
+                                            </td>
+                                        </tr>
+                                    ) : paginatedTickets.length > 0 ? (
                                         paginatedTickets.map((ticket, index) => (
                                             <tr
-                                                key={`${ticket.id}-${index}`}
+                                                key={ticket._id || index}
                                                 className="hover:bg-gray-50 transition-colors cursor-pointer"
                                                 onClick={() => setSelectedTicket(ticket)}
                                             >
-                                                <td className="px-4 py-4 text-sm text-gray-900">{ticket.id}</td>
+                                                <td className="px-4 py-4 text-sm text-gray-900">
+                                                    #{ticket._id?.slice(-5).toUpperCase()}
+                                                </td>
                                                 <td className="px-4 py-4">
                                                     <div className="flex items-center gap-2">
                                                         <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs font-medium">
-                                                            {getInitials(ticket.reporter)}
+                                                            {getInitials(ticket.raisedBy?.name)}
                                                         </div>
-                                                        <span className="text-sm text-gray-900 hidden sm:inline">{ticket.reporter}</span>
+                                                        <span className="text-sm text-gray-900 hidden sm:inline">
+                                                            {ticket.raisedBy?.name || 'N/A'}
+                                                        </span>
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-4 text-sm text-gray-900 hidden md:table-cell max-w-xs truncate">{ticket.subject}</td>
+                                                <td className="px-4 py-4 text-sm text-gray-900 hidden md:table-cell max-w-xs truncate">
+                                                    {ticket.subject}
+                                                </td>
                                                 <td className="px-4 py-4">
                                                     <div className="flex items-center gap-2">
                                                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
                                                             {ticket.status}
                                                         </span>
-                                                        <ChevronDown className="w-4 h-4 text-gray-400" />
                                                     </div>
                                                 </td>
-                                                <td className="px-4 py-4 text-sm text-gray-500 hidden lg:table-cell">{ticket.startDate}</td>
-                                                <td className="px-4 py-4 text-sm text-gray-500 hidden lg:table-cell">{ticket.dueDate}</td>
+                                                <td className="px-4 py-4 hidden lg:table-cell">
+                                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(ticket.priority)}`}>
+                                                        {ticket.priority}
+                                                    </span>
+                                                </td>
+                                                <td className="px-4 py-4 text-sm text-gray-500 hidden lg:table-cell">
+                                                    {formatDate(ticket.createdAt)}
+                                                </td>
                                                 <td className="px-4 py-4">
                                                     <button
                                                         className="p-1 rounded-sm hover:bg-red-100 transition-colors group border border-red-500"
@@ -258,23 +316,41 @@ const RMGRaiseTickets = () => {
                         {selectedTicket ? (
                             <div className="space-y-4">
                                 <div className="inline-block px-3 py-1 bg-blue-100 text-blue-600 rounded-full text-xs font-medium">
-                                    Recruiter
+                                    {selectedTicket.role || 'N/A'}
                                 </div>
 
                                 <div>
-                                    <div className="text-sm font-medium text-gray-900 mb-1">Subject : {selectedTicket.subject}</div>
-                                    <div className="text-sm font-medium text-gray-900">Reporter : {selectedTicket.reporter}</div>
+                                    <div className="text-sm font-medium text-gray-900 mb-1">
+                                        Subject : {selectedTicket.subject}
+                                    </div>
+                                    <div className="text-sm font-medium text-gray-900">
+                                        Raised By : {selectedTicket.raisedBy?.name || 'N/A'}
+                                    </div>
+                                    <div className="text-sm text-gray-600">
+                                        Email : {selectedTicket.raisedBy?.email || 'N/A'}
+                                    </div>
                                 </div>
 
                                 <div className="">
                                     <div className='flex gap-3'>
-                                        <div className="text-sm font-medium text-gray-900 mb-1">Start Date :</div>
-                                        <div className="text-sm font-medium text-gray-900">{selectedTicket.startDate}</div>
+                                        <div className="text-sm font-medium text-gray-900 mb-1">Created Date :</div>
+                                        <div className="text-sm font-medium text-gray-900">
+                                            {formatDate(selectedTicket.createdAt)}
+                                        </div>
                                     </div>
                                     <div className='flex gap-3'>
-                                        <div className="text-sm font-medium text-gray-900">Due Date :</div>
-                                        <div className="text-sm font-medium text-gray-900">{selectedTicket.dueDate}</div>
+                                        <div className="text-sm font-medium text-gray-900">Updated Date :</div>
+                                        <div className="text-sm font-medium text-gray-900">
+                                            {formatDate(selectedTicket.updatedAt)}
+                                        </div>
                                     </div>
+                                </div>
+
+                                <div className='flex gap-3'>
+                                    <div className="text-sm font-medium text-gray-900 mb-2">Priority :</div>
+                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getPriorityColor(selectedTicket.priority)}`}>
+                                        {selectedTicket.priority}
+                                    </span>
                                 </div>
 
                                 <div className='flex gap-3'>
@@ -284,42 +360,24 @@ const RMGRaiseTickets = () => {
                                     </span>
                                 </div>
 
+                                <div className='flex gap-3'>
+                                    <div className="text-sm font-medium text-gray-900 mb-2">Assigned To :</div>
+                                    <span className="text-sm text-gray-600">
+                                        {selectedTicket.assignedTo?.name || 'Not Assigned'}
+                                    </span>
+                                </div>
+
                                 <hr />
 
                                 <div>
                                     <div className="text-sm font-medium text-gray-900 mb-2">Description :</div>
                                     <div className="text-sm text-gray-600 leading-relaxed">
-                                        I am experiencing an issue with selecting candidates. The select button doesn't seem to working.
+                                        {selectedTicket.description}
                                     </div>
                                 </div>
 
                                 <hr />
-                                
-                                <div>
-                                    <div className="text-sm font-medium text-gray-900 mb-3">Reply</div>
-                                    <textarea
-                                        placeholder="Your reply"
-                                        className="w-full px-3 py-2 border border-gray-400 rounded-lg text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                        rows={2}
-                                    />
-                                </div>
 
-                                <div className="bg-gray-50 rounded-lg mt-4">
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center flex-shrink-0">
-                                            <span className="text-xs font-medium text-gray-600">A</span>
-                                        </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="text-sm font-medium text-gray-900">Admin</span>
-                                                <span className="text-xs text-gray-500">May 15, 2025</span>
-                                            </div>
-                                            <p className="text-sm text-gray-600 leading-relaxed">
-                                                Thank you for reporting this issue, we are looking into it and will update you shortly.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         ) : (
                             <div className="text-center text-gray-500 py-8">

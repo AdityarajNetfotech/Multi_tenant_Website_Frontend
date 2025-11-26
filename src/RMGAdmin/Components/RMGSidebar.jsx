@@ -18,7 +18,7 @@ const RMGSidebar = ({ isOpen, onToggle }) => {
     const path = location.pathname;
 
     if (path.includes("/RMGAdmin-Dashboard/RequirementForm")) setActiveNav("RequirementForm");
-    else if (path.includes("/RMGAdmin-Dashboard/Requirement")) setActiveNav("Requirement");
+    else if (path.includes("/RMGAdmin-Dashboard/AssignedRecruiter")) setActiveNav("AssignedRecruiter");
     else if (path.includes("/RMGAdmin-Dashboard/RMGRaiseTickets")) setActiveNav("RaiseTickets");
     else if (path.includes("/RMGAdmin-Dashboard/RMGSupportTickets")) setActiveNav("SupportTickets");
     else if (path.includes("/logout")) setActiveNav("Logout");
@@ -86,12 +86,12 @@ const RMGSidebar = ({ isOpen, onToggle }) => {
 
             <li>
               <button
-                onClick={() => handleNavClick('Requirement', '/RMGAdmin-Dashboard/Requirement')}
+                onClick={() => handleNavClick('AssignedRecruiters', '/RMGAdmin-Dashboard/AssignedRecruiters')}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
-                  ${activeNav === 'Requirement' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
+                  ${activeNav === 'AssignedRecruiters' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
                 <UserPlus size={20} />
-                <span>Requirement</span>
+                <span>Assigned Recruiters</span>
               </button>
             </li>
 
