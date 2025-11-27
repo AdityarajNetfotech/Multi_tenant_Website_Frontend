@@ -4,99 +4,147 @@ import {
     ChevronRight,
     Eye,
 } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import Pagination from "../../components/LandingPage/Pagination";
-import FilteredCandidate from "./FilteredCandidate"; 
+import FilteredCandidate from "./FilteredCandidate";
 import UnfilteredCandidate from "./UnfilteredCandidate";
 
 const SeeHistory = () => {
+    const location = useLocation();
+    const { jdData } = location.state || {};
+
+    // console.log("Received JD Data from Parent/Assigned Recruiter:", jdData);
+
     const [showFilteredPopup, setShowFilteredPopup] = useState(false);
     const [showUnfilteredPopup, setShowUnfilteredPopup] = useState(false);
     const [selectedCandidate, setSelectedCandidate] = useState(null);
 
-    const jobData = [
-        {
-            id: 1,
-            title: "UI/UX Designer",
-            jdId: "JD#2043",
-            assignedOn: "2025-10-02",
-            dueDate: "2025-10-25",
-            status: "In Progress",
-            statusColor: "text-yellow-600",
-            priority: "High",
-            notes: "Ensure candidate resumes are filtered by portfolio quality and case study review.",
-            totalApply: 500,
-            filtered: 300,
-            unfiltered: 100
-        },
-        {
-            id: 2,
-            title: "Frontend Developer",
-            jdId: "JD#2044",
-            assignedOn: "2025-10-03",
-            dueDate: "2025-10-28",
-            status: "Completed",
-            statusColor: "text-green-600",
-            priority: "Medium",
-            notes: "Focus on React.js and TypeScript experience. Portfolio review mandatory.",
-            totalApply: 350,
-            filtered: 250,
-            unfiltered: 50
-        },
-        {
-            id: 3,
-            title: "Backend Developer",
-            jdId: "JD#2045",
-            assignedOn: "2025-10-05",
-            dueDate: "2025-10-30",
-            status: "Pending",
-            statusColor: "text-red-600",
-            priority: "Low",
-            notes: "Node.js and Python expertise required. Check for cloud deployment experience.",
-            totalApply: 280,
-            filtered: 180,
-            unfiltered: 70
-        }
-    ];
+    const jdArray = jdData?.fullData?.jds || [];
 
-    const filteredCandidates = Array.from({ length: 50 }, (_, i) => ({
-        id: i + 1,
-        name: ["Trina Das", "Rahul Sharma", "Priya Patel", "Amit Kumar", "Sneha Gupta"][i % 5],
-        email: ["trinadas01@gmail.com", "rahul.sharma@gmail.com", "priya.patel@gmail.com", "amit.kumar@gmail.com", "sneha.gupta@gmail.com"][i % 5],
-        skills: ["Wireframe, Prototyping, User Research, others more skills", "React, JavaScript, CSS, HTML, Redux", "Figma, Sketch, Adobe XD, User Testing", "Angular, TypeScript, Material UI", "Vue.js, Sass, Webpack, Git"][i % 5],
-        percentage: [79, 85, 72, 88, 91][i % 5]
-    }));
+    const jobData = jdArray.map((jd, index) => {
+        const appliedCandidates = jd.raw?.appliedCandidates || [];
+        const filteredCands = appliedCandidates.filter(c => c.status === 'filtered');
+        const unfilteredCands = appliedCandidates.filter(c => c.status === 'unfiltered' || c.status !== 'filtered');
 
-    const unfilteredCandidates = Array.from({ length: 40 }, (_, i) => ({
-        id: i + 1,
-        name: ["John Doe", "Sarah Wilson", "Mike Johnson", "Lisa Brown", "David Lee"][i % 5],
-        email: ["johndoe@gmail.com", "sarah.wilson@gmail.com", "mike.j@gmail.com", "lisa.brown@gmail.com", "david.lee@gmail.com"][i % 5],
-        skills: ["Basic HTML, CSS knowledge", "Limited JavaScript experience", "Beginner level skills", "Some design knowledge", "Entry level programming"][i % 5],
-        percentage: [29, 35, 25, 31, 28][i % 5]
-    }));
+        return {
+            id: jd.id || jd._id,
+            title: jdData?.fullData?.jobTitle || jdData?.title || "N/A",
+            jdId: `JD#${(jd.id || jd._id)?.slice(-4) || index}`,
+            assignedOn: new Date(jdData?.fullData?.createdAt).toLocaleDateString('en-CA') || "N/A",
+            dueDate: new Date(jdData?.fullData?.dueDate).toLocaleDateString('en-CA') || "N/A",
+            status: jdData?.fullData?.status || "N/A",
+            statusColor: jdData?.fullData?.status === 'JD created' ? 'text-green-600' :
+                jdData?.fullData?.status === 'In Progress' ? 'text-yellow-600' : 'text-red-600',
+            priority: jdData?.fullData?.priority || "N/A",
+            notes: jd.raw?.jobSummary || "No notes available",
+            totalApply: jd.totalApplicants || appliedCandidates.length || 0,
+            filtered: jd.filteredCount || filteredCands.length || 0,
+            unfiltered: jd.unfilteredCount || unfilteredCands.length || 0,
+            rawFilteredCandidates: jd.raw?.filteredCandidates || [],
+            rawUnfilteredCandidates: jd.raw?.unfilteredCandidates || [],
+            rawAppliedCandidates: appliedCandidates,
+            skills: jdData?.fullData?.skills || []
+        };
+    });
+
+    const finalJobData = jobData.length > 0 ? jobData : [{
+        id: 1,
+        title: "No Data Available",
+        jdId: "N/A",
+        assignedOn: "N/A",
+        dueDate: "N/A",
+        status: "N/A",
+        statusColor: "text-gray-600",
+        priority: "N/A",
+        notes: "No data available",
+        totalApply: 0,
+        filtered: 0,
+        unfiltered: 0,
+        rawFilteredCandidates: [],
+        rawUnfilteredCandidates: [],
+        rawAppliedCandidates: [],
+        skills: []
+    }];
 
     const [currentJobIndex, setCurrentJobIndex] = useState(0);
     const [filteredPage, setFilteredPage] = useState(1);
     const [unfilteredPage, setUnfilteredPage] = useState(1);
 
     const itemsPerPage = 4;
-    const currentJob = jobData[currentJobIndex];
+    const currentJob = finalJobData[currentJobIndex];
 
-    const filteredTotalPages = Math.ceil(filteredCandidates.length / itemsPerPage);
+    const filteredCandidates = (currentJob.rawAppliedCandidates || [])
+        .filter(c => c.status === 'filtered')
+        .map((candidate, index) => ({
+            id: candidate._id || index + 1,
+            name: candidate.name || "N/A",
+            email: candidate.email || "N/A",
+            phone: candidate.phone || "N/A",
+            skills: currentJob.skills?.join(', ') || "N/A",
+            percentage: candidate.aiScore || 0,
+            aiExplanation: candidate.aiExplanation || "No explanation available",
+            resume: candidate.resume || null,
+            appliedAt: candidate.appliedAt || null
+        }));
+
+    const unfilteredCandidates = (currentJob.rawAppliedCandidates || [])
+        .filter(c => c.status === 'unfiltered' || c.status !== 'filtered')
+        .map((candidate, index) => ({
+            id: candidate._id || index + 1,
+            name: candidate.name || "N/A",
+            email: candidate.email || "N/A",
+            phone: candidate.phone || "N/A",
+            skills: currentJob.skills?.join(', ') || "N/A",
+            percentage: candidate.aiScore || 0,
+            aiExplanation: candidate.aiExplanation || "No explanation available",
+            resume: candidate.resume || null,
+            appliedAt: candidate.appliedAt || null
+        }));
+
+    const finalFilteredCandidates = filteredCandidates.length > 0 ? filteredCandidates :
+        (currentJob.rawFilteredCandidates || []).map((candidate, index) => ({
+            id: candidate._id || index + 1,
+            name: candidate.name || "N/A",
+            email: candidate.email || "N/A",
+            phone: candidate.phone || "N/A",
+            skills: currentJob.skills?.join(', ') || "N/A",
+            percentage: candidate.aiScore || 0,
+            aiExplanation: candidate.aiExplanation || "No explanation available",
+            resume: candidate.resume || null
+        }));
+
+    const finalUnfilteredCandidates = unfilteredCandidates.length > 0 ? unfilteredCandidates :
+        (currentJob.rawUnfilteredCandidates || []).map((candidate, index) => ({
+            id: candidate._id || index + 1,
+            name: candidate.name || "N/A",
+            email: candidate.email || "N/A",
+            phone: candidate.phone || "N/A",
+            skills: currentJob.skills?.join(', ') || "N/A",
+            percentage: candidate.aiScore || 0,
+            aiExplanation: candidate.aiExplanation || "No explanation available",
+            resume: candidate.resume || null
+        }));
+
+    const filteredTotalPages = Math.ceil(finalFilteredCandidates.length / itemsPerPage) || 1;
     const filteredStartIndex = (filteredPage - 1) * itemsPerPage;
     const filteredEndIndex = filteredStartIndex + itemsPerPage;
-    const currentFilteredCandidates = filteredCandidates.slice(filteredStartIndex, filteredEndIndex);
+    const currentFilteredCandidates = finalFilteredCandidates.slice(filteredStartIndex, filteredEndIndex);
 
-    const unfilteredTotalPages = Math.ceil(unfilteredCandidates.length / itemsPerPage);
+    const unfilteredTotalPages = Math.ceil(finalUnfilteredCandidates.length / itemsPerPage) || 1;
     const unfilteredStartIndex = (unfilteredPage - 1) * itemsPerPage;
     const unfilteredEndIndex = unfilteredStartIndex + itemsPerPage;
-    const currentUnfilteredCandidates = unfilteredCandidates.slice(unfilteredStartIndex, unfilteredEndIndex);
+    const currentUnfilteredCandidates = finalUnfilteredCandidates.slice(unfilteredStartIndex, unfilteredEndIndex);
 
     const handlePrevious = () => {
-        setCurrentJobIndex((prev) => (prev === 0 ? jobData.length - 1 : prev - 1));
+        setCurrentJobIndex((prev) => (prev === 0 ? finalJobData.length - 1 : prev - 1));
+        setFilteredPage(1);
+        setUnfilteredPage(1);
     };
 
     const handleNext = () => {
-        setCurrentJobIndex((prev) => (prev === jobData.length - 1 ? 0 : prev + 1));
+        setCurrentJobIndex((prev) => (prev === finalJobData.length - 1 ? 0 : prev + 1));
+        setFilteredPage(1);
+        setUnfilteredPage(1);
     };
 
     const handleFilteredEyeClick = (candidate) => {
@@ -147,7 +195,7 @@ const SeeHistory = () => {
                             <ChevronLeft className="w-5 h-5 cursor-pointer text-gray-600" />
                         </button>
                         <span className="text-sm text-gray-500">
-                            {currentJobIndex + 1} / {jobData.length}
+                            {currentJobIndex + 1} / {finalJobData.length}
                         </span>
                         <button
                             onClick={handleNext}
@@ -200,9 +248,10 @@ const SeeHistory = () => {
                                 <p className="text-gray-600 font-semibold mt-2">{currentJob.priority}</p>
                             </div>
                             <p className="text-gray-700 font-semibold mt-2">Notes :</p>
-                            <p className="text-gray-600 text-sm leading-tight">
-                                "{currentJob.notes}"
+                            <p className="text-gray-600 text-sm leading-tight border rounded-xl p-1 h-[120px] overflow-y-auto">
+                                {currentJob.notes}
                             </p>
+
                         </div>
                     </div>
                 </div>
@@ -217,12 +266,12 @@ const SeeHistory = () => {
 
                         <div className="flex items-center gap-2">
                             <span className="w-3 h-3 bg-blue-600 rounded-full"></span>
-                            <p className="text-gray-700">Filtered Candidate: {currentJob.filtered}</p>
+                            <p className="text-gray-700">Filtered Candidate: {finalFilteredCandidates.length}</p>
                         </div>
 
                         <div className="flex items-center gap-2">
                             <span className="w-3 h-3 bg-red-600 rounded-full"></span>
-                            <p className="text-gray-700">Unfiltered Candidate: {currentJob.unfiltered}</p>
+                            <p className="text-gray-700">Unfiltered Candidate: {finalUnfilteredCandidates.length}</p>
                         </div>
                     </div>
                 </div>
@@ -231,7 +280,7 @@ const SeeHistory = () => {
             <div className="shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] p-4 rounded-xl space-y-4 bg-white">
                 <div className="flex items-center gap-2">
                     <span className="w-4 h-4 bg-blue-600 rounded-full"></span>
-                    <p className="text-gray-800 font-semibold">Filtered Candidate: {currentJob.filtered}</p>
+                    <p className="text-gray-800 font-semibold">Filtered Candidate: {finalFilteredCandidates.length}</p>
                 </div>
 
                 <div className="bg-white shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] rounded-xl">
@@ -250,31 +299,39 @@ const SeeHistory = () => {
                             </thead>
 
                             <tbody>
-                                {currentFilteredCandidates.map((candidate, idx) => (
-                                    <tr key={candidate.id} className="border-b border-gray-400 text-gray-700">
-                                        <td className="py-3 px-4">{filteredStartIndex + idx + 1}.</td>
-                                        <td className="py-3 px-4">{candidate.name}</td>
-                                        <td className="py-3 px-4">{candidate.email}</td>
-                                        <td className="py-3 px-4">{currentJob.title}</td>
-                                        <td className="py-3 px-4">{candidate.skills}</td>
+                                {currentFilteredCandidates.length > 0 ? (
+                                    currentFilteredCandidates.map((candidate, idx) => (
+                                        <tr key={candidate.id} className="border-b border-gray-400 text-gray-700">
+                                            <td className="py-3 px-4">{filteredStartIndex + idx + 1}.</td>
+                                            <td className="py-3 px-4">{candidate.name}</td>
+                                            <td className="py-3 px-4">{candidate.email}</td>
+                                            <td className="py-3 px-4">{currentJob.title}</td>
+                                            <td className="py-3 px-4">{candidate.skills}</td>
 
-                                        <td className="py-3 px-2 flex items-center gap-2">
-                                            <div className="w-24 bg-gray-200 rounded-full h-2">
-                                                <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${candidate.percentage}%` }}></div>
-                                            </div>
-                                            <span className="text-blue-600 text-sm">{candidate.percentage}%</span>
-                                        </td>
+                                            <td className="py-3 px-2 flex items-center gap-2">
+                                                <div className="w-24 bg-gray-200 rounded-full h-2">
+                                                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: `${candidate.percentage}%` }}></div>
+                                                </div>
+                                                <span className="text-blue-600 text-sm">{candidate.percentage}%</span>
+                                            </td>
 
-                                        <td className="py-3 px-2">
-                                            <button
-                                                onClick={() => handleFilteredEyeClick(candidate)}
-                                                className="p-2 border rounded-lg hover:bg-gray-100"
-                                            >
-                                                <Eye className="w-5 h-5 text-blue-600" />
-                                            </button>
+                                            <td className="py-3 px-2">
+                                                <button
+                                                    onClick={() => handleFilteredEyeClick(candidate)}
+                                                    className="p-2 border rounded-lg hover:bg-gray-100"
+                                                >
+                                                    <Eye className="w-5 h-5 text-blue-600" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="7" className="py-8 text-center text-gray-500">
+                                            No filtered candidates available
                                         </td>
                                     </tr>
-                                ))}
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -290,7 +347,7 @@ const SeeHistory = () => {
             <div className="shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] p-4 rounded-xl space-y-4 bg-white">
                 <div className="flex items-center gap-2">
                     <span className="w-4 h-4 bg-red-600 rounded-full"></span>
-                    <p className="text-gray-800 font-semibold">Unfiltered Candidate: {currentJob.unfiltered}</p>
+                    <p className="text-gray-800 font-semibold">Unfiltered Candidate: {finalUnfilteredCandidates.length}</p>
                 </div>
 
                 <div className="bg-white shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] rounded-xl">
@@ -309,31 +366,39 @@ const SeeHistory = () => {
                             </thead>
 
                             <tbody>
-                                {currentUnfilteredCandidates.map((candidate, idx) => (
-                                    <tr key={candidate.id} className="border-b border-gray-400 text-gray-700">
-                                        <td className="py-3 px-4">{unfilteredStartIndex + idx + 1}.</td>
-                                        <td className="py-3 px-4">{candidate.name}</td>
-                                        <td className="py-3 px-4">{candidate.email}</td>
-                                        <td className="py-3 px-4">{currentJob.title}</td>
-                                        <td className="py-3 px-4">{candidate.skills}</td>
+                                {currentUnfilteredCandidates.length > 0 ? (
+                                    currentUnfilteredCandidates.map((candidate, idx) => (
+                                        <tr key={candidate.id} className="border-b border-gray-400 text-gray-700">
+                                            <td className="py-3 px-4">{unfilteredStartIndex + idx + 1}.</td>
+                                            <td className="py-3 px-4">{candidate.name}</td>
+                                            <td className="py-3 px-4">{candidate.email}</td>
+                                            <td className="py-3 px-4">{currentJob.title}</td>
+                                            <td className="py-3 px-4">{candidate.skills}</td>
 
-                                        <td className="py-3 px-2 flex items-center gap-2">
-                                            <div className="w-24 bg-gray-200 rounded-full h-2">
-                                                <div className="bg-red-500 h-2 rounded-full" style={{ width: `${candidate.percentage}%` }}></div>
-                                            </div>
-                                            <span className="text-red-600 text-sm">{candidate.percentage}%</span>
-                                        </td>
+                                            <td className="py-3 px-2 flex items-center gap-2">
+                                                <div className="w-24 bg-gray-200 rounded-full h-2">
+                                                    <div className="bg-red-500 h-2 rounded-full" style={{ width: `${candidate.percentage}%` }}></div>
+                                                </div>
+                                                <span className="text-red-600 text-sm">{candidate.percentage}%</span>
+                                            </td>
 
-                                        <td className="py-3 px-2">
-                                            <button
-                                                onClick={() => handleUnfilteredEyeClick(candidate)}
-                                                className="p-2 border rounded-lg hover:bg-gray-100"
-                                            >
-                                                <Eye className="w-5 h-5 text-red-600" />
-                                            </button>
+                                            <td className="py-3 px-2">
+                                                <button
+                                                    onClick={() => handleUnfilteredEyeClick(candidate)}
+                                                    className="p-2 border rounded-lg hover:bg-gray-100"
+                                                >
+                                                    <Eye className="w-5 h-5 text-red-600" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="7" className="py-8 text-center text-gray-500">
+                                            No unfiltered candidates available
                                         </td>
                                     </tr>
-                                ))}
+                                )}
                             </tbody>
                         </table>
                     </div>

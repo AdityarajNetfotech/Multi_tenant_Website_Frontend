@@ -1,23 +1,67 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search, SlidersHorizontal, Edit, Eye, Trash2 } from 'lucide-react';
 import Pagination from '../../components/LandingPage/Pagination';
 import RequirementAddNote from './RequirementAddNote';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 export default function AssignedRecruiters() {
+    const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [showAddNote, setShowAddNote] = useState(false);
+    const [jobs, setJobs] = useState([]);
     const jobsPerPage = 5;
 
-    const jobs = [
-        { id: 1, jobId: '#225248', title: 'UI/UX Designer', deadline: '1/09/2025', status: 'Closed', assignedTo: "Ishan Ghosh" },
-        { id: 2, jobId: '#225249', title: 'Frontend Developer', deadline: '5/09/2025', status: 'Open', assignedTo: "Ishan Ghosh" },
-        { id: 3, jobId: '#225250', title: 'Backend Engineer', deadline: '10/09/2025', status: 'Expired', assignedTo: "Ishan Ghosh" },
-        { id: 4, jobId: '#225251', title: 'Project Manager', deadline: '12/09/2025', status: 'Open', assignedTo: "Ishan Ghosh" },
-        { id: 5, jobId: '#225252', title: 'QA Tester', deadline: '15/09/2025', status: 'Closed', assignedTo: "Ishan Ghosh" },
-        { id: 6, jobId: '#225251', title: 'Project Manager', deadline: '12/09/2025', status: 'Open', assignedTo: "Ishan Ghosh" },
-        { id: 7, jobId: '#225252', title: 'QA Tester', deadline: '15/09/2025', status: 'Closed', assignedTo: "Ishan Ghosh" },
-    ];
+    useEffect(() => {
+        const fetchAllOffer = async () => {
+            try {
+                const response = await axios.get('http://localhost:4000/api/offer/overview', {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    },
+                });
+                console.log("hii", response.data);
+
+                if (response.data.success && response.data.data) {
+                    const mappedJobs = response.data.data.map((job, index) => ({
+                        id: job._id,
+                        jobId: `#${job._id.slice(-6)}`,
+                        title: job.jobTitle,
+                        deadline: new Date(job.dueDate).toLocaleDateString('en-GB'),
+                        status: job.status,
+                        assignedTo: job.assignedTo?.name || 'Unassigned',
+                        fullData: job
+                    }));
+                    setJobs(mappedJobs);
+                }
+
+            } catch (error) {
+                console.error('Error fetching offers:', error);
+            }
+        }
+
+        fetchAllOffer();
+    }, [])
+
+    const handleDelete = async (id) => {
+        if (window.confirm('Are you sure you want to delete this offer?')) {
+            try {
+                const response = await axios.delete(`http://localhost:4000/api/offer/${id}`, {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    },
+                });
+
+                if (response.data.success) {
+                    setJobs(jobs.filter(job => job.id !== id));
+                    alert('Offer deleted successfully');
+                }
+            } catch (error) {
+                console.error('Error deleting offer:', error);
+                alert('Failed to delete offer');
+            }
+        }
+    };
 
     const filteredJobs = jobs.filter((job) =>
         job.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -38,6 +82,8 @@ export default function AssignedRecruiters() {
             case 'Closed': return 'bg-yellow-100 text-yellow-700';
             case 'Open': return 'bg-green-100 text-green-700';
             case 'Expired': return 'bg-red-100 text-red-700';
+            case 'JD pending': return 'bg-yellow-100 text-yellow-700';
+            case 'JD created': return 'bg-green-100 text-green-700';
             default: return 'bg-gray-100 text-gray-700';
         }
     };
@@ -77,7 +123,7 @@ export default function AssignedRecruiters() {
                     </div>
 
                     <div className="flex gap-2 shrink-0">
-                        <button className="px-6 py-2.5 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors">
+                        <button onClick={()=>navigate("/RMGAdmin-Dashboard/RequirementForm")} className="px-6 py-2.5 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors">
                             Create
                         </button>
                         <button className="px-6 py-2.5 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors flex items-center gap-2">
@@ -88,7 +134,7 @@ export default function AssignedRecruiters() {
                 </div>
 
                 <div className="overflow-x-auto rounded-2xl border border-gray-300 shadow-lg">
-                    <table className="min-w-[1200px] w-full border-collapse">
+                    <table className="min-w-[900px] w-full border-collapse">
                         <thead>
                             <tr className="border-b border-gray-200">
                                 <th className="py-4 px-6 text-left text-sm font-semibold text-gray-700 w-[60px]">Sl.No</th>
@@ -113,28 +159,23 @@ export default function AssignedRecruiters() {
                                             {job.status}
                                         </span>
                                     </td>
-                                     <td className="py-4 px-6 text-sm text-gray-700">{job.assignedTo}</td>
+                                    <td className="py-4 px-6 text-sm text-gray-700">{job.assignedTo}</td>
                                     <td className="py-4 px-6">
                                         <div className="flex items-center gap-2 overflow-x-auto scrollbar-thin scrollbar-thumb-gray-300">
-                                            <button className="px-3 py-1.5 border border-purple-300 text-purple-600 rounded text-sm hover:bg-purple-50 transition-colors whitespace-nowrap">
-                                                Task assign ▼
-                                            </button>
-                                            <button className="p-2 border border-green-300 text-green-600 rounded hover:bg-green-50 transition-colors">
-                                                <Edit size={16} />
-                                            </button>
                                             <button className="p-2 border border-blue-300 text-blue-600 rounded hover:bg-blue-50 transition-colors">
                                                 <Eye size={16} />
                                             </button>
-                                            <button className="p-2 border border-red-300 text-red-600 rounded hover:bg-red-50 transition-colors">
+                                            <button 
+                                                onClick={() => handleDelete(job.id)}
+                                                className="p-2 border border-red-300 text-red-600 rounded hover:bg-red-50 transition-colors"
+                                            >
                                                 <Trash2 size={16} />
                                             </button>
-                                               <button
-                        onClick={() => setShowAddNote(true)} 
-                        className="px-3 py-1.5 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors whitespace-nowrap"
-                      >
-                        Add Note
-                      </button>
-                                            <button className="px-3 py-1.5 bg-orange-500 text-white rounded text-sm hover:bg-orange-600 transition-colors whitespace-nowrap">
+                                            <button
+                                                onClick={() => navigate('/RMGAdmin-Dashboard/SeeHistory', {
+                                                    state: { jdData: job }
+                                                })}
+                                                className="px-3 py-1.5 bg-orange-500 text-white rounded text-sm hover:bg-orange-600 transition-colors whitespace-nowrap">
                                                 See History
                                             </button>
                                         </div>
@@ -151,7 +192,6 @@ export default function AssignedRecruiters() {
                     onPageChange={handlePageChange}
                 />
 
-                {showAddNote && <RequirementAddNote onClose={() => setShowAddNote(false)} />}
             </div>
         </div>
     );

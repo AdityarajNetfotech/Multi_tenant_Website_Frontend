@@ -11,23 +11,31 @@ export default function UnfilteredCandidate({ candidate, jobTitle, onClose }) {
             </button>
 
             <h2 className="text-2xl font-semibold text-gray-900 mb-1">
-                Unfiltered Candidates
+                Unfiltered Candidate
             </h2>
             <p className="text-gray-600 mb-4">{jobTitle}</p>
 
             <a
-                href="#"
+                href={candidate?.resume || "#"}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-blue-600 font-medium hover:underline inline-block mb-4"
             >
-                {candidate?.name || "John Doe"}
+                {candidate?.name || "N/A"}
             </a>
 
             <div className="mb-3 text-sm text-gray-700">
-                <span className="font-semibold">Email :</span> {candidate?.email || "johndoe@gmail.com"}
+                <span className="font-semibold">Email :</span> {candidate?.email || "N/A"}
             </div>
 
+            {candidate?.phone && (
+                <div className="mb-3 text-sm text-gray-700">
+                    <span className="font-semibold">Phone :</span> {candidate?.phone}
+                </div>
+            )}
+
             <div className="mb-4 text-sm text-gray-700">
-                <span className="font-semibold">Skills :</span> {candidate?.skills || "Basic HTML, CSS knowledge"}
+                <span className="font-semibold">Skills :</span> {candidate?.skills || "N/A"}
             </div>
 
             <div className="mb-6">
@@ -35,49 +43,31 @@ export default function UnfilteredCandidate({ candidate, jobTitle, onClose }) {
                 <div className="w-full bg-gray-200 rounded-full h-3 mt-2">
                     <div
                         className="bg-red-500 h-3 rounded-full text-xs text-white flex items-center justify-center"
-                        style={{ width: `${candidate?.percentage || 19}%` }}
+                        style={{ width: `${candidate?.percentage || 0}%` }}
                     >
-                        {candidate?.percentage || 19}%
+                        {candidate?.percentage || 0}%
                     </div>
                 </div>
             </div>
 
-            {/* Rest of your component remains the same */}
-            <h1 className="pl-1 mb-1 text-gray-800 font-medium">AI Summary</h1>
+            <h1 className="pl-1 mb-1 text-gray-800 font-medium">Summary</h1>
             <div className="mb-6 border rounded-lg bg-gray-50 p-4 text-sm text-gray-800 leading-relaxed">
-                <p>
-                    <strong>Top Skills:</strong> Python, React, Data Analysis, Cloud
-                    Computing.
-                </p>
-                <p>
-                    <strong>Experience Range:</strong> 2–7 years (average 4.3 years).
-                </p>
-                <p>
-                    <strong>Location Concentration:</strong> 45% Bangalore, 30% Pune,
-                    15% Hyderabad, 10% Remote.
-                </p>
-                <p>
-                    <strong>Availability:</strong> 62% immediately available, 25% within
-                    30 days.
-                </p>
-                <p>
-                    <strong>AI Match Score:</strong> Average 87% alignment with job
-                    criteria.
-                </p>
+                <p>{candidate?.aiExplanation || "No AI explanation available"}</p>
             </div>
 
-            <div className="bg-red-100 border border-red-300 rounded-lg p-4">
-                <h3 className="font-semibold text-gray-900 mb-2">
-                    Reasons for rejection
-                </h3>
-                <p className="text-gray-700 text-sm leading-relaxed">
-                    Limited practical exposure to design systems, weak portfolio
-                    presentation, and insufficient demonstration of complex user flows
-                    or data-driven design approaches. Needs improvement in visual
-                    hierarchy, accessibility considerations, and documentation of design
-                    rationale.
-                </p>
-            </div>
+
+            {candidate?.resume && (
+                <div className="mt-4">
+                    <a
+                        href={candidate.resume}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                        View Resume
+                    </a>
+                </div>
+            )}
         </div>
     );
 }

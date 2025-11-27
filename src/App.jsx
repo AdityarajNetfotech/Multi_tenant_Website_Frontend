@@ -55,11 +55,11 @@ import CandidateDashboard from './Candidate/Pages/CandidateDashboard';
 import RMGDashboard from './RMGAdmin/Pages/RMGDashboard';
 import SeeHistory from './RMGAdmin/Pages/SeeHistory';
 import CandidateLogin from './Candidate/CandidateLogin';
-import RecruiterLogin from './RecruiterAdmin/RecruiterLogin';
 import AdminDashboard from './Admin/Components/AdminDashboard';
 import RMGSupportTickets from './RMGAdmin/Pages/RMGSupportTickets';
 import RMGRaiseTickets from './RMGAdmin/Pages/RMGRaiseTickets';
 import EnquiryMessages from './SuperAdmin/EnquiryMessages';
+import UniversalLogin from './components/UniversalLogin';
 
 
 
@@ -73,7 +73,7 @@ const App = () => {
         <Route path="/" element={<LandingPage />} />
         <Route path="/SuperAdminLogin" element={<SuperAdminLogin />} />
         <Route path="/CandidateLogin" element={<CandidateLogin />} />
-        <Route path="/RecruiterLogin" element={<RecruiterLogin />} />
+        <Route path="/Login" element={<UniversalLogin />} />
         <Route path="/SuperAdminRegister" element={<SuperAdminRegister />} />
 
         <Route path="/Admin-Dashboard" element={<AdminLayout />}>
