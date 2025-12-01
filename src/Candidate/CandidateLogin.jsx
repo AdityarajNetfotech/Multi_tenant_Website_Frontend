@@ -1,25 +1,21 @@
 import React, { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
 import img from "../assets/CandidateLogin.png";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const CandidateLogin = () => {
-    const [fullName, setFullName] = useState("");
-    const [phoneNumber, setPhoneNumber] = useState("");
     const [email, setEmail] = useState("");
-    const [qualification, setQualification] = useState("");
-    const [otp, setOtp] = useState("");
-    const [showOtp, setShowOtp] = useState(false);
+    const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const navigate = useNavigate();
 
-    const handleLogin = () => {
+    const handleLogin = async () => {
         setLoading(true);
         setError("");
 
-        if (!fullName || !phoneNumber || !email || !qualification || !otp) {
-            setError("All fields are required");
+        if (!email || !password) {
+            setError("Email and password are required");
             setLoading(false);
             return;
         }
@@ -31,39 +27,17 @@ const CandidateLogin = () => {
             return;
         }
 
-        const phoneRegex = /^[0-9]{10}$/;
-        if (!phoneRegex.test(phoneNumber)) {
-            setError("Please enter a valid 10-digit phone number");
+        try {
+            const { data } = await axios.post("http://localhost:4000/api/candidate/login", { email, password });
+
+            localStorage.setItem("candidateToken", data.token);
+
             setLoading(false);
-            return;
+            navigate("/Candidate-Dashboard");
+        } catch (err) {
+            setError(err.response?.data?.error || "Invalid credentials");
+            setLoading(false);
         }
-
-        const otpRegex = /^[0-9]{6}$/;
-        if (!otpRegex.test(otp)) {
-            setError("Please enter a valid 6-digit OTP");
-            setLoading(false);
-            return;
-        }
-
-        setTimeout(() => {
-            console.log("Login data:", {
-                fullName,
-                phoneNumber,
-                email,
-                qualification,
-                otp
-            });
-
-            localStorage.setItem('candidateData', JSON.stringify({
-                fullName,
-                phoneNumber,
-                email,
-                qualification
-            }));
-
-            setLoading(false);
-            navigate("/SuperAdmin-Dashboard");
-        }, 1000);
     };
 
     return (
@@ -85,36 +59,7 @@ const CandidateLogin = () => {
 
                 <div className="flex-1 bg-white rounded-2xl shadow-md border border-gray-100 p-8 max-w-md mx-auto">
                     <div className="mb-4">
-                        <label className="block text-gray-800 font-medium mb-1">
-                            Full Name
-                        </label>
-                        <input
-                            type="text"
-                            value={fullName}
-                            onChange={(e) => setFullName(e.target.value)}
-                            placeholder="Enter Full Name"
-                            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                    </div>
-
-                    <div className="mb-4">
-                        <label className="block text-gray-800 font-medium mb-1">
-                            Phone Number
-                        </label>
-                        <input
-                            type="tel"
-                            value={phoneNumber}
-                            onChange={(e) => setPhoneNumber(e.target.value)}
-                            placeholder="Enter Phone Number"
-                            maxLength="10"
-                            className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
-                    </div>
-
-                    <div className="mb-4">
-                        <label className="block text-gray-800 font-medium mb-1">
-                            Email ID
-                        </label>
+                        <label className="block text-gray-800 font-medium mb-1">Email ID</label>
                         <input
                             type="email"
                             value={email}
@@ -124,64 +69,16 @@ const CandidateLogin = () => {
                         />
                     </div>
 
-                    <div className="mb-4">
-                        <label className="block text-gray-800 font-medium mb-1">
-                            Qualification
-                        </label>
+                    <div className="mb-6">
+                        <label className="block text-gray-800 font-medium mb-1">Password</label>
                         <input
-                            type="text"
-                            value={qualification}
-                            onChange={(e) => setQualification(e.target.value)}
-                            placeholder="Enter Qualification"
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            placeholder="Enter Password"
                             className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                     </div>
-
-                    <div className="mb-6">
-                        <label className="block text-gray-800 font-medium mb-1">
-                            OTP
-                        </label>
-
-                        <div className="flex gap-2">
-                            {[0, 1, 2, 3, 4, 5].map((index) => (
-                                <input
-                                    key={index}
-                                    type="text"
-                                    maxLength="1"
-                                    value={otp[index] || ""}
-                                    onChange={(e) => {
-                                        const value = e.target.value.replace(/[^0-9]/g, "");
-                                        if (!value) return;
-
-                                        const newOtp = otp.split("");
-                                        newOtp[index] = value;
-                                        setOtp(newOtp.join(""));
-
-                                        if (index < 5) {
-                                            document.getElementById(`otp-${index + 1}`).focus();
-                                        }
-                                    }}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Backspace") {
-                                            const newOtp = otp.split("");
-                                            newOtp[index] = "";
-                                            setOtp(newOtp.join(""));
-
-                                            if (index > 0) {
-                                                document.getElementById(`otp-${index - 1}`).focus();
-                                            }
-                                        }
-                                    }}
-                                    id={`otp-${index}`}
-                                    className="w-12 h-12 border rounded-lg text-center text-xl 
-                 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                            ))}
-
-                            <button className="text-blue-600 text-sm ml-2">Send</button>
-                        </div>
-                    </div>
-
 
                     {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
 
