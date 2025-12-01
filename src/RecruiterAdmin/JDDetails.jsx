@@ -1,14 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Upload, FileText, Copy, Eye, Trash2, Filter, Search, Trash } from "lucide-react";
 import Pagination from "../components/LandingPage/Pagination";
 import ResumeSummary from "./ResumeSummary";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 
 function JDDetails() {
-      const navigate = useNavigate();
+    const navigate = useNavigate();
+    const location = useLocation();
+    const jdData = location.state?.jdData || null;
+    // console.log(jdData);
+
     const [searchTerm, setSearchTerm] = useState("");
     const [activeTab, setActiveTab] = useState("all");
     const [showResumeSummary, setShowResumeSummary] = useState(false);
+    const [selectedCandidate, setSelectedCandidate] = useState(null);
 
     const [currentPageTable1, setCurrentPageTable1] = useState(1);
     const itemsPerPageTable1 = 5;
@@ -16,102 +22,163 @@ function JDDetails() {
     const [currentPageTable2, setCurrentPageTable2] = useState(1);
     const itemsPerPageTable2 = 5;
 
-    const candidatesData = [
-        {
-            id: "#145798",
-            name: "Aakash Singh",
-            email: "aakashsingh@gmail.com",
-            company: "Nerthwork Solution",
-            jobTitle: "QA Cypress + Java",
-            createdOn: "12/01/2025",
-            skills: "View",
-            filtered: 24,
-            unfiltered: 44,
-            isFiltered: true,
-            experience: "5+ Years",
-        },
-        {
-            id: "#145799",
-            name: "Rahul Kumar",
-            email: "rahulkumar@gmail.com",
-            company: "Tech Solutions",
-            jobTitle: "Full Stack Developer",
-            createdOn: "11/01/2025",
-            skills: "View",
-            filtered: 30,
-            unfiltered: 50,
-            isFiltered: true,
-            experience: "3+ Years",
-        },
-        {
-            id: "#145800",
-            name: "Priya Sharma",
-            email: "priyasharma@gmail.com",
-            company: "Digital Innovations",
-            jobTitle: "UI/UX Designer",
-            createdOn: "10/01/2025",
-            skills: "View",
-            filtered: 20,
-            unfiltered: 35,
-            isFiltered: false,
-            experience: "4+ Years",
-        },
-        {
-            id: "#145801",
-            name: "Vikram Patel",
-            email: "vikrampatel@gmail.com",
-            company: "Nerthwork Solution",
-            jobTitle: "Backend Developer",
-            createdOn: "12/01/2025",
-            skills: "View",
-            filtered: 24,
-            unfiltered: 44,
-            isFiltered: false,
-            experience: "2+ Years",
-        },
-        {
-            id: "#145802",
-            name: "Neha Gupta",
-            email: "nehagupta@gmail.com",
-            company: "Tech Corp",
-            jobTitle: "DevOps Engineer",
-            createdOn: "10/05/2025",
-            skills: "View",
-            filtered: 24,
-            unfiltered: 44,
-            isFiltered: false,
-            experience: "6+ Years",
-        },
-        {
-            id: "#145803",
-            name: "Amit Verma",
-            email: "amitverma@gmail.com",
-            company: "Solutions Inc",
-            jobTitle: "Frontend Developer",
-            createdOn: "10/05/2025",
-            skills: "View",
-            filtered: 24,
-            unfiltered: 44,
-            isFiltered: true,
-            experience: "4+ Years",
-        },
-        {
-            id: "#145804",
-            name: "Sonia Kapoor",
-            email: "soniakapoor@gmail.com",
-            company: "Digital Tech",
-            jobTitle: "Data Analyst",
-            createdOn: "10/05/2025",
-            skills: "View",
-            filtered: 24,
-            unfiltered: 44,
-            isFiltered: true,
-            experience: "3+ Years",
-        },
-    ];
+    const [pendingCandidates, setPendingCandidates] = useState([]);
+    const [isFiltering, setIsFiltering] = useState(false);
+    const [jdDetails, setJdDetails] = useState(jdData);
+
+    useEffect(() => {
+        const fetchCandidateAppliedJDs = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const jdId = jdData?._id;
+
+                if (!jdId) {
+                    console.error('No JD ID available');
+                    return;
+                }
+
+                const response = await axios.get(`http://localhost:4000/api/jd/${jdId}/candidates`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                    }
+                });
+
+                console.log('Candidate applied JDs Data:', response.data);
+
+                if (response.data.success) {
+                    const pending = response.data.data.filter(
+                        (candidate) => candidate.status === 'pending'
+                    );
+                    setPendingCandidates(pending);
+                }
+
+            } catch (error) {
+                console.error('Error fetching JDs:', error);
+            }
+        };
+
+        fetchCandidateAppliedJDs();
+    }, [jdData?._id]);
+
+    const handleFilterResumes = async () => {
+    try {
+        setIsFiltering(true);
+        const token = localStorage.getItem('token');
+        const jdId = jdDetails?._id;
+
+        if (!jdId) {
+            console.error('No JD ID available');
+            alert('No JD ID available');
+            return;
+        }
+
+        const response = await axios.post(
+            `http://localhost:4000/api/jd/${jdId}/filter-resumes`,
+            {},
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                }
+            }
+        );
+
+        console.log('Filter Resumes Response:', response.data);
+
+        if (response.data.success) {
+            const updatedJdDetails = {
+                ...jdDetails,
+                filteredCandidates: response.data.filtered.map(f => ({
+                    candidate: f.id,
+                    aiScore: f.score,
+                    aiExplanation: f.explanation
+                })),
+                unfilteredCandidates: response.data.unfiltered.map(u => ({
+                    candidate: u.id,
+                    aiScore: u.score,
+                    aiExplanation: u.explanation
+                }))
+            };
+
+            if (updatedJdDetails.appliedCandidates) {
+                updatedJdDetails.appliedCandidates = updatedJdDetails.appliedCandidates.map(candidate => {
+                    const filtered = response.data.filtered.find(f => f.id === candidate.candidate);
+                    const unfiltered = response.data.unfiltered.find(u => u.id === candidate.candidate);
+                    
+                    if (filtered) {
+                        return {
+                            ...candidate,
+                            status: 'filtered',
+                            aiScore: filtered.score,
+                            aiExplanation: filtered.explanation
+                        };
+                    }
+                    
+                    if (unfiltered) {
+                        return {
+                            ...candidate,
+                            status: 'unfiltered',
+                            aiScore: unfiltered.score,
+                            aiExplanation: unfiltered.explanation
+                        };
+                    }
+                    
+                    return candidate;
+                });
+            }
+
+            setJdDetails(updatedJdDetails);
+
+            setPendingCandidates([]);
+
+            const totalFiltered = response.data.filtered.length;
+            const totalUnfiltered = response.data.unfiltered.length;
+            
+            alert('Resumes filtered successfully!');
+        } else {
+            alert('Filtering failed. Please try again.');
+        }
+
+    } catch (error) {
+        console.error('Error filtering resumes:', error);
+    } finally {
+        setIsFiltering(false);
+    }
+};
+
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-GB');
+    };
+
+    const appliedCandidates = jdDetails?.appliedCandidates || [];
+    const filteredCandidatesList = jdDetails?.filteredCandidates || [];
+    const unfilteredCandidatesList = jdDetails?.unfilteredCandidates || [];
+
+    const filteredCandidateIds = new Set(filteredCandidatesList.map(fc => fc.candidate));
+
+    const mappedCandidates = appliedCandidates.map((candidate) => {
+        const isFiltered = filteredCandidateIds.has(candidate.candidate);
+        const filteredInfo = filteredCandidatesList.find(fc => fc.candidate === candidate.candidate);
+        const unfilteredInfo = unfilteredCandidatesList.find(uc => uc.candidate === candidate.candidate);
+
+        return {
+            id: candidate.candidate,
+            name: candidate.name || 'N/A',
+            email: candidate.email || 'N/A',
+            phone: candidate.phone || 'N/A',
+            resume: candidate.resume || '',
+            isFiltered: isFiltered,
+            experience: candidate.experience || 'N/A',
+            aiScore: filteredInfo?.aiScore || unfilteredInfo?.aiScore || 0,
+            aiExplanation: filteredInfo?.aiExplanation || unfilteredInfo?.aiExplanation || '',
+            appliedAt: formatDate(candidate.appliedAt),
+        };
+    });
 
     const getFilteredData = () => {
-        let data = candidatesData;
+        let data = mappedCandidates;
 
         if (activeTab === "filtered") {
             data = data.filter(candidate => candidate.isFiltered === true);
@@ -130,13 +197,13 @@ function JDDetails() {
 
     const filteredCandidates = getFilteredData();
 
-    const filteredCount = candidatesData.filter(c => c.isFiltered === true).length;
-    const unfilteredCount = candidatesData.filter(c => c.isFiltered === false).length;
+    const filteredCount = mappedCandidates.filter(c => c.isFiltered === true).length;
+    const unfilteredCount = mappedCandidates.filter(c => c.isFiltered === false).length;
 
-    const totalPagesTable1 = Math.ceil(candidatesData.length / itemsPerPageTable1);
+    const totalPagesTable1 = Math.ceil(pendingCandidates.length / itemsPerPageTable1);
     const startIndexTable1 = (currentPageTable1 - 1) * itemsPerPageTable1;
     const endIndexTable1 = startIndexTable1 + itemsPerPageTable1;
-    const currentDataTable1 = candidatesData.slice(startIndexTable1, endIndexTable1);
+    const currentDataTable1 = pendingCandidates.slice(startIndexTable1, endIndexTable1);
 
     const totalPagesTable2 = Math.ceil(filteredCandidates.length / itemsPerPageTable2);
     const startIndexTable2 = (currentPageTable2 - 1) * itemsPerPageTable2;
@@ -163,6 +230,11 @@ function JDDetails() {
     const handleTabChange = (tab) => {
         setActiveTab(tab);
         setCurrentPageTable2(1);
+    };
+
+    const handleViewCandidate = (candidate) => {
+        setSelectedCandidate(candidate);
+        setShowResumeSummary(true);
     };
 
     return (
@@ -219,10 +291,20 @@ function JDDetails() {
 
                 <div className="bg-white rounded-xl shadow-lg border border-gray-300 p-4 md:p-6 mb-8">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-                        <h2 className="text-xl font-semibold text-gray-800">Candidates</h2>
-                        <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors">
-                            <Filter size={18} />
-                            Filter
+                        <h2 className="text-xl font-semibold text-gray-800">
+                            Pending Candidates ({pendingCandidates.length})
+                        </h2>
+                        <button 
+                            onClick={handleFilterResumes}
+                            disabled={isFiltering || pendingCandidates.length === 0}
+                            className={`${
+                                isFiltering || pendingCandidates.length === 0
+                                    ? 'bg-purple-400 cursor-not-allowed'
+                                    : 'bg-purple-600 hover:bg-purple-700'
+                            } text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors`}
+                        >
+                            <Filter size={18} className={isFiltering ? 'animate-spin' : ''} />
+                            {isFiltering ? 'Filtering...' : 'Filter'}
                         </button>
                     </div>
 
@@ -234,22 +316,22 @@ function JDDetails() {
                                         ID
                                     </th>
                                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                                        Company
+                                        Candidate Name
                                     </th>
                                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                                        Job Title
+                                        Applied On
                                     </th>
                                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                                        Created On
+                                        Phone
                                     </th>
                                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                                        Skills
+                                        Email
                                     </th>
                                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                                        Filtered
+                                        Reallocate
                                     </th>
                                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                                        Unfiltered
+                                        Status
                                     </th>
                                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
                                         Action
@@ -257,53 +339,60 @@ function JDDetails() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {currentDataTable1.map((candidate, index) => (
-                                    <tr
-                                        key={index}
-                                        className="border-b border-gray-300 hover:bg-gray-50"
-                                    >
-                                        <td className="py-4 px-4 text-sm text-gray-800">
-                                            {candidate.id}
-                                        </td>
-                                        <td className="py-4 px-4 text-sm text-gray-600">
-                                            {candidate.company}
-                                        </td>
-                                        <td className="py-4 px-4 text-sm text-gray-600">
-                                            {candidate.jobTitle}
-                                        </td>
-                                        <td className="py-4 px-4 text-sm text-gray-600">
-                                            {candidate.createdOn}
-                                        </td>
-                                        <td className="py-4 px-4">
-                                            <span className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-medium">
-                                                {candidate.skills}
-                                            </span>
-                                        </td>
-                                        <td className="py-4 px-4 text-sm text-blue-600 font-medium">
-                                            {candidate.filtered}
-                                        </td>
-                                        <td className="py-4 px-4 text-sm text-blue-600 font-medium">
-                                            {candidate.unfiltered}
-                                        </td>
-                                        <td className="py-4 px-4">
-                                            <div className="flex gap-2">
-                                                <button className="p-1.5 border border-blue-300 rounded hover:bg-blue-50">
-                                                    <Eye size={16} className="text-blue-500" />
-                                                </button>
-                                                <button className="p-1.5 border border-red-300 rounded hover:bg-red-50">
-                                                    <Trash2 size={16} className="text-red-600" />
-                                                </button>
-                                            </div>
+                                {currentDataTable1.length > 0 ? (
+                                    currentDataTable1.map((candidate, index) => (
+                                        <tr
+                                            key={candidate._id || index}
+                                            className="border-b border-gray-300 hover:bg-gray-50"
+                                        >
+                                            <td className="py-4 px-4 text-sm text-gray-800">
+                                                #{candidate._id?.slice(-6) || 'N/A'}
+                                            </td>
+                                            <td className="py-4 px-4 text-sm text-gray-600">
+                                                {candidate.name || candidate.candidate?.name || 'N/A'}
+                                            </td>
+                                            <td className="py-4 px-4 text-sm text-gray-600">
+                                                {candidate.appliedAt ? formatDate(candidate.appliedAt) : 'N/A'}
+                                            </td>
+                                            <td className="py-4 px-4 text-sm text-gray-600">
+                                                {candidate.phone || candidate.candidate?.phone || 'N/A'}
+                                            </td>
+                                            <td className="py-4 px-4 text-sm text-gray-600">
+                                                {candidate.email || candidate.candidate?.email || 'N/A'}
+                                            </td>
+                                            <td className="py-4 px-4 text-sm text-gray-600">
+                                                {candidate.reallocate ? 'Yes' : 'No'}
+                                            </td>
+                                            <td className="py-4 px-4">
+                                                <span className="bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full text-xs font-medium">
+                                                    {candidate.status || 'Pending'}
+                                                </span>
+                                            </td>
+                                            <td className="py-4 px-4">
+                                                <div className="flex gap-2">
+                                                    <button className="p-1.5 border border-red-300 rounded hover:bg-red-50">
+                                                        <Trash2 size={16} className="text-red-600" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="8" className="py-8 text-center text-gray-500">
+                                            No pending candidates found
                                         </td>
                                     </tr>
-                                ))}
+                                )}
                             </tbody>
                         </table>
-                        <Pagination
-                            currentPage={currentPageTable1}
-                            totalPages={totalPagesTable1}
-                            onPageChange={handlePageChangeTable1}
-                        />
+                        {currentDataTable1.length > 0 && totalPagesTable1 > 1 && (
+                            <Pagination
+                                currentPage={currentPageTable1}
+                                totalPages={totalPagesTable1}
+                                onPageChange={handlePageChangeTable1}
+                            />
+                        )}
                     </div>
                 </div>
 
@@ -318,7 +407,7 @@ function JDDetails() {
                                         : "text-gray-500 hover:text-gray-700"
                                         }`}
                                 >
-                                    All ({candidatesData.length})
+                                    All ({mappedCandidates.length})
                                     {activeTab === "all" && (
                                         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"></div>
                                     )}
@@ -364,7 +453,6 @@ function JDDetails() {
                                     <Search size={16} className="text-white" />
                                 </div>
                             </div>
-
                         </div>
                     </div>
 
@@ -379,10 +467,10 @@ function JDDetails() {
                                         Email
                                     </th>
                                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                                        Skills
+                                        AI Score
                                     </th>
                                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
-                                        Experience
+                                        Phone
                                     </th>
                                     <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">
                                         Status
@@ -416,12 +504,17 @@ function JDDetails() {
                                                 {candidate.email}
                                             </td>
                                             <td className="py-4 px-4">
-                                                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-medium">
-                                                    View
+                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${candidate.aiScore >= 70
+                                                    ? "bg-green-100 text-green-700"
+                                                    : candidate.aiScore >= 40
+                                                        ? "bg-yellow-100 text-yellow-700"
+                                                        : "bg-red-100 text-red-700"
+                                                    }`}>
+                                                    {candidate.aiScore}%
                                                 </span>
                                             </td>
-                                            <td className="py-4 px-4 text-sm text-blue-600">
-                                                {candidate.experience}
+                                            <td className="py-4 px-4 text-sm text-gray-600">
+                                                {candidate.phone}
                                             </td>
                                             <td className="py-4 px-4">
                                                 <span className={`px-3 py-1 rounded-full text-xs font-medium ${candidate.isFiltered
@@ -434,10 +527,7 @@ function JDDetails() {
                                             <td className="py-4 px-4">
                                                 <div className="flex gap-2">
                                                     <button
-                                                        onClick={() => {
-                                                            console.log("Eye button clicked");
-                                                            setShowResumeSummary(true);
-                                                        }}
+                                                        onClick={() => handleViewCandidate(candidate)}
                                                         className="p-1.5 border border-blue-300 rounded hover:bg-blue-50"
                                                     >
                                                         <Eye size={16} className="text-blue-500" />
@@ -458,7 +548,7 @@ function JDDetails() {
                                 )}
                             </tbody>
                         </table>
-                        {currentDataTable2.length > 0 && (
+                        {currentDataTable2.length > 0 && totalPagesTable2 > 1 && (
                             <Pagination
                                 currentPage={currentPageTable2}
                                 totalPages={totalPagesTable2}
@@ -468,13 +558,18 @@ function JDDetails() {
                     </div>
 
                     <div className="my-6 flex justify-center">
-                        <button  onClick={() => navigate("/RecruiterAdmin-Dashboard/JDDetails/GenerateAssessment")} className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors">
+                        <button onClick={() => navigate("/RecruiterAdmin-Dashboard/JDDetails/GenerateAssessment")} className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors">
                             Generate Assessment
                         </button>
                     </div>
                 </div>
-                
-                {showResumeSummary && <ResumeSummary onClose={() => setShowResumeSummary(false)} />}
+
+                {showResumeSummary && (
+                    <ResumeSummary
+                        onClose={() => setShowResumeSummary(false)}
+                        candidate={selectedCandidate}
+                    />
+                )}
 
             </div>
         </div>

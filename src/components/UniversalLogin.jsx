@@ -39,7 +39,7 @@ const UniversalLogin = () => {
             case 'admin':
                 navigate("/Admin-Dashboard");
                 break;
-            case 'recruiter':
+            case 'hr':
                 navigate("/RecruiterAdmin-Dashboard");
                 break;
             case 'rmg':
