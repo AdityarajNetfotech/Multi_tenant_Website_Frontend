@@ -25,10 +25,9 @@ const AllJDs = () => {
         const fetchJDs = async () => {
             try {
                 setLoading(true);
-                const token = localStorage.getItem('token');
                 const response = await axios.get('http://localhost:4000/api/jd/all-jd', {
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'Authorization': `Bearer ${localStorage.getItem('candidateToken')}`,
                     }
                 });
 
@@ -134,7 +133,7 @@ const AllJDs = () => {
 
         try {
             setSubmitting(true);
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('candidateToken');
 
             const submitData = new FormData();
             submitData.append('resume', resume);

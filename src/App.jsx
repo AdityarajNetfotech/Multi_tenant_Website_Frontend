@@ -60,6 +60,8 @@ import RMGSupportTickets from './RMGAdmin/Pages/RMGSupportTickets';
 import RMGRaiseTickets from './RMGAdmin/Pages/RMGRaiseTickets';
 import EnquiryMessages from './SuperAdmin/EnquiryMessages';
 import UniversalLogin from './components/UniversalLogin';
+import Profile from './Candidate/Pages/Profile';
+import SpinLoader from './components/SpinLoader';
 
 
 
@@ -105,6 +107,7 @@ const App = () => {
           <Route path="Examination" element={<Examination />} />
           <Route path="Examination/TestDetails" element={<StartExam />} />
           <Route path="CandidateProfile" element={<CandidateProfile />} />
+          <Route path="Profile" element={<Profile />} />
         </Route>
 
         <Route path="/SuperAdmin-Dashboard" element={<SuperAdminLayout />}>
@@ -133,6 +136,8 @@ const App = () => {
           {/* ✅ NEW ROUTE: Standalone Review page (optional) */}
           <Route path="Review" element={<Review />} />
           <Route path="NonCandidateList" element={<NonCandidateList />} />
+          <Route path='SpinLoader' element={<SpinLoader />} />
+
         </Route>
 
       </Routes>

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
     BarChart,
     Bar,
@@ -14,85 +14,178 @@ import {
     PieChart, Pie, Cell, Legend,
 } from "recharts";
 import img from "../../assets/RMGDashImg1.png";
+import axios from "axios";
 
-const itemApprovalData = [
-    { month: "Jan", jobs: 40, recruiters: 60 },
-    { month: "Feb", jobs: 30, recruiters: 50 },
-    { month: "Mar", jobs: 50, recruiters: 70 },
-    { month: "Apr", jobs: 60, recruiters: 80 },
-    { month: "May", jobs: 40, recruiters: 60 },
-    { month: "Jun", jobs: 70, recruiters: 90 },
-    { month: "Jul", jobs: 45, recruiters: 55 },
-    { month: "Aug", jobs: 35, recruiters: 65 },
-    { month: "Sep", jobs: 50, recruiters: 70 },
-    { month: "Oct", jobs: 30, recruiters: 50 },
-    { month: "Nov", jobs: 55, recruiters: 75 },
-    { month: "Dec", jobs: 40, recruiters: 60 },
-];
+const getMonthName = (monthNum) => {
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return months[monthNum - 1] || "";
+};
 
-const rangeData = [
-    { range: 5000, active: 20, assigned: 30 },
-    { range: 10000, active: 30, assigned: 70 },
-    { range: 20000, active: 25, assigned: 30 },
-    { range: 30000, active: 60, assigned: 45 },
-    { range: 35000, active: 90, assigned: 55 },
-    { range: 40000, active: 40, assigned: 30 },
-    { range: 50000, active: 70, assigned: 40 },
-    { range: 55000, active: 50, assigned: 80 },
-    { range: 60000, active: 30, assigned: 100 },
-];
-
-const chartData = [
-    { month: "Oct 2021", tickets: 6, recruiters: 4 },
-    { month: "Nov 2021", tickets: 7, recruiters: 5 },
-    { month: "Dec 2021", tickets: 5, recruiters: 3 },
-    { month: "Jan 2022", tickets: 8, recruiters: 6 },
-    { month: "Feb 2022", tickets: 7, recruiters: 5 },
-    { month: "Mar 2022", tickets: 6, recruiters: 4 },
-];
-
-const recruiters = [
-    {
-        id: 1,
-        name: "Sarah Lee",
-        activeJDs: 5,
-        shortlisted: 12,
-        closed: 4,
-        status: "Active",
-    },
-    {
-        id: 2,
-        name: "Sarah Lee",
-        activeJDs: 5,
-        shortlisted: 12,
-        closed: 4,
-        status: "Active",
-    },
-    {
-        id: 3,
-        name: "Sarah Lee",
-        activeJDs: 5,
-        shortlisted: 12,
-        closed: 4,
-        status: "On Leave",
-    },
-];
-
-const data = [
-    { name: 'Software Engineer', value: 120 },
-    { name: 'Product Manager', value: 85 },
-    { name: 'Data Analyst', value: 65 },
-    { name: 'UI/UX Designer', value: 45 },
-    { name: 'DevOps Engineer', value: 26 },
-];
-
-// Colors for each slice
+// Colors for pie chart
 const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
-// Calculate total
-const total = data.reduce((sum, item) => sum + item.value, 0);
-
 export default function RMGDashboard() {
+    const [totalOffers, setTotalOffers] = useState(0);
+    const [totalJobs, setTotalJobs] = useState(0);
+    const [jobsRecruitersData, setJobsRecruitersData] = useState([]);
+    const [hrTicketsData, setHrTicketsData] = useState([]);
+    const [currentOffers, setCurrentOffers] = useState([]);
+    const [recentJobs, setRecentJobs] = useState([]);
+    const [jdStatusPercentage, setJdStatusPercentage] = useState({
+        closed: 0,
+        inProgress: 0,
+        jdCreated: 0,
+        jdPending: 0,
+        open: 0
+    });
+    const [recruitersData, setRecruitersData] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchAllData = async () => {
+            try {
+                const token = localStorage.getItem("token");
+
+                const [
+                    offersRes,
+                    jobsRecRes,
+                    hrTicketsRes,
+                    currentOffersRes,
+                    recentJobsRes,
+                    jdStatusPercentageRes,
+                    recruitersClosedRes
+                ] = await Promise.all([
+                    axios.get('http://localhost:4000/api/dashboard/total-offers', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }),
+                    axios.get('http://localhost:4000/api/dashboard/jobs-recruiters-month-wise', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }),
+                    axios.get('http://localhost:4000/api/dashboard/count-hr-tickets-month-wise', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }),
+                    axios.get('http://localhost:4000/api/dashboard/current-offers', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }),
+                    axios.get('http://localhost:4000/api/dashboard/recent-jobs', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }),
+                    axios.get('http://localhost:4000/api/dashboard/jd-status-percentage', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }),
+                    axios.get('http://localhost:4000/api/dashboard/getAll-recruiters-closed', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    }),
+                ]);
+
+                if (offersRes.data.success) {
+                    setTotalOffers(offersRes.data.totalOffers);
+                }
+
+                if (jobsRecRes.data.success) {
+                    const { totalRecruiterMonthWise, offersMonthWise } = jobsRecRes.data;
+                    
+                    const monthDataMap = {};
+                    
+                    totalRecruiterMonthWise.forEach(item => {
+                        const monthName = getMonthName(item._id);
+                        if (!monthDataMap[item._id]) {
+                            monthDataMap[item._id] = { month: monthName, jobs: 0, recruiters: 0 };
+                        }
+                        monthDataMap[item._id].recruiters = item.count;
+                    });
+                    
+                    offersMonthWise.forEach(item => {
+                        const monthName = getMonthName(item.month);
+                        if (!monthDataMap[item.month]) {
+                            monthDataMap[item.month] = { month: monthName, jobs: 0, recruiters: 0 };
+                        }
+                        monthDataMap[item.month].jobs = item.count;
+                    });
+                    
+                    const chartData = Object.keys(monthDataMap)
+                        .sort((a, b) => parseInt(a) - parseInt(b))
+                        .map(key => monthDataMap[key]);
+                    
+                    setJobsRecruitersData(chartData);
+                }
+
+                if (hrTicketsRes.data.success) {
+                    const { totalHRMonthWise, totalTicketsMonthWise } = hrTicketsRes.data;
+                    
+                    const monthDataMap = {};
+                    
+                    totalHRMonthWise.forEach(item => {
+                        const monthName = getMonthName(item._id);
+                        if (!monthDataMap[item._id]) {
+                            monthDataMap[item._id] = { month: monthName, tickets: 0, recruiters: 0 };
+                        }
+                        monthDataMap[item._id].recruiters = item.count;
+                    });
+                    
+                    totalTicketsMonthWise.forEach(item => {
+                        const monthName = getMonthName(item._id);
+                        if (!monthDataMap[item._id]) {
+                            monthDataMap[item._id] = { month: monthName, tickets: 0, recruiters: 0 };
+                        }
+                        monthDataMap[item._id].tickets = item.count;
+                    });
+                    
+                    const chartData = Object.keys(monthDataMap)
+                        .sort((a, b) => parseInt(a) - parseInt(b))
+                        .map(key => monthDataMap[key]);
+                    
+                    setHrTicketsData(chartData);
+                }
+
+                if (currentOffersRes.data.success) {
+                    setCurrentOffers(currentOffersRes.data.offers);
+                }
+
+                if (recentJobsRes.data.success) {
+                    setRecentJobs(recentJobsRes.data.recentJobs);
+                    setTotalJobs(recentJobsRes.data.totalJobs);
+                }
+
+                if (jdStatusPercentageRes.data.success) {
+                    setJdStatusPercentage(jdStatusPercentageRes.data.jdStatusPercentage);
+                }
+
+                if (recruitersClosedRes.data.success) {
+                    setRecruitersData(recruitersClosedRes.data.recruiterData);
+                }
+
+                setLoading(false);
+
+            } catch (error) {
+                console.error("Error fetching dashboard data:", error);
+                setLoading(false);
+            }
+        };
+
+        fetchAllData();
+    }, []);
+
+    const jdTotal = jdStatusPercentage.closed + jdStatusPercentage.inProgress + 
+                    jdStatusPercentage.jdCreated + jdStatusPercentage.jdPending + 
+                    jdStatusPercentage.open || 100;
+
+    const pieData = [
+        { name: 'JD Created', value: jdStatusPercentage.jdCreated || 0 },
+        { name: 'In Progress', value: jdStatusPercentage.inProgress || 0 },
+        { name: 'Open', value: jdStatusPercentage.open || 0 },
+        { name: 'Closed', value: jdStatusPercentage.closed || 0 },
+        { name: 'JD Pending', value: jdStatusPercentage.jdPending || 0 },
+    ].filter(item => item.value > 0);
+
+    const pieTotal = pieData.reduce((sum, item) => sum + item.value, 0);
+
+    // Format date helper
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    };
+
     return (
         <div className="min-h-screen">
             <div className="grid md:grid-cols-[30%_67%] gap-7 mb-6">
@@ -100,8 +193,7 @@ export default function RMGDashboard() {
                     <div className="bg-white shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] rounded-2xl p-4 flex items-center justify-between">
                         <div>
                             <h2 className="text-gray-600 text-sm font-medium">Total Jobs</h2>
-                            <p className="text-2xl font-semibold text-gray-800 mt-1">500+</p>
-                            <p className="text-green-500 text-sm mt-1">▲ 8.5% Up from yesterday</p>
+                            <p className="text-2xl font-semibold text-gray-800 mt-1">{totalJobs}+</p>
                         </div>
                         <div className="p-3 bg-purple-100 rounded-full">
                             <svg
@@ -121,9 +213,8 @@ export default function RMGDashboard() {
 
                     <div className="bg-white shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] rounded-2xl p-4 flex items-center justify-between">
                         <div>
-                            <h2 className="text-gray-600 text-sm font-medium">Total Tickets</h2>
-                            <p className="text-2xl font-semibold text-gray-800 mt-1">800+</p>
-                            <p className="text-red-500 text-sm mt-1">▼ 4.3% Down from yesterday</p>
+                            <h2 className="text-gray-600 text-sm font-medium">Total Offers</h2>
+                            <p className="text-2xl font-semibold text-gray-800 mt-1">{totalOffers}+</p>
                         </div>
                         <div className="p-3 bg-green-100 rounded-full">
                             <svg
@@ -138,9 +229,10 @@ export default function RMGDashboard() {
                 </div>
 
                 <div className="bg-white shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] rounded-2xl p-4 overflow-x-auto">
+                    <h3 className="text-gray-700 font-semibold mb-2">Jobs & Recruiters Month Wise</h3>
                     <div className="min-w-[600px] sm:min-w-full">
                         <ResponsiveContainer width="100%" height={250}>
-                            <BarChart data={itemApprovalData}>
+                            <BarChart data={jobsRecruitersData.length > 0 ? jobsRecruitersData : [{ month: 'No Data', jobs: 0, recruiters: 0 }]}>
                                 <XAxis dataKey="month" />
                                 <YAxis />
                                 <Tooltip />
@@ -152,46 +244,42 @@ export default function RMGDashboard() {
                 </div>
             </div>
 
-
-
             <div className="bg-white shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] rounded-2xl p-4 overflow-x-auto">
+                <h3 className="text-gray-700 font-semibold mb-2">Active Recruiters & Assigned Candidates</h3>
                 <div className="min-w-[600px] sm:min-w-full">
                     <ResponsiveContainer width="100%" height={250}>
-                        <AreaChart data={rangeData}>
-                            <XAxis dataKey="range" />
+                        <AreaChart data={hrTicketsData.length > 0 ? hrTicketsData : [{ month: 'No Data', tickets: 0, recruiters: 0 }]}>
+                            <XAxis dataKey="month" />
                             <YAxis />
                             <Tooltip />
                             <Area
                                 type="monotone"
-                                dataKey="active"
+                                dataKey="tickets"
                                 stroke="#f97316"
                                 fill="#fca5a5"
                                 fillOpacity={0.6}
-                                name="Active Recruiters"
+                                name="Tickets"
                             />
                             <Area
                                 type="monotone"
-                                dataKey="assigned"
+                                dataKey="recruiters"
                                 stroke="#a78bfa"
                                 fill="#c4b5fd"
                                 fillOpacity={0.6}
-                                name="Assigned Candidates"
+                                name="HR Count"
                             />
                         </AreaChart>
                     </ResponsiveContainer>
                 </div>
             </div>
 
-
             <div className="mt-6 space-y-6">
-
                 <div className="grid grid-cols-1 lg:grid-cols-[67%_30%] gap-7">
-
                     <div className="bg-white rounded-2xl p-5 shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] overflow-x-auto">
-                        <h2 className="text-lg font-semibold mb-4">Job Descriptions</h2>
-                        <div className="h-72 min-w-[600px]"> {/* ensures graph doesn’t squish */}
+                        <h2 className="text-lg font-semibold mb-4">HR & Tickets Overview</h2>
+                        <div className="h-72 min-w-[600px]">
                             <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={chartData}>
+                                <LineChart data={hrTicketsData.length > 0 ? hrTicketsData : [{ month: 'No Data', tickets: 0, recruiters: 0 }]}>
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f1f1" />
                                     <XAxis dataKey="month" />
                                     <YAxis />
@@ -212,7 +300,7 @@ export default function RMGDashboard() {
                                         strokeWidth={3}
                                         dot={{ r: 5 }}
                                         activeDot={{ r: 7 }}
-                                        name="Recruiters"
+                                        name="HR Count"
                                     />
                                 </LineChart>
                             </ResponsiveContainer>
@@ -221,40 +309,42 @@ export default function RMGDashboard() {
 
                     <div className="bg-white rounded-2xl p-5 shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] overflow-x-auto">
                         <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-lg font-semibold">Upcoming Interviews</h2>
+                            <h2 className="text-lg font-semibold">Recent Jobs</h2>
                             <a href="#" className="text-blue-600 text-sm font-medium">See all</a>
                         </div>
 
                         <div className="space-y-4 min-w-[400px]">
-                            {[
-                                { name: "Simmons", role: "UI/UX Designer" },
-                                { name: "Jenny Wilson", role: "Angular Developer" },
-                                { name: "Devon Lane", role: "Web Designer" },
-                            ].map((person, index) => (
-                                <div
-                                    key={index}
-                                    className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition"
-                                >
-                                    <div className="flex items-center space-x-3">
-                                        <div className="w-10 h-10 rounded-full bg-gray-300" />
-                                        <div>
-                                            <p className="font-semibold text-gray-800">{person.name}</p>
-                                            <p className="text-sm text-gray-500">{person.role}</p>
+                            {recentJobs.length > 0 ? (
+                                recentJobs.map((job, index) => (
+                                    <div
+                                        key={job._id}
+                                        className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition"
+                                    >
+                                        <div className="flex items-center space-x-3">
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold">
+                                                {job.jobTitle?.charAt(0) || 'J'}
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-gray-800">{job.jobTitle}</p>
+                                                <p className="text-sm text-gray-500">{job.positionAvailable} Positions</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-sm text-gray-500 flex items-center space-x-1">
+                                            <span>📅</span>
+                                            <span>{formatDate(job.createdAt)}</span>
                                         </div>
                                     </div>
-                                    <div className="text-sm text-gray-500 flex items-center space-x-1">
-                                        <span>🕒</span>
-                                        <span>10:00–12:45</span>
-                                    </div>
-                                </div>
-                            ))}
+                                ))
+                            ) : (
+                                <p className="text-gray-500 text-center py-4">No recent jobs available</p>
+                            )}
                         </div>
                     </div>
                 </div>
 
                 <div className="bg-white rounded-xl p-5 shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)]">
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-lg font-semibold">Current Jobs Open</h2>
+                        <h2 className="text-lg font-semibold">Current Offers</h2>
                         <a href="#" className="text-blue-600 text-sm font-medium">See all</a>
                     </div>
 
@@ -263,38 +353,64 @@ export default function RMGDashboard() {
                             <thead>
                                 <tr className="text-gray-500 text-sm">
                                     <th className="px-2 py-2 border border-gray-500 text-slate-600">Job Title</th>
-                                    <th className="px-2 py-2 border border-gray-500 text-slate-600">Applications</th>
-                                    <th className="px-2 py-2 border border-gray-500 text-slate-600">Date Period</th>
-                                    <th className="px-2 py-2 border border-gray-500 text-slate-600">Options</th>
+                                    <th className="px-2 py-2 border border-gray-500 text-slate-600">Location</th>
+                                    <th className="px-2 py-2 border border-gray-500 text-slate-600">Positions</th>
+                                    <th className="px-2 py-2 border border-gray-500 text-slate-600">Status</th>
+                                    <th className="px-2 py-2 border border-gray-500 text-slate-600">Due Date</th>
+                                    <th className="px-2 py-2 border border-gray-500 text-slate-600">Priority</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr className="rounded-lg">
-                                    <td className="px-2 py-2 font-medium border border-gray-500 text-slate-600">
-                                        Flutter Developer
-                                    </td>
-                                    <td className="px-2 py-2 border border-gray-500 text-slate-600">92</td>
-                                    <td className="px-2 py-2 border border-gray-500 text-slate-600">Apr 21, 2024</td>
-                                    <td className="px-2 py-2 border border-gray-500 text-slate-600">•••</td>
-                                </tr>
-                                <tr className="rounded-lg">
-                                    <td className="px-2 py-2 font-medium border border-gray-500 text-slate-600">
-                                        Angular Developer
-                                    </td>
-                                    <td className="px-2 py-2 border border-gray-500 text-slate-600">84</td>
-                                    <td className="px-2 py-2 border border-gray-500 text-slate-600">Dec 21, 2024</td>
-                                    <td className="px-2 py-2 border border-gray-500 text-slate-600">•••</td>
-                                </tr>
+                                {currentOffers.length > 0 ? (
+                                    currentOffers.map((offer) => (
+                                        <tr key={offer._id} className="rounded-lg">
+                                            <td className="px-2 py-2 font-medium border border-gray-500 text-slate-600">
+                                                {offer.jobTitle}
+                                            </td>
+                                            <td className="px-2 py-2 border border-gray-500 text-slate-600">
+                                                {offer.city}, {offer.state}
+                                            </td>
+                                            <td className="px-2 py-2 border border-gray-500 text-slate-600">
+                                                {offer.positionAvailable}
+                                            </td>
+                                            <td className="px-2 py-2 border border-gray-500 text-slate-600">
+                                                <span className={`px-2 py-1 rounded-full text-xs ${
+                                                    offer.status === 'JD created' ? 'bg-green-100 text-green-600' :
+                                                    offer.status === 'Open' ? 'bg-blue-100 text-blue-600' :
+                                                    'bg-gray-100 text-gray-600'
+                                                }`}>
+                                                    {offer.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-2 py-2 border border-gray-500 text-slate-600">
+                                                {formatDate(offer.dueDate)}
+                                            </td>
+                                            <td className="px-2 py-2 border border-gray-500 text-slate-600">
+                                                <span className={`px-2 py-1 rounded-full text-xs ${
+                                                    offer.priority === 'High' ? 'bg-red-100 text-red-600' :
+                                                    offer.priority === 'Medium' ? 'bg-yellow-100 text-yellow-600' :
+                                                    'bg-green-100 text-green-600'
+                                                }`}>
+                                                    {offer.priority}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="6" className="px-2 py-4 text-center text-gray-500 border border-gray-500">
+                                            No current offers available
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
                 </div>
-
             </div>
 
             <div className="p-4 bg-gray-50 min-h-screen flex flex-col gap-6">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
                     <div className="flex flex-col gap-6">
                         <div className="flex justify-center items-center shadow-md">
                             <img
@@ -305,19 +421,19 @@ export default function RMGDashboard() {
                         </div>
 
                         <div className="bg-white p-4 rounded-lg shadow-md">
-                            <h3 className="text-gray-700 font-semibold mb-4">Popular JDs</h3>
+                            <h3 className="text-gray-700 font-semibold mb-4">JD Status Distribution</h3>
                             <div className="flex justify-center">
                                 <ResponsiveContainer width="100%" height={250}>
                                     <PieChart>
                                         <Pie
-                                            data={data}
+                                            data={pieData.length > 0 ? pieData : [{ name: 'No Data', value: 1 }]}
                                             cx="50%"
                                             cy="50%"
                                             outerRadius={80}
                                             fill="#8884d8"
                                             dataKey="value"
                                         >
-                                            {data.map((entry, index) => (
+                                            {(pieData.length > 0 ? pieData : [{ name: 'No Data', value: 1 }]).map((entry, index) => (
                                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                             ))}
                                         </Pie>
@@ -326,62 +442,91 @@ export default function RMGDashboard() {
                                     </PieChart>
                                 </ResponsiveContainer>
                             </div>
-                            <p className="text-center text-gray-600 mt-2">{total} Total</p>
+                            <p className="text-center text-gray-600 mt-2">{pieTotal}% Total</p>
                         </div>
                     </div>
 
                     <div className="flex flex-col gap-6">
                         <div className="bg-white p-4 rounded-lg shadow-md overflow-x-auto">
                             <div className="flex justify-between items-center mb-2">
-                                <h3 className="text-gray-700 font-semibold">Candidates</h3>
+                                <h3 className="text-gray-700 font-semibold">Total Positions Available</h3>
                                 <span className="text-sm text-gray-500">Month</span>
                             </div>
-                            <h2 className="text-2xl font-semibold mb-3">7,124.80</h2>
+                            <h2 className="text-2xl font-semibold mb-3">
+                                {recentJobs.reduce((sum, job) => sum + (job.positionAvailable || 0), 0)}
+                            </h2>
                             <div className="flex items-end space-x-4 min-w-[500px]">
-                                {[8, 10, 9, 9.5, 8, 7, 3].map((val, i) => (
-                                    <div key={i} className="flex flex-col items-center">
-                                        <div
-                                            className="w-6 bg-gradient-to-t from-purple-600 to-purple-300 rounded-md"
-                                            style={{ height: `${val * 20}px` }}
-                                        ></div>
-                                        <span className="text-xs text-gray-500 mt-1">
-                                            {1 + i * 3}Nov
-                                        </span>
-                                    </div>
-                                ))}
+                                {recentJobs.length > 0 ? (
+                                    recentJobs.map((job, i) => (
+                                        <div key={job._id} className="flex flex-col items-center">
+                                            <div
+                                                className="w-6 bg-gradient-to-t from-purple-600 to-purple-300 rounded-md"
+                                                style={{ height: `${(job.positionAvailable || 1) * 20}px` }}
+                                            ></div>
+                                            <span className="text-xs text-gray-500 mt-1">
+                                                {job.jobTitle?.substring(0, 8)}...
+                                            </span>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-gray-500">No data available</p>
+                                )}
                             </div>
                         </div>
 
                         <div className="bg-white p-4 rounded-lg shadow-md">
                             <h3 className="text-gray-700 font-semibold mb-4">JD Status</h3>
-                            <h2 className="text-2xl font-semibold mb-4">100</h2>
+                            <h2 className="text-2xl font-semibold mb-4">100%</h2>
                             <div className="space-y-3">
                                 <div className="flex items-center">
+                                    <span className="text-sm text-gray-600 w-24">JD Created</span>
                                     <div className="w-full bg-gray-200 rounded-full h-4 mr-3">
                                         <div
                                             className="bg-blue-500 h-4 rounded-full"
-                                            style={{ width: "45%" }}
+                                            style={{ width: `${jdStatusPercentage.jdCreated}%` }}
                                         ></div>
                                     </div>
-                                    <span className="text-blue-500 font-medium text-sm">45%</span>
+                                    <span className="text-blue-500 font-medium text-sm w-12">{jdStatusPercentage.jdCreated}%</span>
                                 </div>
                                 <div className="flex items-center">
+                                    <span className="text-sm text-gray-600 w-24">In Progress</span>
                                     <div className="w-full bg-gray-200 rounded-full h-4 mr-3">
                                         <div
                                             className="bg-orange-400 h-4 rounded-full"
-                                            style={{ width: "25%" }}
+                                            style={{ width: `${jdStatusPercentage.inProgress}%` }}
                                         ></div>
                                     </div>
-                                    <span className="text-orange-400 font-medium text-sm">25%</span>
+                                    <span className="text-orange-400 font-medium text-sm w-12">{jdStatusPercentage.inProgress}%</span>
                                 </div>
                                 <div className="flex items-center">
+                                    <span className="text-sm text-gray-600 w-24">Open</span>
                                     <div className="w-full bg-gray-200 rounded-full h-4 mr-3">
                                         <div
                                             className="bg-green-500 h-4 rounded-full"
-                                            style={{ width: "35%" }}
+                                            style={{ width: `${jdStatusPercentage.open}%` }}
                                         ></div>
                                     </div>
-                                    <span className="text-green-500 font-medium text-sm">35%</span>
+                                    <span className="text-green-500 font-medium text-sm w-12">{jdStatusPercentage.open}%</span>
+                                </div>
+                                <div className="flex items-center">
+                                    <span className="text-sm text-gray-600 w-24">Closed</span>
+                                    <div className="w-full bg-gray-200 rounded-full h-4 mr-3">
+                                        <div
+                                            className="bg-red-500 h-4 rounded-full"
+                                            style={{ width: `${jdStatusPercentage.closed}%` }}
+                                        ></div>
+                                    </div>
+                                    <span className="text-red-500 font-medium text-sm w-12">{jdStatusPercentage.closed}%</span>
+                                </div>
+                                <div className="flex items-center">
+                                    <span className="text-sm text-gray-600 w-24">JD Pending</span>
+                                    <div className="w-full bg-gray-200 rounded-full h-4 mr-3">
+                                        <div
+                                            className="bg-purple-500 h-4 rounded-full"
+                                            style={{ width: `${jdStatusPercentage.jdPending}%` }}
+                                        ></div>
+                                    </div>
+                                    <span className="text-purple-500 font-medium text-sm w-12">{jdStatusPercentage.jdPending}%</span>
                                 </div>
                             </div>
                         </div>
@@ -404,28 +549,37 @@ export default function RMGDashboard() {
                             </tr>
                         </thead>
                         <tbody>
-                            {recruiters.map((rec) => (
-                                <tr
-                                    key={rec.id}
-                                    className="border-b border-gray-400 text-sm text-gray-700 hover:bg-gray-50"
-                                >
-                                    <td className="px-4 py-3">{rec.id}.</td>
-                                    <td className="px-4 py-3">{rec.name}</td>
-                                    <td className="px-4 py-3">{rec.activeJDs}</td>
-                                    <td className="px-4 py-3">{rec.shortlisted}</td>
-                                    <td className="px-4 py-3">{rec.closed}</td>
-                                    <td className="px-4 py-3">
-                                        <span
-                                            className={`px-3 py-1 rounded-full text-xs font-medium ${rec.status === "Active"
-                                                ? "bg-green-100 text-green-600"
-                                                : "bg-orange-100 text-orange-600"
+                            {recruitersData.length > 0 ? (
+                                recruitersData.map((rec, index) => (
+                                    <tr
+                                        key={index}
+                                        className="border-b border-gray-400 text-sm text-gray-700 hover:bg-gray-50"
+                                    >
+                                        <td className="px-4 py-3">{index + 1}.</td>
+                                        <td className="px-4 py-3">{rec.recruiterName}</td>
+                                        <td className="px-4 py-3">{rec.activeJDs}</td>
+                                        <td className="px-4 py-3">{rec.candidateShortlisted}</td>
+                                        <td className="px-4 py-3">{rec.closedPositions}</td>
+                                        <td className="px-4 py-3">
+                                            <span
+                                                className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                                    rec.isActive
+                                                        ? "bg-green-100 text-green-600"
+                                                        : "bg-orange-100 text-orange-600"
                                                 }`}
-                                        >
-                                            {rec.status}
-                                        </span>
+                                            >
+                                                {rec.isActive ? "Active" : "Inactive"}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="6" className="px-4 py-4 text-center text-gray-500">
+                                        No recruiter data available
                                     </td>
                                 </tr>
-                            ))}
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -438,7 +592,6 @@ export default function RMGDashboard() {
                     </a>
                 </div>
             </div>
-
         </div>
     );
 }
