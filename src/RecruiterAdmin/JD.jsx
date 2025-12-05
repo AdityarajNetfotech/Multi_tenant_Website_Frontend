@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
-import { FileText, Filter, X, Eye, MoreVertical, ChevronLeft, ChevronRight } from 'lucide-react';
+import { FileText, Filter, X, Eye, MoreVertical, ChevronLeft, ChevronRight, Share, ShareIcon } from 'lucide-react';
 import Pagination from '../components/LandingPage/Pagination';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import SpinLoader from '../components/SpinLoader';
 
 function JD() {
   const [currentPage, setCurrentPage] = useState(1);
   const [jdData, setJdData] = useState([]);
+  const [incomingJDs, setIncomingJDs] = useState([]);
+  const [loadingIncoming, setLoadingIncoming] = useState(false);
   const [stats, setStats] = useState({
     totalJD: 0,
     filteredResumes: 0,
@@ -19,6 +22,7 @@ function JD() {
 
   useEffect(() => {
     fetchJDs();
+    fetchIncomingJDs();
   }, []);
 
   const fetchJDs = async () => {
@@ -59,6 +63,30 @@ function JD() {
     }
   };
 
+  const fetchIncomingJDs = async () => {
+    try {
+      setLoadingIncoming(true);
+      const response = await axios.get('http://localhost:4000/api/jd/assigned-offers/hr', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      console.log(response.data);
+
+      if (response.data.success) {
+        setIncomingJDs(response.data.data);
+      }
+    } catch (error) {
+      console.log('Error fetching incoming JDs:', error);
+    } finally {
+      setLoadingIncoming(false);
+    }
+  };
+
+  const handleSelectJD = (jd) => {
+    navigate("/RecruiterAdmin-Dashboard/JD/CreateJD", { state: { offerId: jd._id } });
+  };
+
   const statsDisplay = [
     { icon: FileText, label: 'Total JD', value: stats.totalJD.toString(), bgColor: 'bg-amber-50', iconColor: 'text-amber-500' },
     { icon: Filter, label: 'Filtered Resumes', value: stats.filteredResumes.toString(), bgColor: 'bg-blue-50', iconColor: 'text-blue-500' },
@@ -92,6 +120,15 @@ function JD() {
   const handleDeleteJD = async (jdId) => {
     console.log('Delete JD:', jdId);
   };
+
+  // Show full page loader if both APIs are loading
+  if (loading && loadingIncoming) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <SpinLoader />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen">
@@ -131,7 +168,7 @@ function JD() {
           <div className="overflow-x-auto">
             {loading ? (
               <div className="flex justify-center items-center py-10">
-                <p className="text-gray-500">Loading...</p>
+                <SpinLoader />
               </div>
             ) : (
               <table className="w-full">
@@ -145,6 +182,7 @@ function JD() {
                     <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Filtered</th>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Unfiltered</th>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Action</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Send Invite</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -156,7 +194,7 @@ function JD() {
                         <td className="py-4 px-6 text-sm text-gray-700">{row.offerId?.jobTitle || 'N/A'}</td>
                         <td className="py-4 px-6 text-sm text-gray-700">{formatDate(row.createdAt)}</td>
                         <td className="py-4 px-6">
-                          <button 
+                          <button
                             className="bg-blue-100 hover:bg-blue-200 text-blue-700 px-4 py-1.5 rounded-2xl text-sm font-medium transition-colors"
                             title={row.offerId?.skills?.join(', ') || 'No skills'}
                           >
@@ -169,14 +207,14 @@ function JD() {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleViewJD(row)}
-                              className="p-1 border border-blue-500 rounded-lg transition-colors" 
+                              className="p-1 border border-blue-500 rounded-lg transition-colors"
                               aria-label="View"
                             >
                               <Eye className="w-4 h-4 text-blue-600" />
                             </button>
-                            <button 
+                            <button
                               onClick={() => handleDeleteJD(row._id)}
-                              className="p-1 border border-red-500 rounded-lg transition-colors" 
+                              className="p-1 border border-red-500 rounded-lg transition-colors"
                               aria-label="Delete"
                             >
                               <svg className="w-4 h-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -184,6 +222,15 @@ function JD() {
                               </svg>
                             </button>
                           </div>
+                        </td>
+                        <td className="py-4 px-6">
+                          <button
+                            onClick={() => navigate("/RecruiterAdmin-Dashboard/NonCandidateList", { state: { jdId: row._id } })}
+                            className="p-1 border border-blue-500 rounded-lg transition-colors"
+                            aria-label="View"
+                          >
+                            <ShareIcon className="w-4 h-4 text-blue-600" />
+                          </button>
                         </td>
                       </tr>
                     ))
@@ -206,6 +253,99 @@ function JD() {
             )}
           </div>
 
+        </div>
+
+        {/* Incoming Assigned JD Table */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 mt-6">
+          <div className="px-6 sm:px-8 py-4 border-b border-gray-300">
+            <h2 className="text-xl font-semibold text-gray-900">Incoming Assigned JD</h2>
+          </div>
+
+          <div className="overflow-x-auto">
+            {loadingIncoming ? (
+              <div className="flex items-center justify-center py-12">
+                <SpinLoader />
+              </div>
+            ) : incomingJDs.length === 0 ? (
+              <div className="flex items-center justify-center py-12">
+                <p className="text-sm text-gray-500">No incoming JD data available</p>
+              </div>
+            ) : (
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Sr.No
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Job Title
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Priority
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      City
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Country
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Experience
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Skills
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Action
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {incomingJDs.map((jd, index) => (
+                    <tr key={jd._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {index + 1}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {jd._id || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {jd.jobTitle || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {jd.priority || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {jd.city || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {jd.country || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {jd.experience || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {jd.skills?.length ? jd.skills.join(", ") : "-"}
+                      </td>
+
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <button
+                          type="button"
+                          onClick={() => handleSelectJD(jd)}
+                          className="px-4 py-2 rounded-lg font-medium transition-colors bg-black text-white hover:bg-gray-800"
+                        >
+                          Select
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       </div>
     </div>

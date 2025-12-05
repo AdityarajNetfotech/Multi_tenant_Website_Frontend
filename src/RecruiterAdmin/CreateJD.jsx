@@ -1,19 +1,32 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
+import axios from 'axios';
+import { useLocation } from 'react-router-dom';
 
 function CreateJD() {
+    const location = useLocation();
     const [formData, setFormData] = useState({
-        jobTitle: '',
+        offerId: '',
         companyName: '',
-        domain: '',
-        qualification: '',
-        location: '',
-        employmentType: '',
-        experience: '',
-        numberOfPositions: '',
-        salaryRange: '',
-        skills: '',
+        department: '',
+        reportingManager: '',
+        keyResponsibilities: '',
+        qualifications: '',
+        benefits: '',
+        additionalNotes: '',
     });
+
+    const [creating, setCreating] = useState(false);
+    const [generatedJD, setGeneratedJD] = useState(null);
+
+    useEffect(() => {
+        if (location.state?.offerId) {
+            setFormData((prev) => ({
+                ...prev,
+                offerId: location.state.offerId,
+            }));
+        }
+    }, [location.state]);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -23,9 +36,46 @@ function CreateJD() {
         }));
     };
 
-    const handleCreate = (e) => {
+    const handleCreate = async (e) => {
         e.preventDefault();
-        console.log('Form data:', formData);
+
+        if (!formData.offerId) {
+            alert('Please select an offer from the JD page table');
+            return;
+        }
+
+        try {
+            setCreating(true);
+            const response = await axios.post(
+                `http://localhost:4000/api/jd/${formData.offerId}/ai`,
+                {
+                    companyName: formData.companyName,
+                    department: formData.department,
+                    reportingManager: formData.reportingManager,
+                    keyResponsibilities: formData.keyResponsibilities,
+                    qualifications: formData.qualifications,
+                    benefits: formData.benefits,
+                    additionalNotes: formData.additionalNotes,
+                },
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            console.log('JD Creation Response:', response.data);
+
+            if (response.data.success) {
+                setGeneratedJD(response.data.jd);
+                alert('JD created successfully!');
+            }
+        } catch (error) {
+            console.error('Error creating JD:', error);
+            alert(error.response?.data?.error || 'Failed to create JD');
+        } finally {
+            setCreating(false);
+        }
     };
 
     const handleUploadJD = () => {
@@ -41,24 +91,25 @@ function CreateJD() {
                     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label htmlFor="jobTitle" className="block text-sm font-medium   mb-2">
-                                    Job Title
+                                <label htmlFor="offerId" className="block text-sm font-medium mb-2">
+                                    Offer ID <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
-                                    id="jobTitle"
-                                    name="jobTitle"
-                                    value={formData.jobTitle}
+                                    id="offerId"
+                                    name="offerId"
+                                    value={formData.offerId}
                                     onChange={handleInputChange}
-                                    placeholder="Enter Job Title"
+                                    placeholder="Select from JD page table"
+                                    readOnly
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl 
-                             focus:ring-2 focus:ring-gray-900 focus:border-transparent 
-                             outline-none transition-all text-sm"
+                                        focus:ring-2 focus:ring-gray-900 focus:border-transparent 
+                                        outline-none transition-all text-sm bg-gray-50 cursor-not-allowed"
                                 />
                             </div>
 
                             <div>
-                                <label htmlFor="companyName" className="block text-sm font-medium   mb-2">
+                                <label htmlFor="companyName" className="block text-sm font-medium mb-2">
                                     Company Name
                                 </label>
                                 <input
@@ -69,154 +120,110 @@ function CreateJD() {
                                     onChange={handleInputChange}
                                     placeholder="Enter Company Name"
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl 
-                             focus:ring-2 focus:ring-gray-900 focus:border-transparent 
-                             outline-none transition-all text-sm"
+                                        focus:ring-2 focus:ring-gray-900 focus:border-transparent 
+                                        outline-none transition-all text-sm"
                                 />
                             </div>
 
                             <div>
-                                <label htmlFor="domain" className="block text-sm font-medium   mb-2">
-                                    Domain
+                                <label htmlFor="department" className="block text-sm font-medium mb-2">
+                                    Department
                                 </label>
                                 <input
                                     type="text"
-                                    id="domain"
-                                    name="domain"
-                                    value={formData.domain}
+                                    id="department"
+                                    name="department"
+                                    value={formData.department}
                                     onChange={handleInputChange}
-                                    placeholder="Enter Domain"
+                                    placeholder="Enter Department"
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl 
-                             focus:ring-2 focus:ring-gray-900 focus:border-transparent 
-                             outline-none transition-all text-sm"
+                                        focus:ring-2 focus:ring-gray-900 focus:border-transparent 
+                                        outline-none transition-all text-sm"
                                 />
                             </div>
 
                             <div>
-                                <label htmlFor="qualification" className="block text-sm font-medium   mb-2">
-                                    Qualification
+                                <label htmlFor="reportingManager" className="block text-sm font-medium mb-2">
+                                    Reporting Manager
                                 </label>
                                 <input
                                     type="text"
-                                    id="qualification"
-                                    name="qualification"
-                                    value={formData.qualification}
+                                    id="reportingManager"
+                                    name="reportingManager"
+                                    value={formData.reportingManager}
                                     onChange={handleInputChange}
-                                    placeholder="Enter Qualification"
+                                    placeholder="Enter Reporting Manager"
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl 
-                             focus:ring-2 focus:ring-gray-900 focus:border-transparent 
-                             outline-none transition-all text-sm"
+                                        focus:ring-2 focus:ring-gray-900 focus:border-transparent 
+                                        outline-none transition-all text-sm"
                                 />
                             </div>
 
-                            <div>
-                                <label htmlFor="location" className="block text-sm font-medium   mb-2">
-                                    Location
+                            <div className="md:col-span-2">
+                                <label htmlFor="keyResponsibilities" className="block text-sm font-medium mb-2">
+                                    Key Responsibilities
                                 </label>
-                                <input
-                                    type="text"
-                                    id="location"
-                                    name="location"
-                                    value={formData.location}
+                                <textarea
+                                    id="keyResponsibilities"
+                                    name="keyResponsibilities"
+                                    value={formData.keyResponsibilities}
                                     onChange={handleInputChange}
-                                    placeholder="Enter Location"
+                                    placeholder="Enter Key Responsibilities (separate with commas or new lines)"
+                                    rows={3}
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl 
-                             focus:ring-2 focus:ring-gray-900 focus:border-transparent 
-                             outline-none transition-all text-sm"
+                                        focus:ring-2 focus:ring-gray-900 focus:border-transparent 
+                                        outline-none transition-all text-sm resize-none"
                                 />
                             </div>
 
-                            <div>
-                                <label htmlFor="employmentType" className="block text-sm font-medium   mb-2">
-                                    Employment Type
+                            <div className="md:col-span-2">
+                                <label htmlFor="qualifications" className="block text-sm font-medium mb-2">
+                                    Qualifications
                                 </label>
-                                <input
-                                    type="text"
-                                    id="employmentType"
-                                    name="employmentType"
-                                    value={formData.employmentType}
+                                <textarea
+                                    id="qualifications"
+                                    name="qualifications"
+                                    value={formData.qualifications}
                                     onChange={handleInputChange}
-                                    placeholder="Enter Employment Type"
+                                    placeholder="Enter Required Qualifications"
+                                    rows={3}
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl 
-                             focus:ring-2 focus:ring-gray-900 focus:border-transparent 
-                             outline-none transition-all text-sm"
+                                        focus:ring-2 focus:ring-gray-900 focus:border-transparent 
+                                        outline-none transition-all text-sm resize-none"
                                 />
                             </div>
 
-                            <div>
-                                <label htmlFor="experience" className="block text-sm font-medium   mb-2">
-                                    Experience
+                            <div className="md:col-span-2">
+                                <label htmlFor="benefits" className="block text-sm font-medium mb-2">
+                                    Benefits
                                 </label>
-                                <input
-                                    type="text"
-                                    id="experience"
-                                    name="experience"
-                                    value={formData.experience}
+                                <textarea
+                                    id="benefits"
+                                    name="benefits"
+                                    value={formData.benefits}
                                     onChange={handleInputChange}
-                                    placeholder="Enter Experience"
+                                    placeholder="Enter Benefits (separate with commas or new lines)"
+                                    rows={3}
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl 
-                             focus:ring-2 focus:ring-gray-900 focus:border-transparent 
-                             outline-none transition-all text-sm"
+                                        focus:ring-2 focus:ring-gray-900 focus:border-transparent 
+                                        outline-none transition-all text-sm resize-none"
                                 />
                             </div>
 
-                            <div>
-                                <label htmlFor="numberOfPositions" className="block text-sm font-medium   mb-2">
-                                    No. of Position
+                            <div className="md:col-span-2">
+                                <label htmlFor="additionalNotes" className="block text-sm font-medium mb-2">
+                                    Additional Notes
                                 </label>
-                                <div className="relative">
-                                    <select
-                                        id="numberOfPositions"
-                                        name="numberOfPositions"
-                                        value={formData.numberOfPositions}
-                                        onChange={handleInputChange}
-                                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl 
-                               focus:ring-2 focus:ring-gray-900 focus:border-transparent 
-                               outline-none transition-all text-sm appearance-none bg-white cursor-pointer"
-                                    >
-                                        <option value="">Select No of Position</option>
-                                        <option value="1">1</option>
-                                        <option value="2">2</option>
-                                        <option value="3">3</option>
-                                        <option value="4">4</option>
-                                        <option value="5">5</option>
-                                        <option value="5+">5+</option>
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 
-                                          text-gray-400 w-5 h-5 pointer-events-none" />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label htmlFor="salaryRange" className="block text-sm font-medium   mb-2">
-                                    Salary Range
-                                </label>
-                                <input
-                                    type="text"
-                                    id="salaryRange"
-                                    name="salaryRange"
-                                    value={formData.salaryRange}
+                                <textarea
+                                    id="additionalNotes"
+                                    name="additionalNotes"
+                                    value={formData.additionalNotes}
                                     onChange={handleInputChange}
-                                    placeholder="e.g., 5-8 LPA"
+                                    placeholder="Enter any additional notes or requirements"
+                                    rows={3}
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl 
-                             focus:ring-2 focus:ring-gray-900 focus:border-transparent 
-                             outline-none transition-all text-sm"
-                                />
-                            </div>
-
-                            <div>
-                                <label htmlFor="skills" className="block text-sm font-medium   mb-2">
-                                    Skills
-                                </label>
-                                <input
-                                    type="text"
-                                    id="skills"
-                                    name="skills"
-                                    value={formData.skills}
-                                    onChange={handleInputChange}
-                                    placeholder="Enter Skills"
-                                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl 
-                             focus:ring-2 focus:ring-gray-900 focus:border-transparent 
-                             outline-none transition-all text-sm"
+                                        focus:ring-2 focus:ring-gray-900 focus:border-transparent 
+                                        outline-none transition-all text-sm resize-none"
                                 />
                             </div>
                         </div>
@@ -224,10 +231,14 @@ function CreateJD() {
                         <div className="flex justify-center mt-8">
                             <button
                                 type="submit"
-                                className="px-12 py-3 bg-black text-white rounded-xl font-medium 
-                           hover:bg-gray-800 transition-colors shadow-sm"
+                                disabled={creating || !formData.offerId}
+                                className={`px-12 py-3 bg-black text-white rounded-xl font-medium 
+                                    transition-colors shadow-sm ${creating || !formData.offerId
+                                        ? 'opacity-50 cursor-not-allowed'
+                                        : 'hover:bg-gray-800'
+                                    }`}
                             >
-                                Create
+                                {creating ? 'Creating...' : 'Create'}
                             </button>
                         </div>
                     </div>
@@ -237,20 +248,71 @@ function CreateJD() {
                             <h2 className="text-xl font-semibold text-gray-900">Job Description</h2>
                         </div>
 
-                        <div className="bg-gray-50 min-h-[200px] 
-                            flex items-center justify-center mb-6">
-                            <p className="text-sm text-center">
-                                Job description will appear here after creation
-                            </p>
+                        <div className="bg-gray-50 min-h-[200px] p-6">
+                            {generatedJD ? (
+                                <div className="space-y-4">
+                                    {generatedJD.jobSummary && (
+                                        <div>
+                                            <h3 className="font-semibold text-gray-900 mb-2">Job Summary</h3>
+                                            <p className="text-sm text-gray-700">{generatedJD.jobSummary}</p>
+                                        </div>
+                                    )}
+                                    {generatedJD.responsibilities && generatedJD.responsibilities.length > 0 && (
+                                        <div>
+                                            <h3 className="font-semibold text-gray-900 mb-2">Responsibilities</h3>
+                                            <ul className="list-disc list-inside text-sm text-gray-700">
+                                                {generatedJD.responsibilities.map((item, index) => (
+                                                    <li key={index}>{item}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    {generatedJD.requirements && generatedJD.requirements.length > 0 && (
+                                        <div>
+                                            <h3 className="font-semibold text-gray-900 mb-2">Requirements</h3>
+                                            <ul className="list-disc list-inside text-sm text-gray-700">
+                                                {generatedJD.requirements.map((item, index) => (
+                                                    <li key={index}>{item}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    {generatedJD.benefits && generatedJD.benefits.length > 0 && (
+                                        <div>
+                                            <h3 className="font-semibold text-gray-900 mb-2">Benefits</h3>
+                                            <ul className="list-disc list-inside text-sm text-gray-700">
+                                                {generatedJD.benefits.map((item, index) => (
+                                                    <li key={index}>{item}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    {generatedJD.additionalInfo && (
+                                        <div>
+                                            <h3 className="font-semibold text-gray-900 mb-2">Additional Information</h3>
+                                            <p className="text-sm text-gray-700">{generatedJD.additionalInfo}</p>
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center h-full min-h-[150px]">
+                                    <p className="text-sm text-center text-gray-500">
+                                        Job description will appear here after creation
+                                    </p>
+                                </div>
+                            )}
                         </div>
 
-
-                        <div className="flex justify-center">
+                        <div className="flex justify-center mt-6">
                             <button
                                 type="button"
                                 onClick={handleUploadJD}
-                                className="px-12 py-3 bg-black text-white rounded-xl font-medium 
-                           hover:bg-gray-800 transition-colors shadow-sm"
+                                disabled={!generatedJD}
+                                className={`px-12 py-3 bg-black text-white rounded-xl font-medium 
+                                    transition-colors shadow-sm ${!generatedJD
+                                        ? 'opacity-50 cursor-not-allowed'
+                                        : 'hover:bg-gray-800'
+                                    }`}
                             >
                                 Upload JD
                             </button>

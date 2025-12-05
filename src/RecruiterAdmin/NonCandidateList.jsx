@@ -11,65 +11,8 @@ import {
     Eye,
 } from "lucide-react";
 import Pagination from "../components/LandingPage/Pagination";
-
-const CANDIDATES = [
-    {
-        id: 1,
-        name: "Aakash Singh",
-        jobTitle: "Full Stack Developer",
-        resumeUrl: "#",
-        profileUrl: "https://example.com/aakashsingh/fullstackdeveloper/1",
-    },
-    {
-        id: 2,
-        name: "Aakash Singh",
-        jobTitle: "UI/UX Designer",
-        resumeUrl: "#",
-        profileUrl: "https://example.com/aakashsingh/uiuxdesigner/2",
-    },
-    {
-        id: 3,
-        name: "Aakash Singh",
-        jobTitle: "Full Stack Developer",
-        resumeUrl: "#",
-        profileUrl: "https://example.com/aakashsingh/fullstackdeveloper/3",
-    },
-    {
-        id: 4,
-        name: "Aakash Singh",
-        jobTitle: "Full Stack Developer",
-        resumeUrl: "#",
-        profileUrl: "https://example.com/aakashsingh/fullstackdeveloper/4",
-    },
-    {
-        id: 5,
-        name: "Aakash Singh",
-        jobTitle: "Full Stack Developer",
-        resumeUrl: "#",
-        profileUrl: "https://example.com/aakashsingh/fullstackdeveloper/5",
-    },
-    {
-        id: 6,
-        name: "Priya Sharma",
-        jobTitle: "Backend Developer",
-        resumeUrl: "#",
-        profileUrl: "https://example.com/priyasharma/backenddeveloper/6",
-    },
-    {
-        id: 7,
-        name: "Rahul Kumar",
-        jobTitle: "DevOps Engineer",
-        resumeUrl: "#",
-        profileUrl: "https://example.com/rahulkumar/devops/7",
-    },
-    {
-        id: 8,
-        name: "Neha Patel",
-        jobTitle: "Data Scientist",
-        resumeUrl: "#",
-        profileUrl: "https://example.com/nehapatel/datascientist/8",
-    },
-];
+import { useLocation } from "react-router-dom";
+import axios from "axios";
 
 export default function NonCandidateList() {
     const [q, setQ] = useState("");
@@ -77,17 +20,47 @@ export default function NonCandidateList() {
     const [shareFor, setShareFor] = useState(null);
     const [copied, setCopied] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5; 
+    const [candidates, setCandidates] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [sendingInvites, setSendingInvites] = useState(false);
+    const location = useLocation();
+    const { jdId } = location.state || {};
+    console.log(jdId);
+
+    useEffect(() => {
+        const fetchNonCandidates = async () => {
+            try {
+                setLoading(true);
+                const res = await axios.get(`http://localhost:4000/api/jd/all-candidates`, {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+                console.log("Non-Candidates Data:", res.data);
+                if (res.data.success && res.data.data) {
+                    setCandidates(res.data.data);
+                }
+            } catch (error) {
+                console.log(error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        fetchNonCandidates();
+    }, [])
+
+    const itemsPerPage = 5;
 
     const filtered = useMemo(() => {
         const needle = q.trim().toLowerCase();
-        if (!needle) return CANDIDATES;
-        return CANDIDATES.filter(
+        if (!needle) return candidates;
+        return candidates.filter(
             (c) =>
-                c.jobTitle.toLowerCase().includes(needle) ||
-                c.name.toLowerCase().includes(needle)
+                c.name?.toLowerCase().includes(needle) ||
+                c.email?.toLowerCase().includes(needle)
         );
-    }, [q]);
+    }, [q, candidates]);
 
     const totalPages = Math.ceil(filtered.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
@@ -96,7 +69,7 @@ export default function NonCandidateList() {
 
     const allSelected =
         currentItems.length > 0 &&
-        currentItems.every((c) => selectedIds.has(c.id));
+        currentItems.every((c) => selectedIds.has(c._id));
 
     const handlePageChange = (page) => {
         if (page >= 1 && page <= totalPages) {
@@ -118,6 +91,41 @@ export default function NonCandidateList() {
         }
     }, [shareFor]);
 
+    const handleSendBulkInvite = async () => {
+        if (!jdId) {
+            alert("JD ID is missing. Please go back and select a JD.");
+            return;
+        }
+        if (selectedIds.size === 0) {
+            alert("Please select at least one candidate.");
+            return;
+        }
+
+        try {
+            setSendingInvites(true);
+            const candidateIds = Array.from(selectedIds);
+            const res = await axios.post(
+                `http://localhost:4000/api/candidate/bulk-invite/${jdId}`,
+                { candidateIds },
+                {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('token')}`
+                    }
+                }
+            );
+
+            if (res.data.success) {
+                alert("Invites sent successfully");
+                setSelectedIds(new Set());
+            }
+        } catch (error) {
+            console.log(error);
+            alert(error.response?.data?.message || "Failed to send invites");
+        } finally {
+            setSendingInvites(false);
+        }
+    };
+
     return (
         <div className="min-h-screen">
             <div className="mx-auto w-full max-w-7xl">
@@ -130,7 +138,7 @@ export default function NonCandidateList() {
                         <input
                             value={q}
                             onChange={(e) => setQ(e.target.value)}
-                            placeholder="Search by Jobs Name"
+                            placeholder="Search by Name or Email"
                             className="w-full rounded-2xl border border-gray-300 bg-white py-2.5 pl-4 pr-12 text-sm outline-none transition focus:border-gray-400 focus:ring-2 focus:ring-black/5"
                         />
                         <button
@@ -141,7 +149,6 @@ export default function NonCandidateList() {
                         </button>
                     </div>
                 </div>
-
 
                 <div className="mt-4 overflow-x-auto rounded-3xl border border-gray-300 shadow-md bg-white">
                     <table className="w-full min-w-[800px] divide-y divide-gray-200 md:table">
@@ -157,11 +164,11 @@ export default function NonCandidateList() {
                                             setSelectedIds((prev) => {
                                                 if (allSelected) {
                                                     const next = new Set(prev);
-                                                    currentItems.forEach((c) => next.delete(c.id));
+                                                    currentItems.forEach((c) => next.delete(c._id));
                                                     return next;
                                                 }
                                                 const next = new Set(prev);
-                                                currentItems.forEach((c) => next.add(c.id));
+                                                currentItems.forEach((c) => next.add(c._id));
                                                 return next;
                                             });
                                         }}
@@ -171,10 +178,10 @@ export default function NonCandidateList() {
                                     Candidate Name
                                 </th>
                                 <th className="px-4 py-4 text-left text-sm font-medium text-gray-600">
-                                    Job Title
+                                    Email
                                 </th>
                                 <th className="px-4 py-4 text-left text-sm font-medium text-gray-600">
-                                    Skills
+                                    Phone
                                 </th>
                                 <th className="px-4 py-4 text-left text-sm font-medium text-gray-600">
                                     Resume
@@ -186,19 +193,25 @@ export default function NonCandidateList() {
                         </thead>
 
                         <tbody className="divide-y divide-gray-200">
-                            {currentItems.length > 0 ? (
+                            {loading ? (
+                                <tr>
+                                    <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
+                                        Loading...
+                                    </td>
+                                </tr>
+                            ) : currentItems.length > 0 ? (
                                 currentItems.map((c) => (
-                                    <tr key={c.id} className="hover:bg-gray-50/60">
+                                    <tr key={c._id} className="hover:bg-gray-50/60">
                                         <td className="px-4 py-4">
                                             <input
                                                 type="checkbox"
                                                 aria-label={`Select ${c.name}`}
                                                 className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black"
-                                                checked={selectedIds.has(c.id)}
+                                                checked={selectedIds.has(c._id)}
                                                 onChange={() => {
                                                     setSelectedIds((prev) => {
                                                         const next = new Set(prev);
-                                                        next.has(c.id) ? next.delete(c.id) : next.add(c.id);
+                                                        next.has(c._id) ? next.delete(c._id) : next.add(c._id);
                                                         return next;
                                                     });
                                                 }}
@@ -214,19 +227,22 @@ export default function NonCandidateList() {
                                         </td>
 
                                         <td className="px-4 py-4 text-sm text-gray-700">
-                                            {c.jobTitle}
+                                            {c.email}
                                         </td>
 
-                                        <td className="px-4 py-4">
-                                            <button className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-200">
-                                                View
-                                            </button>
+                                        <td className="px-4 py-4 text-sm text-gray-700">
+                                            {c.phone}
                                         </td>
 
-                                        <td className="px-4 py-4">
-                                            <button className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-200">
+                                        <td className="py-4 px-6">
+                                            <a
+                                                href={c.resume}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-700 hover:bg-blue-200"
+                                            >
                                                 View
-                                            </button>
+                                            </a>
                                         </td>
 
                                         <td className="px-4 py-4">
@@ -241,9 +257,9 @@ export default function NonCandidateList() {
                                                 </button>
 
                                                 <button
-                                                    onClick={() => alert("Edit clicked")}
-                                                    aria-label="Edit"
-                                                    title="Edit"
+                                                    onClick={() => alert("View clicked")}
+                                                    aria-label="View"
+                                                    title="View"
                                                     className="rounded-lg border border-blue-200 bg-white p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-900"
                                                 >
                                                     <Eye size={18} />
@@ -270,9 +286,9 @@ export default function NonCandidateList() {
                             )}
                         </tbody>
                     </table>
-                    
+
                     {filtered.length > 0 && (
-                        <Pagination 
+                        <Pagination
                             currentPage={currentPage}
                             totalPages={totalPages}
                             onPageChange={handlePageChange}
@@ -285,12 +301,21 @@ export default function NonCandidateList() {
                         <span className="text-sm text-gray-600">
                             {selectedIds.size} candidate(s) selected
                         </span>
-                        <button
-                            onClick={() => setSelectedIds(new Set())}
-                            className="text-sm text-red-600 hover:text-red-700"
-                        >
-                            Clear selection
-                        </button>
+                        <div className="flex items-center gap-3">
+                            <button
+                                onClick={handleSendBulkInvite}
+                                disabled={sendingInvites}
+                                className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                            >
+                                {sendingInvites ? "Sending..." : "Send Invite"}
+                            </button>
+                            <button
+                                onClick={() => setSelectedIds(new Set())}
+                                className="text-sm text-red-600 hover:text-red-700"
+                            >
+                                Clear selection
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
@@ -325,13 +350,13 @@ export default function NonCandidateList() {
                                 <Link className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                                 <input
                                     readOnly
-                                    value={shareFor.profileUrl}
+                                    value={shareFor.resume || ''}
                                     className="w-full rounded-lg border border-gray-300 bg-gray-100 py-2.5 pl-10 pr-12 text-sm text-gray-700 outline-none focus:border-gray-400 focus:ring-2 focus:ring-black/5"
                                 />
                                 <button
                                     onClick={async () => {
                                         try {
-                                            await navigator.clipboard.writeText(shareFor.profileUrl);
+                                            await navigator.clipboard.writeText(shareFor.resume || '');
                                             setCopied(true);
                                             setTimeout(() => setCopied(false), 1500);
                                         } catch {
@@ -358,7 +383,7 @@ export default function NonCandidateList() {
                             <div className="flex flex-wrap items-center gap-3">
                                 <button
                                     onClick={() => {
-                                        const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareFor.profileUrl)}`;
+                                        const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareFor.resume || '')}`;
                                         window.open(url, "_blank", "noopener,noreferrer");
                                     }}
                                     className="rounded-full border border-sky-400 bg-white px-4 py-2 text-sm font-medium text-sky-600 transition hover:bg-sky-50"
@@ -368,9 +393,9 @@ export default function NonCandidateList() {
                                 <button
                                     onClick={() => {
                                         const subject = encodeURIComponent(
-                                            `Candidate: ${shareFor.name} - ${shareFor.jobTitle}`
+                                            `Candidate: ${shareFor.name} - ${shareFor.email}`
                                         );
-                                        const body = encodeURIComponent(`Check out this profile:\n${shareFor.profileUrl}`);
+                                        const body = encodeURIComponent(`Check out this profile:\n${shareFor.resume || ''}`);
                                         window.location.href = `mailto:?subject=${subject}&body=${body}`;
                                     }}
                                     className="rounded-full border border-violet-400 bg-white px-4 py-2 text-sm font-medium text-violet-600 transition hover:bg-violet-50"
@@ -382,8 +407,8 @@ export default function NonCandidateList() {
                                         if (navigator.share) {
                                             try {
                                                 await navigator.share({
-                                                    title: `${shareFor.name} - ${shareFor.jobTitle}`,
-                                                    url: shareFor.profileUrl,
+                                                    title: `${shareFor.name} - ${shareFor.email}`,
+                                                    url: shareFor.resume || '',
                                                 });
                                             } catch { }
                                         } else {

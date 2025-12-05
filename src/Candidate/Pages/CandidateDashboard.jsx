@@ -1,5 +1,5 @@
 import { Bookmark } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
     LineChart,
     Line,
@@ -8,113 +8,239 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from "recharts";
-
-const candidates = [
-    {
-        id: 1,
-        name: "Rahul Kumar",
-        role: "Full Stack Developer",
-        progress: 64,
-        status: "Pending",
-        points: "2.140 Points",
-        targetDate: "Until 12 March, 2021",
-        color: "bg-pink-200",
-    },
-    {
-        id: 2,
-        name: "Arijit Kar",
-        role: "UI/UX Designer",
-        progress: 50,
-        status: "Pending",
-        points: "1.839 Points",
-        targetDate: "Until 9 March, 2021",
-        color: "bg-sky-200",
-    },
-    {
-        id: 3,
-        name: "Sneha Sen",
-        role: "Data Analytics",
-        progress: 80,
-        status: "Almost Done",
-        points: "4.220 Points",
-        targetDate: "Until 12 February, 2021",
-        color: "bg-yellow-200",
-    },
-];
-
-const applications = [
-    {
-        company: "Techmint",
-        role: "Senior Product Designer",
-        location: "Bengaluru, India",
-        salary: "₹ 50K – ₹ 70K",
-        type: "On-Site",
-        status: "Rejected",
-        color: "bg-red-100 text-red-600",
-    },
-    {
-        company: "Unacademy",
-        role: "Senior Product Designer",
-        location: "Bengaluru, India",
-        salary: "₹ 60K – ₹ 80K",
-        type: "Work From Home",
-        status: "In Process (70%)",
-        color: "bg-yellow-100 text-yellow-700",
-    },
-    {
-        company: "Udemy",
-        role: "Senior Product Designer",
-        location: "Bengaluru, India",
-        salary: "₹ 60K – ₹ 75K",
-        type: "On-Site",
-        status: "Selected",
-        color: "bg-green-100 text-green-700",
-    },
-];
-
-const jobs = [
-    {
-        id: 1,
-        company: "Avalon Meta",
-        location: "Mumbai",
-        applicants: 100,
-        posted: "3 Weeks Ago",
-        logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSW4qIERoyjk6oTJte3pRofI1CZWOEFK-0FIQ&s",
-    },
-    {
-        id: 2,
-        company: "CRED",
-        location: "Bengaluru",
-        applicants: 12,
-        posted: "1 Week Ago",
-        logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSW4qIERoyjk6oTJte3pRofI1CZWOEFK-0FIQ&s",
-    },
-    {
-        id: 3,
-        company: "Avalon Meta",
-        location: "Mumbai",
-        applicants: 100,
-        posted: "3 Weeks Ago",
-        logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSW4qIERoyjk6oTJte3pRofI1CZWOEFK-0FIQ&s",
-    },
-];
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const CandidateDashboard = () => {
     const [range, setRange] = useState("1 Day");
-
-    const dataByRange = {
-        "1 Day": [80, 70, 65, 50, 45, 40],
-        "1 Month": [90, 85, 75, 70, 60, 55],
-        "1 Year": [95, 90, 85, 80, 70, 60],
-        Max: [100, 95, 85, 75, 65, 60],
-    };
-
-    const chartData = dataByRange[range].map((v, i) => ({
-        name: `P${i + 1}`,
-        value: v,
-    }));
+    const [appliedJobs, setAppliedJobs] = useState([]);
+    const navigate = useNavigate();
+    const [jdCounts, setJdCounts] = useState({
+        totalAppliedJds: 0,
+        filteredJds: 0,
+        unfilteredJds: 0
+    });
+    const [latestJobs, setLatestJobs] = useState([]);
+    const [contributionView, setContributionView] = useState("Years");
+    const [candidateName, setCandidateName] = useState("Candidate");
+    const [currentDate, setCurrentDate] = useState("");
 
     const ranges = ["1 Day", "1 Month", "1 Year", "Max"];
+
+    useEffect(() => {
+        const now = new Date();
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        setCurrentDate(now.toLocaleDateString('en-US', options));
+
+        const fetchCandidateData = async () => {
+            try {
+                const token = localStorage.getItem("candidateToken");
+                const res = await axios.get("http://localhost:4000/api/auth/me", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                console.log("Candidate data:", res.data);
+                if (res.data?.success && res.data?.data) {
+                    const userData = res.data.data;
+                    const name = userData.name || userData.fullName || userData.firstName || userData.username || userData.email?.split('@')[0] || "Candidate";
+                    setCandidateName(name);
+                }
+            } catch (error) {
+                console.log("Error fetching candidate data:", error);
+            }
+        };
+
+        fetchCandidateData();
+    }, []);
+
+    useEffect(() => {
+        const fetchAppliedJobs = async () => {
+            try {
+                const res = await axios.get("http://localhost:4000/api/candidate/applied-jobs", {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("candidateToken")}`,
+                    },
+                });
+                console.log("applied jobs", res.data);
+                if (res.data?.success) {
+                    setAppliedJobs(res.data.jobs || []);
+                }
+            } catch (error) {
+                console.log(error);
+            }
+        }
+
+        fetchAppliedJobs()
+    }, [])
+
+    useEffect(() => {
+        const fetchjdcounts = async () => {
+            try {
+                const res = await axios.get("http://localhost:4000/api/candidate/jd-counts", {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("candidateToken")}`,
+                    },
+                });
+                console.log("jd-counts", res.data?.counts);
+                if (res.data?.counts) {
+                    setJdCounts(res.data.counts);
+                }
+            } catch (error) {
+                console.log(error);
+            }
+        }
+
+        fetchjdcounts()
+    }, [])
+
+    useEffect(() => {
+        const fetchlatestfivejds = async () => {
+            try {
+                const res = await axios.get("http://localhost:4000/api/candidate/latest-five-jds", {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem("candidateToken")}`,
+                    },
+                });
+                console.log("latest-five-jds", res.data);
+                if (res.data?.success) {
+                    setLatestJobs(res.data.data || []);
+                }
+            } catch (error) {
+                console.log(error);
+            }
+        }
+
+        fetchlatestfivejds()
+    }, [])
+
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return "Good Morning";
+        if (hour < 17) return "Good Afternoon";
+        return "Good Evening";
+    };
+
+    const getFirstName = () => {
+        if (candidateName) {
+            return candidateName.split(' ')[0];
+        }
+        return "Candidate";
+    };
+
+    const getWelcomeMessage = () => {
+        if (jdCounts.totalAppliedJds === 0) {
+            return "Start your journey by applying to jobs!";
+        } else if (jdCounts.filteredJds > 0) {
+            return `Great news! ${jdCounts.filteredJds} of your applications are shortlisted.`;
+        } else if (jdCounts.unfilteredJds > 0) {
+            return "Your applications are being reviewed. Stay tuned!";
+        }
+        return "Always stay updated in your candidate portal.";
+    };
+
+    const calculateContributionPercentage = () => {
+        if (jdCounts.totalAppliedJds === 0) return 0;
+        return Math.round((jdCounts.filteredJds / jdCounts.totalAppliedJds) * 100);
+    };
+
+    const getContributionStats = () => {
+        switch (contributionView) {
+            case "Years":
+                return {
+                    label: "Success Rate",
+                    percentage: calculateContributionPercentage(),
+                    description: "Filtered applications"
+                };
+            case "Months":
+                return {
+                    label: "This Month",
+                    percentage: jdCounts.totalAppliedJds > 0 ? Math.round((jdCounts.filteredJds / jdCounts.totalAppliedJds) * 100) : 0,
+                    description: "Application progress"
+                };
+            case "Days":
+                return {
+                    label: "Recent",
+                    percentage: appliedJobs.length > 0 ? Math.min(100, appliedJobs.length * 20) : 0,
+                    description: "Recent activity"
+                };
+            default:
+                return {
+                    label: "Success Rate",
+                    percentage: calculateContributionPercentage(),
+                    description: "Filtered applications"
+                };
+        }
+    };
+
+    const generateChartData = () => {
+        if (appliedJobs.length === 0) {
+            return [
+                { name: "P1", value: 0 },
+                { name: "P2", value: 0 },
+                { name: "P3", value: 0 },
+                { name: "P4", value: 0 },
+                { name: "P5", value: 0 },
+                { name: "P6", value: 0 },
+            ];
+        }
+
+        switch (range) {
+            case "1 Day":
+                return appliedJobs.slice(0, 6).map((job, index) => {
+                    const filteredCandidate = job.filteredCandidates?.[0];
+                    const unfilteredCandidate = job.unfilteredCandidates?.[0];
+                    const score = filteredCandidate?.aiScore || unfilteredCandidate?.aiScore || 0;
+                    return {
+                        name: job.companyName?.substring(0, 8) || `Job ${index + 1}`,
+                        value: score
+                    };
+                });
+            case "1 Month":
+                return appliedJobs.slice(0, 6).map((job, index) => ({
+                    name: job.companyName?.substring(0, 8) || `Job ${index + 1}`,
+                    value: job.appliedCandidates?.length || 0
+                }));
+            case "1 Year":
+                return appliedJobs.slice(0, 6).map((job, index) => ({
+                    name: job.companyName?.substring(0, 8) || `Job ${index + 1}`,
+                    value: job.filteredCandidates?.length > 0 ? 80 : job.unfilteredCandidates?.length > 0 ? 40 : 20
+                }));
+            case "Max":
+                return appliedJobs.slice(0, 6).map((job, index) => {
+                    const totalCandidates = (job.filteredCandidates?.length || 0) + (job.unfilteredCandidates?.length || 0);
+                    return {
+                        name: job.companyName?.substring(0, 8) || `Job ${index + 1}`,
+                        value: Math.min(100, totalCandidates * 10 + 30)
+                    };
+                });
+            default:
+                return appliedJobs.slice(0, 6).map((job, index) => ({
+                    name: `Job ${index + 1}`,
+                    value: 50
+                }));
+        }
+    };
+
+    const chartData = generateChartData();
+    const contributionStats = getContributionStats();
+
+    const formatPostedDate = (dateString) => {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffTime = Math.abs(now - date);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 7) {
+            return `${diffDays} Day${diffDays > 1 ? 's' : ''} Ago`;
+        } else if (diffDays < 30) {
+            const weeks = Math.floor(diffDays / 7);
+            return `${weeks} Week${weeks > 1 ? 's' : ''} Ago`;
+        } else {
+            const months = Math.floor(diffDays / 30);
+            return `${months} Month${months > 1 ? 's' : ''} Ago`;
+        }
+    };
 
     return (
         <div className="min-h-screen space-y-6">
@@ -122,17 +248,40 @@ const CandidateDashboard = () => {
 
                 <div className="col-span-2 bg-white rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between relative overflow-hidden shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)]">
                     <div className="absolute inset-0">
-                        <div className="w-full h-full bg-gradient-to-r from-purple-300/30 to-blue-300/30 rounded-2xl"></div>
+                        <div className={`w-full h-full rounded-2xl ${jdCounts.filteredJds > 0
+                            ? "bg-gradient-to-r from-green-300/30 to-blue-300/30"
+                            : jdCounts.unfilteredJds > 0
+                                ? "bg-gradient-to-r from-yellow-300/30 to-orange-300/30"
+                                : "bg-gradient-to-r from-purple-300/30 to-blue-300/30"
+                            }`}></div>
                     </div>
 
                     <div className="relative z-10 max-w-md">
-                        <p className="text-sm text-gray-600">September 4, 2023</p>
+                        <p className="text-sm text-gray-600">{currentDate}</p>
                         <h2 className="text-2xl md:text-3xl font-semibold mt-2">
-                            Welcome back, Leena!
+                            {getGreeting()}, {getFirstName()}!
                         </h2>
                         <p className="text-gray-500 mt-1">
-                            Always stay updated in your candidate portal.
+                            {getWelcomeMessage()}
                         </p>
+
+                        <div className="flex flex-wrap gap-2 mt-4">
+                            {jdCounts.totalAppliedJds > 0 && (
+                                <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                                    {jdCounts.totalAppliedJds} Applied
+                                </span>
+                            )}
+                            {jdCounts.filteredJds > 0 && (
+                                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">
+                                    {jdCounts.filteredJds} Shortlisted
+                                </span>
+                            )}
+                            {latestJobs.length > 0 && (
+                                <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm">
+                                    {latestJobs.length} New Jobs
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     <img
@@ -146,36 +295,36 @@ const CandidateDashboard = () => {
 
                     <div className="space-y-4">
                         <div className="bg-white shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] rounded-xl p-6">
-                            <div className="text-gray-600">Total Application</div>
-                            <div className="text-3xl font-bold mt-1">7,825</div>
+                            <div className="text-gray-600">Total Applications</div>
+                            <div className="text-3xl font-bold mt-1">{jdCounts.totalAppliedJds}</div>
                             <div className="flex items-center mt-2 text-orange-500 font-medium">
-                                +22% <span className="ml-2 w-12 h-4 bg-orange-300 rounded-full"></span>
+                                <span className="ml-2 w-12 h-4 bg-orange-300 rounded-full"></span>
                             </div>
                         </div>
 
                         <div className="bg-white shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] rounded-xl p-6">
-                            <div className="text-gray-600">Exam Schedule</div>
-                            <div className="text-3xl font-bold mt-1">1200+</div>
-                            <div className="flex items-center mt-2 text-red-500 font-medium">
-                                -25% <span className="ml-2 w-12 h-4 bg-red-300 rounded-full"></span>
+                            <div className="text-gray-600">Filtered Applications</div>
+                            <div className="text-3xl font-bold mt-1">{jdCounts.filteredJds}</div>
+                            <div className="flex items-center mt-2 text-green-600 font-medium">
+                                <span className="ml-2 w-12 h-4 bg-green-300 rounded-full"></span>
                             </div>
                         </div>
                     </div>
 
                     <div className="space-y-4">
                         <div className="bg-white shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] rounded-xl p-6">
-                            <div className="text-gray-600">Already Hired</div>
-                            <div className="text-3xl font-bold mt-1">1000+</div>
-                            <div className="flex items-center mt-2 text-green-600 font-medium">
-                                +49% <span className="ml-2 w-12 h-4 bg-green-300 rounded-full"></span>
+                            <div className="text-gray-600">Unfiltered Applications</div>
+                            <div className="text-3xl font-bold mt-1">{jdCounts.unfilteredJds}</div>
+                            <div className="flex items-center mt-2 text-red-500 font-medium">
+                                <span className="ml-2 w-12 h-4 bg-red-300 rounded-full"></span>
                             </div>
                         </div>
 
                         <div className="bg-white shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] rounded-xl p-6">
-                            <div className="text-gray-600">Rejected Application</div>
-                            <div className="text-3xl font-bold mt-1">200</div>
-                            <div className="flex items-center mt-2 text-red-500 font-medium">
-                                -25% <span className="ml-2 w-12 h-4 bg-red-300 rounded-full"></span>
+                            <div className="text-gray-600">Latest Jobs Available</div>
+                            <div className="text-3xl font-bold mt-1">{latestJobs.length}</div>
+                            <div className="flex items-center mt-2 text-blue-500 font-medium">
+                                <span className="ml-2 w-12 h-4 bg-blue-300 rounded-full"></span>
                             </div>
                         </div>
                     </div>
@@ -187,14 +336,14 @@ const CandidateDashboard = () => {
                 <div className="lg:col-span-2 bg-white shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] rounded-xl p-6 overflow-x-auto">
                     <div className="flex justify-between items-center mb-4">
                         <h2 className="text-lg font-semibold text-gray-800">Applications</h2>
-                        <a href="#" className="text-indigo-600 text-sm font-medium">
+                        <a className="text-indigo-600 text-sm font-medium">
                             See all
                         </a>
                     </div>
                     <div className="min-w-[600px]">
-                        {applications.map((app, i) => (
+                        {appliedJobs.length > 0 ? appliedJobs.map((job, i) => (
                             <div
-                                key={i}
+                                key={job._id || i}
                                 className="flex justify-between items-center mb-4 border-b border-gray-100 pb-4 last:border-0 shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] p-2 rounded-2xl"
                             >
                                 <div className="flex items-center space-x-4">
@@ -204,43 +353,44 @@ const CandidateDashboard = () => {
                                         className="w-12 h-12 shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] p-1 rounded-2xl"
                                     />
                                     <div className="">
-                                        <h3 className="font-medium text-gray-800">{app.role}</h3>
+                                        <h3 className="font-medium text-gray-800">{job.department || "Position"}</h3>
                                         <p className="text-sm text-gray-500">
-                                            {app.company} • {app.type}
+                                            {job.companyName} • {job.benefits?.[2] || "On-Site"}
                                         </p>
-                                        <p className="text-sm text-gray-400">{app.location}</p>
+                                        <p className="text-sm text-gray-400">{job.additionalInfo?.split('.')[0] || "Location"}</p>
                                     </div>
                                 </div>
-                                <p className="font-medium">{app.salary}</p>
-                                <div className="text-right">
-                                    <span
-                                        className={`inline-block mt-2 px-2 py-1 text-xs rounded-lg ${app.color}`}
-                                    >
-                                        {app.status}
-                                    </span>
-                                </div>
+                                <p className="font-medium">{job.benefits?.[0] || "Competitive Salary"}</p>
                             </div>
-                        ))}
+                        )) : (
+                            <div className="text-center text-gray-500 py-8">
+                                No applications yet
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 <div className="bg-white shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] rounded-xl p-6 flex flex-col items-center justify-center">
-                    <h2 className="text-lg font-semibold text-gray-800 mb-6">
+                    <h2 className="text-lg font-semibold text-gray-800 mb-2">
                         Contributions
                     </h2>
+                    <p className="text-sm text-gray-500 mb-4">{contributionStats.description}</p>
                     <div className="flex space-x-2 mb-6">
-                        <button className="bg-indigo-700 text-white px-3 py-1 rounded-lg text-sm">
-                            Years
-                        </button>
-                        <button className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg text-sm">
-                            Months
-                        </button>
-                        <button className="bg-gray-100 text-gray-700 px-3 py-1 rounded-lg text-sm">
-                            Days
-                        </button>
+                        {["Years", "Months", "Days"].map((view) => (
+                            <button
+                                key={view}
+                                onClick={() => setContributionView(view)}
+                                className={`px-3 py-1 rounded-lg text-sm transition-all ${contributionView === view
+                                    ? "bg-indigo-700 text-white"
+                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                    }`}
+                            >
+                                {view}
+                            </button>
+                        ))}
                     </div>
                     <div className="relative w-32 h-32">
-                        <svg className="w-full h-full">
+                        <svg className="w-full h-full transform -rotate-90">
                             <circle
                                 cx="64"
                                 cy="64"
@@ -253,164 +403,108 @@ const CandidateDashboard = () => {
                                 cx="64"
                                 cy="64"
                                 r="56"
-                                stroke="#2563EB"
+                                stroke={contributionStats.percentage >= 70 ? "#22C55E" : contributionStats.percentage >= 40 ? "#F59E0B" : "#EF4444"}
                                 strokeWidth="10"
                                 fill="none"
-                                strokeDasharray="350"
-                                strokeDashoffset="20"
+                                strokeDasharray={2 * Math.PI * 56}
+                                strokeDashoffset={2 * Math.PI * 56 - (contributionStats.percentage / 100) * 2 * Math.PI * 56}
                                 strokeLinecap="round"
-                                transform="rotate(-90 64 64)"
+                                style={{ transition: "stroke-dashoffset 0.5s ease-in-out" }}
                             />
                         </svg>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <p className="text-2xl font-semibold text-gray-800">99%</p>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <p className="text-2xl font-semibold text-gray-800">{contributionStats.percentage}%</p>
+                            <p className="text-xs text-gray-500">{contributionStats.label}</p>
+                        </div>
+                    </div>
+                    <div className="mt-4 w-full grid grid-cols-3 gap-2 text-center">
+                        <div className="bg-green-50 rounded-lg p-2">
+                            <p className="text-lg font-bold text-green-600">{jdCounts.filteredJds}</p>
+                            <p className="text-xs text-gray-500">Filtered</p>
+                        </div>
+                        <div className="bg-orange-50 rounded-lg p-2">
+                            <p className="text-lg font-bold text-orange-600">{jdCounts.unfilteredJds}</p>
+                            <p className="text-xs text-gray-500">Pending</p>
+                        </div>
+                        <div className="bg-blue-50 rounded-lg p-2">
+                            <p className="text-lg font-bold text-blue-600">{jdCounts.totalAppliedJds}</p>
+                            <p className="text-xs text-gray-500">Total</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div className="bg-white shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] rounded-xl p-6 w-full overflow-x-auto">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold text-gray-900">
-                        Candidate's progress
-                    </h2>
-                    <div className="flex space-x-2">
-                        <button className="bg-indigo-50 text-indigo-600 px-3 py-1 rounded-lg text-sm font-medium">
-                            Filter
-                        </button>
-                        <button className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-1 rounded-lg text-sm font-medium">
-                            + Add
-                        </button>
-                    </div>
-                </div>
-
-                <div className="divide-y min-w-[800px]">
-                    <div className="py-3 flex justify-between items-center font-semibold text-gray-700 border-b">
-                        <div className="w-1/3">Name & Stages</div>
-                        <div className="w-1/3">Progress</div>
-                        <div className="w-1/6 text-right">Points</div>
-                        <div className="w-1/4 text-right">Target Date</div>
-                    </div>
-
-                    {candidates.map((c, i) => (
-                        <div key={i} className="py-4 flex justify-between items-center">
-                            <div className="flex items-center space-x-4 w-1/3">
-                                <div
-                                    className={`relative w-10 h-10 rounded-full ${c.color} flex items-center justify-center text-sm font-semibold`}
-                                >
-                                    <span>{c.id}</span>
-                                </div>
-                                <div>
-                                    <p className="font-semibold text-gray-900">{c.name}</p>
-                                    <p className="text-sm text-gray-500">{c.role}</p>
-                                </div>
-                            </div>
-
-                            <div className="w-1/3">
-                                <div className="flex justify-between text-sm text-gray-700 mb-1">
-                                    <span>{c.progress}%</span>
-                                    <span
-                                        className={
-                                            c.status === "Almost Done"
-                                                ? "text-orange-500 font-medium"
-                                                : "text-gray-500"
-                                        }
-                                    >
-                                        {c.status}
-                                    </span>
-                                </div>
-                                <div className="w-full bg-gray-200 rounded-full h-2">
-                                    <div
-                                        className="bg-orange-500 h-2 rounded-full"
-                                        style={{ width: `${c.progress}%` }}
-                                    ></div>
-                                </div>
-                            </div>
-
-                            <div className="w-1/6 text-right">
-                                <span className="bg-pink-100 text-gray-700 px-3 py-1 rounded-lg text-sm font-medium">
-                                    {c.points}
-                                </span>
-                            </div>
-
-                            <div className="w-1/4 text-right text-sm text-gray-500">
-                                {c.targetDate}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-
-            </div>
             <div className="grid grid-cols-1 lg:grid-cols-[67%_30%] gap-7 mt-6">
 
                 <div className="bg-white shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] p-6 rounded-xl overflow-x-auto">
                     <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
                         <h2 className="text-xl font-semibold">
-                            Jobs Recommendations for You
+                            Latest Jobs for You
                         </h2>
-                        <a href="#" className="text-blue-600 hover:underline text-sm">
+                        <span onClick={() => navigate("/Candidate-Dashboard/Alljds")} className="text-blue-600 cursor-default text-sm">
                             See all
-                        </a>
-                    </div>
-
-                    <div className="text-sm text-gray-500 mb-5 flex flex-wrap gap-3">
-                        <span>🔹 UX Designer</span>
-                        <span>💰 ₹50K – ₹75K</span>
-                        <span>📍 Mumbai, Bengaluru, Pune</span>
+                        </span>
                     </div>
 
                     <div className="space-y-4 shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] p-4 rounded-xl min-w-[500px]">
-                        {jobs.map((job) => (
+                        {latestJobs.length > 0 ? latestJobs.map((job) => (
                             <div
-                                key={job.id}
+                                key={job._id}
                                 className="flex justify-between items-center border-b pb-3 last:border-none"
                             >
                                 <div className="flex items-center space-x-4">
                                     <img
-                                        src={job.logo}
+                                        src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSW4qIERoyjk6oTJte3pRofI1CZWOEFK-0FIQ&s"
                                         alt="Company Logo"
                                         className="w-12 h-12 p-1 rounded-full shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)]"
                                     />
                                     <div>
                                         <h3 className="font-semibold text-gray-800 text-lg">
-                                            UX Designer
+                                            {job.department || "Developer"}
                                         </h3>
                                         <p className="text-gray-500 text-sm">
-                                            {job.company}, {job.location}
+                                            {job.companyName}
                                         </p>
                                         <div className="flex justify-center items-center mt-1 space-x-2">
                                             <p className="text-gray-500 text-sm">
-                                                {job.posted}
+                                                {formatPostedDate(job.createdAt)}
                                             </p>
                                             <p
-                                                className={`text-sm ${job.applicants > 50
+                                                className={`text-sm ${job.appliedCandidates?.length > 50
                                                     ? "text-red-500"
                                                     : "text-green-600"
                                                     }`}
                                             >
-                                                • {job.applicants} Applicants
+                                                • {job.appliedCandidates?.length || 0} Applicants
                                             </p>
                                         </div>
                                     </div>
                                 </div>
 
                                 <div className="flex items-center space-x-3">
-                                    <button className="border border-green-500 text-green-600 px-4 py-1.5 rounded-full hover:bg-green-50 transition">
+                                    <button onClick={() => navigate("/Candidate-Dashboard/Alljds")} className="border border-green-500 text-green-600 px-4 py-1.5 rounded-full hover:bg-green-50 transition">
                                         Apply Now
-                                    </button>
-                                    <button className="text-blue-500 hover:text-blue-700">
-                                        <Bookmark />
                                     </button>
                                 </div>
                             </div>
-                        ))}
+                        )) : (
+                            <div className="text-center text-gray-500 py-8">
+                                No jobs available
+                            </div>
+                        )}
                     </div>
                 </div>
 
                 <div className="bg-white p-5 rounded-xl shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)]">
-                    <h3 className="text-md font-semibold mb-4 text-gray-700">
-                        Jobs Description
+                    <h3 className="text-md font-semibold mb-2 text-gray-700">
+                        Jobs Analytics
                     </h3>
+                    <p className="text-xs text-gray-500 mb-4">
+                        {range === "1 Day" && "AI Scores per Application"}
+                        {range === "1 Month" && "Applicants per Job"}
+                        {range === "1 Year" && "Application Status"}
+                        {range === "Max" && "Overall Performance"}
+                    </p>
 
                     <div className="w-full h-40">
                         <ResponsiveContainer width="100%" height="100%">
@@ -420,21 +514,44 @@ const CandidateDashboard = () => {
                                     dataKey="value"
                                     stroke="#3B82F6"
                                     strokeWidth={2}
-                                    dot={false}
+                                    dot={{ fill: "#3B82F6", strokeWidth: 2, r: 4 }}
+                                    activeDot={{ r: 6, fill: "#1D4ED8" }}
                                 />
-                                <XAxis dataKey="name" hide />
-                                <YAxis hide />
-                                <Tooltip />
+                                <XAxis
+                                    dataKey="name"
+                                    tick={{ fontSize: 10 }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                />
+                                <YAxis
+                                    hide={false}
+                                    tick={{ fontSize: 10 }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    width={30}
+                                />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: "#fff",
+                                        border: "1px solid #e5e7eb",
+                                        borderRadius: "8px",
+                                        boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+                                    }}
+                                    formatter={(value, name) => [
+                                        `${value}${range === "1 Day" ? "%" : ""}`,
+                                        range === "1 Day" ? "AI Score" : range === "1 Month" ? "Applicants" : "Score"
+                                    ]}
+                                />
                             </LineChart>
                         </ResponsiveContainer>
                     </div>
 
-                    <div className="flex justify-center gap-3 mt-3">
+                    <div className="flex justify-center gap-2 mt-3 flex-wrap">
                         {ranges.map((r) => (
                             <button
                                 key={r}
                                 onClick={() => setRange(r)}
-                                className={`text-sm px-3 py-1 rounded-md ${range === r
+                                className={`text-sm px-3 py-1 rounded-md transition-all ${range === r
                                     ? "bg-blue-100 text-blue-600 font-semibold"
                                     : "text-gray-600 hover:bg-gray-100"
                                     }`}
@@ -442,6 +559,26 @@ const CandidateDashboard = () => {
                                 {r}
                             </button>
                         ))}
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                        <div className="flex justify-between text-sm">
+                            <span className="text-gray-500">Total Jobs Applied</span>
+                            <span className="font-semibold text-gray-800">{appliedJobs.length}</span>
+                        </div>
+                        <div className="flex justify-between text-sm mt-2">
+                            <span className="text-gray-500">Avg. AI Score</span>
+                            <span className="font-semibold text-blue-600">
+                                {appliedJobs.length > 0
+                                    ? Math.round(
+                                        appliedJobs.reduce((acc, job) => {
+                                            const score = job.filteredCandidates?.[0]?.aiScore || job.unfilteredCandidates?.[0]?.aiScore || 0;
+                                            return acc + score;
+                                        }, 0) / appliedJobs.length
+                                    )
+                                    : 0}%
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
