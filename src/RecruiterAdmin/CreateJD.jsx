@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, X, Copy, Check } from 'lucide-react';
 import axios from 'axios';
 import { useLocation } from 'react-router-dom';
+import SpinLoader from '../components/SpinLoader';
 
 function CreateJD() {
     const location = useLocation();
@@ -18,6 +19,9 @@ function CreateJD() {
 
     const [creating, setCreating] = useState(false);
     const [generatedJD, setGeneratedJD] = useState(null);
+    const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+    const [jdUrl, setJdUrl] = useState('');
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
         if (location.state?.offerId) {
@@ -68,7 +72,10 @@ function CreateJD() {
 
             if (response.data.success) {
                 setGeneratedJD(response.data.jd);
-                alert('JD created successfully!');
+                // Set the URL - adjust based on your actual response structure
+                const generatedUrl = response.data.jd?.url || `${window.location.origin}/jd/${response.data.jd?._id || formData.offerId}`;
+                setJdUrl(generatedUrl);
+                setShowSuccessPopup(true);
             }
         } catch (error) {
             console.error('Error creating JD:', error);
@@ -78,12 +85,114 @@ function CreateJD() {
         }
     };
 
+    const handleCopyLink = async () => {
+        try {
+            await navigator.clipboard.writeText(jdUrl);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error('Failed to copy:', err);
+        }
+    };
+
+    const handleClosePopup = () => {
+        setShowSuccessPopup(false);
+        setCopied(false);
+    };
+
     const handleUploadJD = () => {
         console.log('Upload JD clicked');
     };
 
     return (
         <div className="min-h-screen">
+            {creating && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div className="absolute inset-0  backdrop-blur-sm"></div>
+                    <div className="relative z-10">
+                        <SpinLoader />
+                    </div>
+                </div>
+            )}
+
+            {showSuccessPopup && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center">
+                    <div 
+                        className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+                        onClick={handleClosePopup}
+                    ></div>
+                    <div className="relative z-10 bg-white rounded-2xl shadow-xl p-6 w-full max-w-md mx-4">
+                        <button
+                            onClick={handleClosePopup}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                        >
+                            <X size={20} />
+                        </button>
+
+                        <div className="flex justify-center mb-4">
+                            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                                <svg 
+                                    className="w-8 h-8 text-green-500" 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path 
+                                        strokeLinecap="round" 
+                                        strokeLinejoin="round" 
+                                        strokeWidth={2} 
+                                        d="M5 13l4 4L19 7" 
+                                    />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <h3 className="text-xl font-semibold text-center text-gray-900 mb-2">
+                            JD Created Successfully!
+                        </h3>
+                        <p className="text-sm text-center text-gray-500 mb-6">
+                            Your job description has been created. Copy the link below to share.
+                        </p>
+
+                        <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl border border-gray-200">
+                            <input
+                                type="text"
+                                value={jdUrl}
+                                readOnly
+                                className="flex-1 bg-transparent text-sm text-gray-700 outline-none truncate"
+                            />
+                            <button
+                                onClick={handleCopyLink}
+                                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                                    copied 
+                                        ? 'bg-green-100 text-green-600' 
+                                        : 'bg-black text-white hover:bg-gray-800'
+                                }`}
+                            >
+                                {copied ? (
+                                    <>
+                                        <Check size={16} />
+                                        Copied!
+                                    </>
+                                ) : (
+                                    <>
+                                        <Copy size={16} />
+                                        Copy
+                                    </>
+                                )}
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={handleClosePopup}
+                            className="w-full mt-4 px-4 py-2.5 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="">
                 <h1 className="text-3xl font-bold text-gray-900 mb-8">Create</h1>
 

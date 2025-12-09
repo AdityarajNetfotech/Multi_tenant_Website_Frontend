@@ -42,7 +42,7 @@ function AdminDashboard() {
           axios.get('http://localhost:4000/api/jd/all-candidates', {
             headers: { Authorization: `Bearer ${token}` }
           }),
-          axios.get('http://localhost:4000/api/jd/all-jd', {
+          axios.get('http://localhost:4000/api/jd/all-jd-admin', {
             headers: { Authorization: `Bearer ${token}` }
           }),
           axios.get('http://localhost:4000/api/offer/all-offers', {
@@ -153,22 +153,6 @@ function AdminDashboard() {
 
   return (
     <div className="min-h-screen">
-      <header className="mb-6 md:mb-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-slate-800">
-              Admin Dashboard
-            </h1>
-            <p className="text-slate-500 mt-1">Welcome back! Here's your overview</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-slate-500">
-              Last updated: {new Date().toLocaleString()}
-            </span>
-          </div>
-        </div>
-      </header>
-
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6 mb-6 md:mb-8">
         <StatCard
           title="Total RMG"

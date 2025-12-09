@@ -22,7 +22,6 @@ const CandidateAdminSidebar = ({ isOpen, onToggle }) => {
     else if (path.includes("/Examination")) setActiveNav("Examination");
     else if (path.includes("/Report")) setActiveNav("Reports");
     else if (path.includes("/Results")) setActiveNav("Results");
-    else if (path.includes("/logout")) setActiveNav("Logout");
     else setActiveNav("CandidateDashboard");
 
   }, [location.pathname]);
@@ -30,6 +29,11 @@ const CandidateAdminSidebar = ({ isOpen, onToggle }) => {
   const handleNavClick = (name, path) => {
     setActiveNav(name);
     navigate(path);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('candidateToken');
+    navigate('/Login');
   };
 
   return (
@@ -130,7 +134,7 @@ const CandidateAdminSidebar = ({ isOpen, onToggle }) => {
 
             <li>
               <button
-                onClick={() => handleNavClick('Logout', '/logout')}
+                onClick={handleLogout}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
                   ${activeNav === 'Logout' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >

@@ -21,7 +21,6 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
     else if (path.includes("/RMGManagement")) setActiveNav("RMGManagement");
     else if (path.includes("/Tickets")) setActiveNav("RaiseTickets");
     else if (path.includes("/RaiseTickets")) setActiveNav("CreateTickets");
-    else if (path.includes("/logout")) setActiveNav("Logout");
     else setActiveNav("Admin-Dashboard");
 
   }, [location.pathname]);
@@ -30,6 +29,13 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
     setActiveNav(name);
     navigate(path);
   };
+
+
+  const handleLogout = () => {
+    localStorage.removeItem('candidateToken');
+    navigate('/Login');
+  };
+
 
   return (
     <>
@@ -118,7 +124,7 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
 
             <li>
               <button
-                onClick={() => handleNavClick('Logout', '/logout')}
+                onClick={handleLogout}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
                   ${activeNav === 'Logout' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >

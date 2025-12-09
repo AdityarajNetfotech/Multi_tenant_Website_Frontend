@@ -61,90 +61,90 @@ function JDDetails() {
     }, [jdData?._id]);
 
     const handleFilterResumes = async () => {
-    try {
-        setIsFiltering(true);
-        const token = localStorage.getItem('token');
-        const jdId = jdDetails?._id;
+        try {
+            setIsFiltering(true);
+            const token = localStorage.getItem('token');
+            const jdId = jdDetails?._id;
 
-        if (!jdId) {
-            console.error('No JD ID available');
-            alert('No JD ID available');
-            return;
-        }
+            if (!jdId) {
+                console.error('No JD ID available');
+                alert('No JD ID available');
+                return;
+            }
 
-        const response = await axios.post(
-            `http://localhost:4000/api/jd/${jdId}/filter-resumes`,
-            {},
-            {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
+            const response = await axios.post(
+                `http://localhost:4000/api/jd/${jdId}/filter-resumes`,
+                {},
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    }
                 }
+            );
+
+            console.log('Filter Resumes Response:', response.data);
+
+            if (response.data.success) {
+                const updatedJdDetails = {
+                    ...jdDetails,
+                    filteredCandidates: response.data.filtered.map(f => ({
+                        candidate: f.id,
+                        aiScore: f.score,
+                        aiExplanation: f.explanation
+                    })),
+                    unfilteredCandidates: response.data.unfiltered.map(u => ({
+                        candidate: u.id,
+                        aiScore: u.score,
+                        aiExplanation: u.explanation
+                    }))
+                };
+
+                if (updatedJdDetails.appliedCandidates) {
+                    updatedJdDetails.appliedCandidates = updatedJdDetails.appliedCandidates.map(candidate => {
+                        const filtered = response.data.filtered.find(f => f.id === candidate.candidate);
+                        const unfiltered = response.data.unfiltered.find(u => u.id === candidate.candidate);
+
+                        if (filtered) {
+                            return {
+                                ...candidate,
+                                status: 'filtered',
+                                aiScore: filtered.score,
+                                aiExplanation: filtered.explanation
+                            };
+                        }
+
+                        if (unfiltered) {
+                            return {
+                                ...candidate,
+                                status: 'unfiltered',
+                                aiScore: unfiltered.score,
+                                aiExplanation: unfiltered.explanation
+                            };
+                        }
+
+                        return candidate;
+                    });
+                }
+
+                setJdDetails(updatedJdDetails);
+
+                setPendingCandidates([]);
+
+                const totalFiltered = response.data.filtered.length;
+                const totalUnfiltered = response.data.unfiltered.length;
+
+                alert('Resumes filtered successfully!');
+            } else {
+                alert('Filtering failed. Please try again.');
             }
-        );
 
-        console.log('Filter Resumes Response:', response.data);
-
-        if (response.data.success) {
-            const updatedJdDetails = {
-                ...jdDetails,
-                filteredCandidates: response.data.filtered.map(f => ({
-                    candidate: f.id,
-                    aiScore: f.score,
-                    aiExplanation: f.explanation
-                })),
-                unfilteredCandidates: response.data.unfiltered.map(u => ({
-                    candidate: u.id,
-                    aiScore: u.score,
-                    aiExplanation: u.explanation
-                }))
-            };
-
-            if (updatedJdDetails.appliedCandidates) {
-                updatedJdDetails.appliedCandidates = updatedJdDetails.appliedCandidates.map(candidate => {
-                    const filtered = response.data.filtered.find(f => f.id === candidate.candidate);
-                    const unfiltered = response.data.unfiltered.find(u => u.id === candidate.candidate);
-                    
-                    if (filtered) {
-                        return {
-                            ...candidate,
-                            status: 'filtered',
-                            aiScore: filtered.score,
-                            aiExplanation: filtered.explanation
-                        };
-                    }
-                    
-                    if (unfiltered) {
-                        return {
-                            ...candidate,
-                            status: 'unfiltered',
-                            aiScore: unfiltered.score,
-                            aiExplanation: unfiltered.explanation
-                        };
-                    }
-                    
-                    return candidate;
-                });
-            }
-
-            setJdDetails(updatedJdDetails);
-
-            setPendingCandidates([]);
-
-            const totalFiltered = response.data.filtered.length;
-            const totalUnfiltered = response.data.unfiltered.length;
-            
-            alert('Resumes filtered successfully!');
-        } else {
-            alert('Filtering failed. Please try again.');
+        } catch (error) {
+            console.error('Error filtering resumes:', error);
+        } finally {
+            setIsFiltering(false);
         }
-
-    } catch (error) {
-        console.error('Error filtering resumes:', error);
-    } finally {
-        setIsFiltering(false);
-    }
-};
+    };
 
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
@@ -246,29 +246,9 @@ function JDDetails() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8 border border-gray-200 p-4 rounded-2xl shadow-md">
                     <div className="bg-white rounded-xl p-6 flex shadow-md border border-gray-200 flex-col items-center justify-center">
-                        <h3 className="text-lg font-semibold text-purple-600 mb-3">
-                            Upload Resume
-                        </h3>
-
-                        <label className="w-full flex flex-col items-center justify-center cursor-pointer">
-                            <div className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg flex items-center gap-2 transition-colors">
-                                <Upload size={20} />
-                                Upload Resume
-                            </div>
-                            <input
-                                type="file"
-                                multiple
-                                accept=".pdf,.doc,.docx"
-                                className="hidden"
-                                id="resumeUpload"
-                                onChange={(e) => {
-                                    console.log(e.target.files);
-                                }}
-                            />
-                        </label>
 
                         <p className="text-xs text-gray-500 mt-3 text-center">
-                            You can only upload 20 resumes at a time!
+                            You can only filter 20 resumes at a time!
                         </p>
                     </div>
 
@@ -294,14 +274,13 @@ function JDDetails() {
                         <h2 className="text-xl font-semibold text-gray-800">
                             Pending Candidates ({pendingCandidates.length})
                         </h2>
-                        <button 
+                        <button
                             onClick={handleFilterResumes}
                             disabled={isFiltering || pendingCandidates.length === 0}
-                            className={`${
-                                isFiltering || pendingCandidates.length === 0
+                            className={`${isFiltering || pendingCandidates.length === 0
                                     ? 'bg-purple-400 cursor-not-allowed'
                                     : 'bg-purple-600 hover:bg-purple-700'
-                            } text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors`}
+                                } text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors`}
                         >
                             <Filter size={18} className={isFiltering ? 'animate-spin' : ''} />
                             {isFiltering ? 'Filtering...' : 'Filter'}
