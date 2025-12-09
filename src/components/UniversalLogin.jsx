@@ -157,9 +157,9 @@ const UniversalLogin = () => {
                             )}
 
                             <div className="mb-4">
-                                <a href="/forgot-password" className="text-blue-600 hover:underline text-sm">
+                                <span onClick={() => navigate("/ForgotPassword")} className="text-blue-600 cursor-pointer text-sm">
                                     Forgot Password?
-                                </a>
+                                </span>
                             </div>
 
                             <div className="flex justify-center">

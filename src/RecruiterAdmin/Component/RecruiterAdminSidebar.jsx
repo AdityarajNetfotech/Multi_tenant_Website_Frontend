@@ -17,18 +17,21 @@ const RecruiterAdminSidebar = ({ isOpen, onToggle }) => {
   useEffect(() => {
     const path = location.pathname;
 
-    if (path.includes("/JDDetails")) setActiveNav("JDDetails");
-    else if (path.includes("/JD")) setActiveNav("JobDescription");
+    if (path.includes("/JD")) setActiveNav("JobDescription");
     else if (path.includes("/Assessment")) setActiveNav("Assessment");
     else if (path.includes("/Results")) setActiveNav("Results");
     else if (path.includes("/NonCandidateList")) setActiveNav("NonCandidateList");
-    else if (path.includes("/logout")) setActiveNav("Logout");
     else setActiveNav("Dashboard");
   }, [location.pathname]);
 
   const handleNavClick = (name, path) => {
     setActiveNav(name);
     navigate(path);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token'); 
+    navigate('/Login');
   };
 
   return (
@@ -85,17 +88,6 @@ const RecruiterAdminSidebar = ({ isOpen, onToggle }) => {
 
             <li>
               <button
-                onClick={() => handleNavClick('JDDetails', '/RecruiterAdmin-Dashboard/JDDetails')}
-                className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
-                  ${activeNav === 'JDDetails' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
-              >
-                <UserPlus size={20} />
-                <span>JD Details</span>
-              </button>
-            </li>
-
-            <li>
-              <button
                 onClick={() => handleNavClick('Assessment', '/RecruiterAdmin-Dashboard/Assessment')}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
                   ${activeNav === 'Assessment' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
@@ -129,7 +121,7 @@ const RecruiterAdminSidebar = ({ isOpen, onToggle }) => {
 
             <li>
               <button
-                onClick={() => handleNavClick('Logout', '/logout')}
+                onClick={handleLogout}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
                   ${activeNav === 'Logout' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >

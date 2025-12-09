@@ -62,6 +62,7 @@ import EnquiryMessages from './SuperAdmin/EnquiryMessages';
 import UniversalLogin from './components/UniversalLogin';
 import Profile from './Candidate/Pages/Profile';
 import SpinLoader from './components/SpinLoader';
+import ForgotPassword from './components/ForgotPassword';
 
 
 
@@ -77,6 +78,7 @@ const App = () => {
         <Route path="/CandidateLogin" element={<CandidateLogin />} />
         <Route path="/Login" element={<UniversalLogin />} />
         <Route path="/SuperAdminRegister" element={<SuperAdminRegister />} />
+        <Route path="/ForgotPassword" element={<ForgotPassword />} />
 
         <Route path="/Admin-Dashboard" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />

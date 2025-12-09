@@ -29,7 +29,7 @@ function JD() {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:4000/api/jd/all-jd', {
+      const response = await axios.get('http://localhost:4000/api/jd/all-jd-hr', {
         headers: {
           'Authorization': `Bearer ${token}`,
         }
@@ -74,7 +74,8 @@ function JD() {
       console.log(response.data);
 
       if (response.data.success) {
-        setIncomingJDs(response.data.data);
+        const filteredData = response.data.data.filter(jd => jd.isJDCreated === false);
+        setIncomingJDs(filteredData);
       }
     } catch (error) {
       console.log('Error fetching incoming JDs:', error);
@@ -153,15 +154,6 @@ function JD() {
           })}
         </div>
 
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={() => navigate("/RecruiterAdmin-Dashboard/JD/CreateJD")}
-            className="bg-gray-900 hover:bg-gray-800 text-white px-4 sm:px-6 py-2.5 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 text-sm sm:text-base shadow-sm"
-          >
-            <span className="text-lg">+</span>
-            Create
-          </button>
-        </div>
 
         <div className="bg-white rounded-4xl shadow-sm border border-gray-300 overflow-hidden">
 

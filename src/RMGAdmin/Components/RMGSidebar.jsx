@@ -21,7 +21,6 @@ const RMGSidebar = ({ isOpen, onToggle }) => {
     else if (path.includes("/RMGAdmin-Dashboard/AssignedRecruiter")) setActiveNav("AssignedRecruiter");
     else if (path.includes("/RMGAdmin-Dashboard/RMGRaiseTickets")) setActiveNav("RaiseTickets");
     else if (path.includes("/RMGAdmin-Dashboard/RMGSupportTickets")) setActiveNav("SupportTickets");
-    else if (path.includes("/logout")) setActiveNav("Logout");
     else if (path.includes("/RMGAdmin-Dashboard")) setActiveNav("RMGDashboard");
     else setActiveNav("");
   }, [location.pathname]);
@@ -30,6 +29,11 @@ const RMGSidebar = ({ isOpen, onToggle }) => {
   const handleNavClick = (name, path) => {
     setActiveNav(name);
     navigate(path);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('candidateToken');
+    navigate('/Login');
   };
 
   return (
@@ -120,7 +124,7 @@ const RMGSidebar = ({ isOpen, onToggle }) => {
 
             <li>
               <button
-                onClick={() => handleNavClick('Logout', '/logout')}
+                onClick={handleLogout}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
                   ${activeNav === 'Logout' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >
