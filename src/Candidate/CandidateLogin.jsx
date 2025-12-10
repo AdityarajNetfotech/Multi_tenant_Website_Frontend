@@ -28,9 +28,23 @@ const CandidateLogin = () => {
         }
 
         try {
-            const { data } = await axios.post("http://localhost:4000/api/candidate/login", { email, password });
+            const { data } = await axios.post(
+                "http://localhost:4000/api/candidate/login",
+                { email, password }
+            );
+
+            const cleanCandidate = {
+                id: data.candidate._id,
+                name: data.candidate.name,
+                email: data.candidate.email,
+                phone: data.candidate.phone
+            };
 
             localStorage.setItem("candidateToken", data.token);
+            localStorage.setItem("candidate", JSON.stringify(cleanCandidate));
+
+            navigate("/Candidate-Dashboard");
+
 
             setLoading(false);
             navigate("/Candidate-Dashboard");
