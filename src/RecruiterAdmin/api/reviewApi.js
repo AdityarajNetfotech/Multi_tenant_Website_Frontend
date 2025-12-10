@@ -10,7 +10,7 @@ class ReviewAPI {
     static prepareFinalizePayload(formData, questions) {
         // Extract test metadata from formData
         const testTitle = formData.roleTitle || 'Untitled Test';
-        const testDescription = `Assessment for ${formData.roleTitle} - ${formData.experience} experience`;
+        const testDescription = `Assessment for ${formData.roleTitle} - ${formData.experience || ''} experience`;
         
         // You can add job_id if available in formData
         const jobId = formData.jobId || null;
@@ -19,7 +19,13 @@ class ReviewAPI {
             test_title: testTitle,
             test_description: testDescription,
             job_id: jobId,
-            questions: questions // Already in correct backend format
+            questions: questions,
+
+            // SEND SCHEDULE
+            examDate: formData.startDate,
+            startTime: formData.startTime,
+            endDate: formData.endDate,
+            endTime: formData.endTime,
         };
     }
 

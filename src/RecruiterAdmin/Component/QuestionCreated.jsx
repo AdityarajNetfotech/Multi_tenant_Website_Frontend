@@ -1,8 +1,10 @@
 import React from 'react'
 import right from '../../assets/right.png'
 import { Share2 } from 'lucide-react'
+import { useNavigate } from 'react-router-dom';
 
 function QuestionCreated() {
+    const navigate = useNavigate();
     return (
         <>
             <div className="min-h-screen flex items-center justify-center">
@@ -25,7 +27,10 @@ function QuestionCreated() {
                             Take Test (Preview)
                         </button>
 
-                        <button className="w-[200px] bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-6 rounded-full border border-gray-300 transition-colors">
+                        <button
+                            onClick={() => navigate('/RecruiterAdmin-Dashboard/Assessment')}
+                            className="w-[200px] bg-white hover:bg-gray-50 text-gray-700 font-medium py-3 px-6 rounded-full border border-gray-300 transition-colors"
+                        >
                             View Test
                         </button>
                     </div>
