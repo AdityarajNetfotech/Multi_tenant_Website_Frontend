@@ -8,19 +8,17 @@ import {
   Search,
   FileText,
 } from "lucide-react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const TestDetails = () => {
   const navigate = useNavigate();
 
-  const { questionSetId } = useParams();
-
-  const handleCancel = () => {
-    navigate("/Candidate-Dashboard/Examination"); // corrected
+  const handleNext = () => {
+    navigate("/Examination/CameraCheck");
   };
 
-  const handleNext = () => {
-    navigate(`/Candidate-Dashboard/Examination/CameraCheck/${questionSetId}`);
+  const handleCancel = () => {
+    navigate("/Examination");
   };
 
   const details = [

@@ -126,19 +126,36 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
       const response = await ReviewAPI.finalizeTest(payload);
 
       if (response.status === 'success') {
-        console.log('Test finalized successfully:', response);
-        
-        // Navigate to success page
-        navigate('/RecruiterAdmin-Dashboard/JDDetails/GenerateAssessment/Created', {
-          state: {
-            testTitle: response.test_title,
-            questionSetId: response.question_set_id,
-            totalQuestions: totalQuestions,
-            totalMarks: totalMarks,
-            expiryTime: response.expiry_time
-          }
-        });
-      } else {
+          console.log('Test finalized successfully:', response);
+
+          // Save to localStorage
+          const existingTests = JSON.parse(localStorage.getItem("jobDataList")) || [];
+
+          const newTest = {
+              id: `#${response.question_set_id}`,
+              company: formData.company || formData.selectedJD?.companyName || formData.selectedJD?.offerId?.company || "Unknown Company",
+              jobTitle: response.test_title,
+              createdOn: new Date().toLocaleDateString(),
+              skills: [...new Set(questions.map(q => q.skill))],
+              totalQuestions: totalQuestions,
+              totalMarks: totalMarks,
+              expiryTime: response.expiry_time
+          };
+
+          localStorage.setItem("jobDataList", JSON.stringify([...existingTests, newTest]));
+
+          // Navigate to success page
+          navigate('/RecruiterAdmin-Dashboard/JDDetails/GenerateAssessment/Created', {
+              state: {
+                  testTitle: response.test_title,
+                  questionSetId: response.question_set_id,
+                  totalQuestions: totalQuestions,
+                  totalMarks: totalMarks,
+                  expiryTime: response.expiry_time
+              }
+          });
+      }
+      else {
         throw new Error('Failed to finalize test');
       }
     } catch (err) {

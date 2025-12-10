@@ -537,7 +537,17 @@ function JDDetails() {
                     </div>
 
                     <div className="my-6 flex justify-center">
-                        <button onClick={() => navigate("/RecruiterAdmin-Dashboard/JDDetails/GenerateAssessment")} className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors">
+                        <button
+                            onClick={() => {
+                                const onlyFiltered = mappedCandidates.filter(c => c.isFiltered === true);
+                                navigate("/RecruiterAdmin-Dashboard/JDDetails/GenerateAssessment", {
+                                    state: {
+                                        filteredCandidates: onlyFiltered
+                                    }
+                                });
+                            }}
+                            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors"
+                        >
                             Generate Assessment
                         </button>
                     </div>

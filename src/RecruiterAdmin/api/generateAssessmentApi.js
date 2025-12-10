@@ -11,9 +11,7 @@ class AssessmentAPI {
     try {
       const response = await fetch(`${API_BASE_URL}/generate-test`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
@@ -39,9 +37,7 @@ class AssessmentAPI {
     try {
       const response = await fetch(`${API_BASE_URL}/finalize-test`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
@@ -82,9 +78,7 @@ class AssessmentAPI {
 
     return {
       skills,
-      global_settings: {
-        mcq_options: 4,
-      },
+      global_settings: { mcq_options: 4 },
     };
   }
 
@@ -121,7 +115,7 @@ class AssessmentAPI {
     return {
       test_title: `${formData.roleTitle} Assessment`,
       test_description: `Assessment for ${formData.roleTitle} position requiring ${formData.experience} experience`,
-      job_id: formData.jobId || null, // Can be added to formData if needed
+      job_id: formData.jobId || null,
       questions: questions.map(q => ({
         question_id: q.question_id,
         type: q.type,
@@ -133,6 +127,35 @@ class AssessmentAPI {
         negative_marking: q.negative_marking || 0,
       })),
     };
+  }
+
+  /**
+   * Fetch questions by question set ID
+   * @param {string} questionSetId
+   * @returns {Promise<Array>} Questions array
+   */
+  static async getQuestionsByAssessmentId(questionSetId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/question-set/${questionSetId}/questions`);
+
+      if (!response.ok) {
+        // Try to parse error JSON if possible
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // ignore JSON parse error (likely HTML response)
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      return data.questions || [];
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      return []; // return empty array instead of crashing
+    }
   }
 }
 
