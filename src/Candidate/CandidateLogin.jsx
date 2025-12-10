@@ -37,17 +37,22 @@ const CandidateLogin = () => {
                 id: data.candidate._id,
                 name: data.candidate.name,
                 email: data.candidate.email,
-                phone: data.candidate.phone
+                phone: data.candidate.phone,
+                hasLoggedIn: data.candidate.hasLoggedIn // include this field
             };
 
             localStorage.setItem("candidateToken", data.token);
             localStorage.setItem("candidate", JSON.stringify(cleanCandidate));
-
-            navigate("/Candidate-Dashboard");
-
+            sessionStorage.setItem("candidateData", JSON.stringify(cleanCandidate)); // For Examination.jsx
+            console.log("Saved candidateData to sessionStorage:", cleanCandidate);
 
             setLoading(false);
-            navigate("/Candidate-Dashboard");
+            // If first login (hasLoggedIn is false), show Chatbot, else dashboard
+            if (!data.candidate.hasLoggedIn) {
+                navigate("/Candidate-Chatbot");
+            } else {
+                navigate("/Candidate-Dashboard");
+            }
         } catch (err) {
             setError(err.response?.data?.error || "Invalid credentials");
             setLoading(false);

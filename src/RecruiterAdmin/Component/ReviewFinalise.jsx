@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Info, Clock, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import ReviewAPI from '../api/reviewApi';
+
 
 export default function ReviewFinalise({ formData, questions, onFinalize, onBack, loading }) {
   const navigate = useNavigate();
@@ -117,49 +117,54 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
     setError(null);
 
     try {
-      // Prepare payload
-      const payload = ReviewAPI.prepareFinalizePayload(formData, questions);
-      
+      // Prepare payload for backend
+      const payload = {
+        ...formData,
+        title: formData.title || formData.roleTitle || "Untitled Test",
+        questions,
+      };
+
       console.log('Finalizing test with payload:', payload);
 
-      // Call backend API
-      const response = await ReviewAPI.finalizeTest(payload);
+      // Call backend API directly
+      const response = await fetch('http://localhost:4000/api/finalise/finalize-test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json();
 
-      if (response.status === 'success') {
-          console.log('Test finalized successfully:', response);
+      if (result && result.success) {
+        // Save to localStorage
+        const existingTests = JSON.parse(localStorage.getItem("jobDataList")) || [];
+        const newTest = {
+          id: `#${result.data.questionSetId || result.data._id || 'unknown'}`,
+          company: payload.company || formData.selectedJD?.companyName || formData.selectedJD?.offerId?.company || "Unknown Company",
+          jobTitle: payload.title || payload.roleTitle,
+          createdOn: new Date().toLocaleDateString(),
+          skills: [...new Set(questions.map(q => q.skill))],
+          totalQuestions: totalQuestions,
+          totalMarks: totalMarks,
+          expiryTime: result.data.expiry_time || '',
+        };
+        localStorage.setItem("jobDataList", JSON.stringify([...existingTests, newTest]));
 
-          // Save to localStorage
-          const existingTests = JSON.parse(localStorage.getItem("jobDataList")) || [];
-
-          const newTest = {
-              id: `#${response.question_set_id}`,
-              company: formData.company || formData.selectedJD?.companyName || formData.selectedJD?.offerId?.company || "Unknown Company",
-              jobTitle: response.test_title,
-              createdOn: new Date().toLocaleDateString(),
-              skills: [...new Set(questions.map(q => q.skill))],
-              totalQuestions: totalQuestions,
-              totalMarks: totalMarks,
-              expiryTime: response.expiry_time
-          };
-
-          localStorage.setItem("jobDataList", JSON.stringify([...existingTests, newTest]));
-
-          // Navigate to success page
-          navigate('/RecruiterAdmin-Dashboard/JDDetails/GenerateAssessment/Created', {
-              state: {
-                  testTitle: response.test_title,
-                  questionSetId: response.question_set_id,
-                  totalQuestions: totalQuestions,
-                  totalMarks: totalMarks,
-                  expiryTime: response.expiry_time
-              }
-          });
-      }
-      else {
-        throw new Error('Failed to finalize test');
+        // Navigate to success page
+        navigate('/RecruiterAdmin-Dashboard/JDDetails/GenerateAssessment/Created', {
+          state: {
+            testTitle: newTest.jobTitle,
+            questionSetId: newTest.id,
+            totalQuestions: totalQuestions,
+            totalMarks: totalMarks,
+            expiryTime: newTest.expiryTime,
+          }
+        });
+      } else {
+        setError(result?.message || 'Failed to finalize test');
       }
     } catch (err) {
-      console.error('Error finalizing test:', err);
       setError(err.message || 'Failed to finalize test. Please try again.');
     } finally {
       setLocalLoading(false);

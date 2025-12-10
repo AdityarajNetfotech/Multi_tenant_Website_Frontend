@@ -6,92 +6,107 @@ export default function Examination() {
   const [jobs, setJobs] = useState([]);
 
   useEffect(() => {
-    try {
-      const candidateRaw = localStorage.getItem("candidateData");
-      const candidate = candidateRaw ? JSON.parse(candidateRaw) : null;
+    const fetchAssessment = async () => {
+      try {
+        const candidateRaw = sessionStorage.getItem("candidateData");
+        const candidate = candidateRaw ? JSON.parse(candidateRaw) : null;
+        const selectedJDRaw = localStorage.getItem("selectedJD");
+        const selectedJD = selectedJDRaw ? JSON.parse(selectedJDRaw) : null;
+        console.log("Loaded candidate:", candidate);
+        console.log("Loaded selectedJD:", selectedJD);
 
-      if (candidate && candidate.isFiltered === false) {
-        console.log("Candidate is not filtered. No exam available.");
-        setJobs([
-          {
-            title: "No Examination Available",
-            location: "—",
-            description: "You have not been shortlisted for the test.",
-            isActive: false,
-            startDate: "—",
-            startTime: "—",
-            endDate: "—",
-            endTime: "—",
-          },
-        ]);
-        return;
-      }
-
-      let storedJob = null;
-
-      const jobListRaw = localStorage.getItem("jobDataList");
-
-      if (jobListRaw) {
-        const jobList = JSON.parse(jobListRaw);
-
-        if (Array.isArray(jobList) && jobList.length > 0) {
-          storedJob = jobList[jobList.length - 1]; // latest assessment
-        }
-      }
-
-      if (!storedJob) {
-        const single = localStorage.getItem("jobData");
-        storedJob = single ? JSON.parse(single) : null;
-      }
-
-      console.log("Loaded jobData:", storedJob);
-      let resolvedStartDate = null;
-
-      if (storedJob?.examDate && storedJob.examDate !== "" && storedJob.examDate !== "null") {
-        resolvedStartDate = storedJob.examDate;
-      } else if (storedJob?.createdOn) {
-        const parts = storedJob.createdOn.split("/");
-        if (parts.length === 3) {
-          const [month, day, year] = parts;
-          resolvedStartDate = `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
-        }
-      }
-
-      resolvedStartDate = resolvedStartDate || "—";
-
-      if (storedJob) {
-        let endDate = "—";
-        let endTime = "—";
-
-        if (storedJob.expiryTime) {
-          const dt = new Date(storedJob.expiryTime);
-          endDate = dt.toISOString().split("T")[0];
-          endTime = dt.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          });
+        if (!candidate || !selectedJD || !selectedJD._id) {
+          setJobs([
+            {
+              title: "No Examination Available",
+              location: "—",
+              description: "You have not been shortlisted for the test.",
+              isActive: false,
+              startDate: "—",
+              startTime: "—",
+              endDate: "—",
+              endTime: "—",
+            },
+          ]);
+          return;
         }
 
-        const formattedJob = {
-          title: storedJob.jobTitle || "Assessment",
-          company: storedJob.company || storedJob.offerId?.company || "Unknown Company",
-          location: "Remote",
-          workType: "Full-time",
-          employmentMode: "On-site",
-          skills: storedJob.skills || [],
-          description:
-            storedJob.test_description ||
-            `This is an assessment for the ${storedJob.jobTitle} role.`,
-          startDate: resolvedStartDate,
-          startTime: storedJob.startTime || "10:00 AM",
-          endDate,
-          endTime,
-          isActive: true,
-          questionSetId: storedJob?.questionSetId || storedJob?.id?.replace(/^#/, ""),
-        };
+        // Robustly check if candidate is filtered for this JD
+        let isFiltered = false;
+        let filteredEntry = null;
+        if (candidate && selectedJD && Array.isArray(selectedJD.filteredCandidates)) {
+          const candidateIdStr = String(candidate._id || candidate.id || "");
+          filteredEntry = selectedJD.filteredCandidates.find(c => String(c.candidate) === candidateIdStr);
+          isFiltered = !!filteredEntry;
+          console.log("Checking filteredCandidates:", selectedJD.filteredCandidates.map(c => c.candidate), "against candidateId:", candidateIdStr);
+        }
+        console.log("Is candidate filtered?", isFiltered);
 
-        setJobs([formattedJob]);
-      } else {
+        if (!isFiltered) {
+          setJobs([
+            {
+              title: "No Examination Available",
+              location: "—",
+              description: "You have not been shortlisted for the test.",
+              isActive: false,
+              startDate: "—",
+              startTime: "—",
+              endDate: "—",
+              endTime: "—",
+            },
+          ]);
+          return;
+        }
+
+        // Call backend API to get assessment for candidate
+        // Fetch the finalized test for this candidate and JD
+        const candidateId = candidate._id || candidate.id;
+        const finalisedTestRes = await fetch(`http://localhost:4000/api/finalise/finalized-test?candidateId=${candidateId}&jdId=${selectedJD._id}`);
+        const finalisedTestResult = await finalisedTestRes.json();
+        console.log("Finalised test API result for candidate", candidateId, "and JD", selectedJD._id, ":", finalisedTestResult);
+
+        if (finalisedTestResult.success && finalisedTestResult.data) {
+          // If the backend returns an array, use the first one
+          const test = Array.isArray(finalisedTestResult.data) ? finalisedTestResult.data[0] : finalisedTestResult.data;
+          setJobs([
+            {
+              title: test.title || "Assessment",
+              company: test.company || "Unknown Company",
+              location: test.location || "Remote",
+              workType: test.workType || "Full-time",
+              employmentMode: test.employmentMode || "On-site",
+              skills: Array.isArray(test.skills) ? test.skills : [],
+              description: test.description || `This is an assessment for your role.`,
+              startDate: test.startDate || "Today",
+              startTime: test.startTime || "10:00 AM",
+              endDate: test.endDate || "—",
+              endTime: test.endTime || "—",
+              isActive: test.isActive !== undefined ? test.isActive : true,
+              questionSetId: test.questionSetId || test.job_id || "assessment",
+              questions: test.questions || [],
+              aiScore: filteredEntry?.aiScore,
+              aiExplanation: filteredEntry?.aiExplanation
+            },
+          ]);
+        } else {
+          setJobs([
+            {
+              title: "No Assessment Found",
+              location: "—",
+              workType: "—",
+              employmentMode: "—",
+              description:
+                "No assessment has been generated yet. Please check back later.",
+              startDate: "—",
+              startTime: "—",
+              endDate: "—",
+              endTime: "—",
+              isActive: false,
+            },
+          ]);
+        }
+      } catch (err) {
+        console.error("Error fetching assessment from backend", err);
         setJobs([
           {
             title: "No Assessment Found",
@@ -108,25 +123,8 @@ export default function Examination() {
           },
         ]);
       }
-    } catch (err) {
-      console.error("Error reading jobData from localStorage", err);
-
-      setJobs([
-        {
-          title: "No Assessment Found",
-          location: "—",
-          workType: "—",
-          employmentMode: "—",
-          description:
-            "No assessment has been generated yet. Please check back later.",
-          startDate: "—",
-          startTime: "—",
-          endDate: "—",
-          endTime: "—",
-          isActive: false,
-        },
-      ]);
-    }
+    };
+    fetchAssessment();
   }, []);
 
   return (
