@@ -1,7 +1,30 @@
 // API service for Generate Assessment
+// API service for Generate Assessment
 const API_BASE_URL = 'http://localhost:5000/api/v1';
 
 class AssessmentAPI {
+  /**
+   * Fetch finalized test for a candidate and JD
+   * @param {string} candidateId
+   * @param {string} jdId
+   * @returns {Promise<Object>} Finalized test response
+   */
+  static async getFinalizedTest(candidateId, jdId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/finalise/finalized-test?candidateId=${candidateId}&jdId=${jdId}`);
+      if (!response.ok) {
+        // Try to parse error JSON, but fallback to status text or HTML
+        let errorText = await response.text();
+        console.error(`Finalized test API returned status ${response.status}:`, errorText);
+        return null;
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching finalized test:', error);
+      return null;
+    }
+  }
   /**
    * Generate test questions based on skills and difficulty levels
    * @param {Object} payload - Skills configuration

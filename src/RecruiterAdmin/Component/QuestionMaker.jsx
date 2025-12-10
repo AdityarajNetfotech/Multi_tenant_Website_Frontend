@@ -8,7 +8,6 @@ export default function QuestionMaker({ questions, onUpdate, onNext, onBack, loa
     // Transform API questions to display format
     const displayQuestions = questions.map((q, idx) => {
         const content = q.content || {};
-        
         if (q.type === 'mcq') {
             return {
                 id: idx + 1,
@@ -71,8 +70,34 @@ export default function QuestionMaker({ questions, onUpdate, onNext, onBack, loa
                 marks: 0,
                 type: q.type
             };
+        } else if (q.type === 'text') {
+            return {
+                id: idx + 1,
+                question_id: q.question_id,
+                text: content.prompt || content.question || '',
+                tags: [q.skill],
+                skills: [q.skill],
+                time: q.time_limit || 60,
+                difficulty: q.difficulty || 'medium',
+                questionType: 'Text',
+                marks: q.positive_marking || 1,
+                type: q.type
+            };
+        } else if (q.type === 'rating') {
+            return {
+                id: idx + 1,
+                question_id: q.question_id,
+                text: content.prompt || content.question || '',
+                scale: content.scale || 5,
+                tags: [q.skill],
+                skills: [q.skill],
+                time: q.time_limit || 60,
+                difficulty: q.difficulty || 'medium',
+                questionType: 'Rating',
+                marks: q.positive_marking || 1,
+                type: q.type
+            };
         }
-        
         return {
             id: idx + 1,
             question_id: q.question_id,
@@ -142,6 +167,37 @@ export default function QuestionMaker({ questions, onUpdate, onNext, onBack, loa
                 questionText: question.text,
                 rubric: question.rubric || ''
             });
+        } else if (question.questionType === 'Text') {
+            setEditedData({
+                ...question,
+                questionType: 'Text',
+                timeLimit: question.time?.toString() || '60',
+                marks: question.marks?.toString() || '1',
+                level: question.difficulty.charAt(0).toUpperCase() + question.difficulty.slice(1) || 'Medium',
+                skills: question.skills || question.tags || [],
+                questionText: question.text
+            });
+        } else if (question.questionType === 'Rating') {
+            setEditedData({
+                ...question,
+                questionType: 'Rating',
+                timeLimit: question.time?.toString() || '60',
+                marks: question.marks?.toString() || '1',
+                level: question.difficulty.charAt(0).toUpperCase() + question.difficulty.slice(1) || 'Medium',
+                skills: question.skills || question.tags || [],
+                questionText: question.text,
+                scale: question.scale || 5
+            });
+            setEditedData({
+                ...question,
+                questionType: 'Video',
+                timeLimit: question.time?.toString() || '180',
+                marks: '0',
+                level: question.difficulty.charAt(0).toUpperCase() + question.difficulty.slice(1) || 'Medium',
+                skills: question.skills || question.tags || [],
+                questionText: question.text,
+                rubric: question.rubric || ''
+            });
         }
     };
 
@@ -176,6 +232,21 @@ export default function QuestionMaker({ questions, onUpdate, onNext, onBack, loa
             updatedQuestion.content.expected_keywords = editedData.expected_keywords;
             updatedQuestion.content.rubric = editedData.rubric;
         } else if (editedData.questionType === 'Video') {
+            updatedQuestion.time_limit = parseInt(editedData.timeLimit);
+            updatedQuestion.difficulty = editedData.level.toLowerCase();
+            updatedQuestion.content.prompt_text = editedData.questionText;
+            updatedQuestion.content.rubric = editedData.rubric;
+        } else if (editedData.questionType === 'Text') {
+            updatedQuestion.time_limit = parseInt(editedData.timeLimit);
+            updatedQuestion.positive_marking = parseInt(editedData.marks);
+            updatedQuestion.difficulty = editedData.level.toLowerCase();
+            updatedQuestion.content.prompt = editedData.questionText;
+        } else if (editedData.questionType === 'Rating') {
+            updatedQuestion.time_limit = parseInt(editedData.timeLimit);
+            updatedQuestion.positive_marking = parseInt(editedData.marks);
+            updatedQuestion.difficulty = editedData.level.toLowerCase();
+            updatedQuestion.content.prompt = editedData.questionText;
+            updatedQuestion.content.scale = editedData.scale || 5;
             updatedQuestion.time_limit = parseInt(editedData.timeLimit);
             updatedQuestion.difficulty = editedData.level.toLowerCase();
             updatedQuestion.content.prompt_text = editedData.questionText;
@@ -536,8 +607,8 @@ export default function QuestionMaker({ questions, onUpdate, onNext, onBack, loa
                             <div className="mb-6">
                                 <label className="block text-sm font-medium text-gray-700 mb-2">Skills</label>
                                 <div className="flex flex-wrap gap-2 p-3 border border-gray-300 rounded-md bg-gray-50 min-h-[42px]">
-                                    {editedData.skills?.map(skill => (
-                                        <span key={skill} className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
+                                    {editedData.skills?.map((skill, idx) => (
+                                        <span key={skill + '-' + idx} className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
                                             {skill}
                                         </span>
                                     ))}

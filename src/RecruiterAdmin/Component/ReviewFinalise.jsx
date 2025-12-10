@@ -78,6 +78,49 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
         type: q.type,
         skill: q.skill
       };
+    } else if (q.type === 'text') {
+      return {
+        id: idx + 1,
+        question_id: q.question_id,
+        text: content.prompt || content.question || '',
+        tags: [q.skill],
+        skills: [q.skill],
+        time: q.time_limit || 60,
+        difficulty: q.difficulty || 'medium',
+        questionType: 'Text',
+        marks: q.positive_marking || 1,
+        type: q.type,
+        skill: q.skill
+      };
+    } else if (q.type === 'rating') {
+      return {
+        id: idx + 1,
+        question_id: q.question_id,
+        text: content.prompt || content.question || '',
+        scale: content.scale || 5,
+        tags: [q.skill],
+        skills: [q.skill],
+        time: q.time_limit || 60,
+        difficulty: q.difficulty || 'medium',
+        questionType: 'Rating',
+        marks: q.positive_marking || 1,
+        type: q.type,
+        skill: q.skill
+      };
+      return {
+        id: idx + 1,
+        question_id: q.question_id,
+        text: content.prompt_text || content.question || '',
+        rubric: content.rubric || '',
+        tags: [q.skill],
+        skills: [q.skill],
+        time: q.time_limit || content.suggested_time_seconds || 180,
+        difficulty: q.difficulty || 'medium',
+        questionType: 'Video',
+        marks: 0,
+        type: q.type,
+        skill: q.skill
+      };
     }
     
     return {
@@ -308,15 +351,16 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
                   <div className="flex-1">
                     <p className="text-base text-gray-900 font-medium mb-3">{question.text}</p>
 
+
                     {/* MCQ Options */}
                     {question.questionType === 'MCQ' && question.options && (
                       <>
+                        {/* ...existing code for MCQ... */}
                         <div className="space-y-2 mb-3">
                           {question.options.map((option, idx) => {
                             const optionText = typeof option === 'string' ? option : option;
                             const isCorrect = question.correctAnswer === String.fromCharCode(65 + idx) ||
                                             question.correctAnswer === optionText;
-                            
                             return (
                               <div 
                                 key={idx} 
@@ -333,7 +377,6 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
                             );
                           })}
                         </div>
-
                         {question.explanation && (
                           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
                             <p className="text-sm text-gray-700">
@@ -390,6 +433,24 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
                       <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-3">
                         <p className="text-sm text-gray-700">
                           <span className="font-semibold">Rubric:</span> {question.rubric}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Text Question */}
+                    {question.questionType === 'Text' && (
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
+                        <p className="text-sm text-gray-700">
+                          <span className="font-semibold">Text Response:</span> Candidate will provide a written answer.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Rating Question */}
+                    {question.questionType === 'Rating' && (
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
+                        <p className="text-sm text-gray-700">
+                          <span className="font-semibold">Rating Scale:</span> {question.scale || 5} (Candidate will rate on a scale)
                         </p>
                       </div>
                     )}

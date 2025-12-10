@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import TestDetail from '../RecruiterAdmin/Component/TestDetail';
 import QuestionMaker from '../RecruiterAdmin/Component/QuestionMaker';
 import ReviewFinalise from '../RecruiterAdmin/Component/ReviewFinalise';
+import AssessmentAPI from './api/generateAssessmentApi';
 
 function GenerateAssessment() {
   const navigate = useNavigate();
@@ -78,25 +79,25 @@ function GenerateAssessment() {
   const generateQuestions = async () => {
     setLoading(true);
     setError(null);
-
     try {
-      // Use full formData as payload for backend
-      const payload = { ...formData };
-
+      // Transform formData to backend payload format
+      const payload = AssessmentAPI.transformToBackendPayload(formData);
       if (!payload.skills || payload.skills.length === 0) {
         throw new Error('Please select at least one skill with question counts greater than 0');
       }
-
-      const response = await fetch('http://localhost:4000/api/finalise/generate-test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-      const result = await response.json();
-
-      if (result && result.success && result.data && result.data.questions) {
+      // Use AssessmentAPI for generate-test
+      const result = await AssessmentAPI.generateTest(payload);
+      console.log('generateTest API result:', result);
+      // Support both {success, data: {questions}} and {status, questions} formats
+      if (result && Array.isArray(result.questions)) {
+        setQuestions(result.questions);
+        setFormData(prev => ({
+          ...prev,
+          questions: result.questions,
+          total_questions: result.questions.length,
+        }));
+        setCurrentStep(2);
+      } else if (result && result.success && result.data && Array.isArray(result.data.questions)) {
         setQuestions(result.data.questions);
         setFormData(prev => ({
           ...prev,
@@ -105,6 +106,8 @@ function GenerateAssessment() {
         }));
         setCurrentStep(2);
       } else {
+        // Log full result for debugging
+        console.error('Unexpected API response:', result);
         throw new Error(result?.message || 'Invalid response from server');
       }
     } catch (err) {
@@ -118,7 +121,6 @@ function GenerateAssessment() {
   const handleFinalize = async () => {
     setLoading(true);
     setError(null);
-
     try {
       // Use full formData as payload for backend
       const payload = { ...formData };
@@ -133,14 +135,8 @@ function GenerateAssessment() {
 
       console.log('Finalize payload:', payload);
 
-      const response = await fetch('http://localhost:4000/api/finalise/finalize-test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-      const result = await response.json();
+      // Use AssessmentAPI for finalize-test
+      const result = await AssessmentAPI.finalizeTest(payload);
 
       if (!result || !result.success) {
         throw new Error(result?.message || 'Failed to finalize test');

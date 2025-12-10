@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import AssessmentAPI from '../../RecruiterAdmin/api/generateAssessmentApi';
 
 export default function Examination() {
   const navigate = useNavigate();
@@ -58,34 +59,39 @@ export default function Examination() {
           return;
         }
 
-        // Call backend API to get assessment for candidate
-        // Fetch the finalized test for this candidate and JD
+        // Use AssessmentAPI to fetch finalized test for candidate and JD
         const candidateId = candidate._id || candidate.id;
-        const finalisedTestRes = await fetch(`http://localhost:4000/api/finalise/finalized-test?candidateId=${candidateId}&jdId=${selectedJD._id}`);
-        const finalisedTestResult = await finalisedTestRes.json();
+        let finalisedTestResult = null;
+        try {
+          finalisedTestResult = await AssessmentAPI.getFinalizedTest(candidateId, selectedJD._id);
+        } catch (apiErr) {
+          console.error('Error fetching finalized test from AssessmentAPI:', apiErr);
+        }
         console.log("Finalised test API result for candidate", candidateId, "and JD", selectedJD._id, ":", finalisedTestResult);
 
-        if (finalisedTestResult.success && finalisedTestResult.data) {
+        if (
+          finalisedTestResult 
+        ) {
           // If the backend returns an array, use the first one
           const test = Array.isArray(finalisedTestResult.data) ? finalisedTestResult.data[0] : finalisedTestResult.data;
           setJobs([
             {
-              title: test.title || "Assessment",
-              company: test.company || "Unknown Company",
-              location: test.location || "Remote",
-              workType: test.workType || "Full-time",
-              employmentMode: test.employmentMode || "On-site",
-              skills: Array.isArray(test.skills) ? test.skills : [],
-              description: test.description || `This is an assessment for your role.`,
-              startDate: test.startDate || "Today",
-              startTime: test.startTime || "10:00 AM",
-              endDate: test.endDate || "—",
-              endTime: test.endTime || "—",
-              isActive: test.isActive !== undefined ? test.isActive : true,
-              questionSetId: test.questionSetId || test.job_id || "assessment",
-              questions: test.questions || [],
-              aiScore: filteredEntry?.aiScore,
-              aiExplanation: filteredEntry?.aiExplanation
+              title: finalisedTestResult.title || "Assessment",
+              company: finalisedTestResult.company || "Unknown Company",
+              location: finalisedTestResult.location || "Remote",
+              workType: finalisedTestResult.workType || "Full-time",
+              employmentMode: finalisedTestResult.employmentMode || "On-site",
+              skills: Array.isArray(finalisedTestResult.skills) ? finalisedTestResult.skills : [],
+              description: finalisedTestResult.description || "This is an assessment for your role.",
+              startDate: finalisedTestResult.startDate || "Today",
+              startTime: finalisedTestResult.startTime || "10:00 AM",
+              endDate: finalisedTestResult.endDate || "—",
+              endTime: finalisedTestResult.endTime || "—",
+              isActive: typeof finalisedTestResult.isActive === 'boolean' ? finalisedTestResult.isActive : true,
+              questionSetId: finalisedTestResult.questionSetId || finalisedTestResult.job_id || "assessment",
+              questions: Array.isArray(finalisedTestResult.questions) ? finalisedTestResult.questions : [],
+              aiScore: finalisedTestResult.aiScore !== null && finalisedTestResult.aiScore !== undefined ? finalisedTestResult.aiScore : (filteredEntry?.aiScore ?? null),
+              aiExplanation: finalisedTestResult.aiExplanation !== null && finalisedTestResult.aiExplanation !== undefined ? finalisedTestResult.aiExplanation : (filteredEntry?.aiExplanation ?? null)
             },
           ]);
         } else {
