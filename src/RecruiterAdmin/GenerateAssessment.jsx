@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import TestDetail from '../RecruiterAdmin/Component/TestDetail';
 import QuestionMaker from '../RecruiterAdmin/Component/QuestionMaker';
 import ReviewFinalise from '../RecruiterAdmin/Component/ReviewFinalise';
-import AssessmentAPI from '../RecruiterAdmin/api/generateAssessmentApi';
+import AssessmentAPI from './api/generateAssessmentApi';
 
 function GenerateAssessment() {
   const navigate = useNavigate();
@@ -19,21 +19,35 @@ function GenerateAssessment() {
     return saved ? JSON.parse(saved) : null;
   });
 
-  // Prefill formData with selected JD info if available
+  // Prefill formData with selected JD info if available, using full payload structure
   const [formData, setFormData] = useState({
-    roleTitle: selectedJD?.offerId?.jobTitle || '',
+    title: selectedJD?.offerId?.jobTitle || '',
+    company: selectedJD?.companyName || selectedJD?.offerId?.company || "Unknown Company",
+    location: '',
+    workType: '',
+    employmentMode: '',
     skills: selectedJD?.offerId?.skills || [],
     experience: '',
-    workType: '',
-    location: '',
-    currency: 'INR',
-    minCompensation: '',
-    maxCompensation: '',
-    skillLevels: [],
+    description: '',
     startDate: null,
     startTime: null,
     endDate: null,
     endTime: null,
+    isActive: true,
+    questionSetId: '',
+    job_id: selectedJD?._id || null,
+    total_questions: 0,
+    total_duration: 0,
+    mini_compensation: '',
+    max_compensation: '',
+    currency: 'INR',
+    created_at: new Date(),
+    expiry_time: '',
+    status: 'active',
+    duration: 0,
+    questions: [],
+    candidates: filteredCandidates,
+    skillLevels: [],
   });
 
   const [questions, setQuestions] = useState([]);
@@ -65,22 +79,36 @@ function GenerateAssessment() {
   const generateQuestions = async () => {
     setLoading(true);
     setError(null);
-
     try {
+      // Transform formData to backend payload format
       const payload = AssessmentAPI.transformToBackendPayload(formData);
-
       if (!payload.skills || payload.skills.length === 0) {
         throw new Error('Please select at least one skill with question counts greater than 0');
       }
-
-      const response = await AssessmentAPI.generateTest(payload);
-
-      if (response && response.status === 'success' && response.questions) {
-        const transformedQuestions = AssessmentAPI.transformToFrontendQuestions(response.questions);
-        setQuestions(transformedQuestions);
+      // Use AssessmentAPI for generate-test
+      const result = await AssessmentAPI.generateTest(payload);
+      console.log('generateTest API result:', result);
+      // Support both {success, data: {questions}} and {status, questions} formats
+      if (result && Array.isArray(result.questions)) {
+        setQuestions(result.questions);
+        setFormData(prev => ({
+          ...prev,
+          questions: result.questions,
+          total_questions: result.questions.length,
+        }));
+        setCurrentStep(2);
+      } else if (result && result.success && result.data && Array.isArray(result.data.questions)) {
+        setQuestions(result.data.questions);
+        setFormData(prev => ({
+          ...prev,
+          questions: result.data.questions,
+          total_questions: result.data.questions.length,
+        }));
         setCurrentStep(2);
       } else {
-        throw new Error(response?.message || 'Invalid response from server');
+        // Log full result for debugging
+        console.error('Unexpected API response:', result);
+        throw new Error(result?.message || 'Invalid response from server');
       }
     } catch (err) {
       console.error('Error generating questions:', err);
@@ -93,26 +121,28 @@ function GenerateAssessment() {
   const handleFinalize = async () => {
     setLoading(true);
     setError(null);
-
     try {
-      const payload = {
-        test_title: formData.roleTitle,
-        test_description: `Assessment for ${formData.roleTitle} - ${formData.experience || ''} experience`,
-        job_id: selectedJD?._id || null,
-        questions,
-        examDate: formData.startDate,
-        startTime: formData.startTime,
-        endDate: formData.endDate,
-        endTime: formData.endTime,
-        candidates: filteredCandidates,
-      };
+      // Use full formData as payload for backend
+      const payload = { ...formData };
+      // Ensure up-to-date questions and counts
+      payload.questions = questions;
+      payload.total_questions = questions.length;
+      payload.title = formData.title || formData.roleTitle;
+      payload.company = formData.company || selectedJD?.companyName || selectedJD?.offerId?.company || "Unknown Company";
+      payload.job_id = formData.job_id || selectedJD?._id || null;
+      payload.questionSetId = formData.questionSetId || (questions.length > 0 ? 'set_' + Math.random().toString(36).substr(2, 9) : '');
+      payload.created_at = new Date();
 
-      const response = await AssessmentAPI.finalizeTest(payload);
+      console.log('Finalize payload:', payload);
 
-      if (!response || response.status !== 'success') {
-        throw new Error(response?.message || 'Failed to finalize test');
+      // Use AssessmentAPI for finalize-test
+      const result = await AssessmentAPI.finalizeTest(payload);
+
+      if (!result || !result.success) {
+        throw new Error(result?.message || 'Failed to finalize test');
       }
 
+      // Optionally save to localStorage for frontend navigation
       const saved = JSON.parse(localStorage.getItem("jobDataList")) || [];
 
       const generateNextId = (existingData) => {
@@ -132,19 +162,19 @@ function GenerateAssessment() {
 
       const newAssessment = {
         id: generateNextId(saved),
-        company: selectedJD?.companyName || selectedJD?.offerId?.company || "Unknown Company",
-        jobTitle: formData.roleTitle,
+        company: payload.company,
+        jobTitle: payload.title,
         createdOn: getCurrentDateString(),
-        questionSetId: response.question_set_id,
-        totalQuestions: questions.length,
-        skills: formData.skills,
+        questionSetId: payload.questionSetId,
+        totalQuestions: payload.total_questions,
+        skills: payload.skills,
         schedule: {
-          startDate: formData.startDate,
-          startTime: formData.startTime,
-          endDate: formData.endDate,
-          endTime: formData.endTime,
+          startDate: payload.startDate,
+          startTime: payload.startTime,
+          endDate: payload.endDate,
+          endTime: payload.endTime,
         },
-        expiryTime: response.expiry_time,
+        expiryTime: payload.expiry_time,
         isActive: true,
       };
 
@@ -154,10 +184,10 @@ function GenerateAssessment() {
 
       navigate('/Created', {
         state: {
-          testTitle: response.test_title,
-          questionSetId: response.question_set_id,
-          totalQuestions: questions.length,
-          expiryTime: response.expiry_time,
+          testTitle: payload.title,
+          questionSetId: payload.questionSetId,
+          totalQuestions: payload.total_questions,
+          expiryTime: payload.expiry_time,
         },
       });
 

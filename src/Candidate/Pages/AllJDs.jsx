@@ -82,6 +82,9 @@ const AllJDs = () => {
 
     const handleApplyClick = (candidate) => {
         setSelectedJob(candidate);
+        // Save the selected JD to localStorage for use in assessment flow
+        localStorage.setItem("selectedJD", JSON.stringify(candidate));
+        console.log("Saved selectedJD to localStorage:", candidate);
         setShowModal(true);
     };
 

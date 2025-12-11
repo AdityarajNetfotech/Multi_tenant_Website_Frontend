@@ -115,6 +115,9 @@ function JD() {
   };
 
   const handleViewJD = (jd) => {
+    // Save selected JD to localStorage for later use (e.g., for job_id)
+    localStorage.setItem("selectedJD", JSON.stringify(jd));
+    console.log("Saved selectedJD to localStorage:", jd);
     navigate("/RecruiterAdmin-Dashboard/JDDetails", { state: { jdData: jd } });
   };
 
