@@ -1,7 +1,30 @@
 // API service for Generate Assessment
+// API service for Generate Assessment
 const API_BASE_URL = 'http://localhost:5000/api/v1';
 
 class AssessmentAPI {
+  /**
+   * Fetch finalized test for a candidate and JD
+   * @param {string} candidateId
+   * @param {string} jdId
+   * @returns {Promise<Object>} Finalized test response
+   */
+  static async getFinalizedTest(candidateId, jdId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/finalise/finalized-test?candidateId=${candidateId}&jdId=${jdId}`);
+      if (!response.ok) {
+        // Try to parse error JSON, but fallback to status text or HTML
+        let errorText = await response.text();
+        console.error(`Finalized test API returned status ${response.status}:`, errorText);
+        return null;
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching finalized test:', error);
+      return null;
+    }
+  }
   /**
    * Generate test questions based on skills and difficulty levels
    * @param {Object} payload - Skills configuration
@@ -11,9 +34,7 @@ class AssessmentAPI {
     try {
       const response = await fetch(`${API_BASE_URL}/generate-test`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
@@ -39,9 +60,7 @@ class AssessmentAPI {
     try {
       const response = await fetch(`${API_BASE_URL}/finalize-test`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
@@ -82,9 +101,7 @@ class AssessmentAPI {
 
     return {
       skills,
-      global_settings: {
-        mcq_options: 4,
-      },
+      global_settings: { mcq_options: 4 },
     };
   }
 
@@ -121,7 +138,7 @@ class AssessmentAPI {
     return {
       test_title: `${formData.roleTitle} Assessment`,
       test_description: `Assessment for ${formData.roleTitle} position requiring ${formData.experience} experience`,
-      job_id: formData.jobId || null, // Can be added to formData if needed
+      job_id: formData.jobId || null,
       questions: questions.map(q => ({
         question_id: q.question_id,
         type: q.type,
@@ -133,6 +150,35 @@ class AssessmentAPI {
         negative_marking: q.negative_marking || 0,
       })),
     };
+  }
+
+  /**
+   * Fetch questions by question set ID
+   * @param {string} questionSetId
+   * @returns {Promise<Array>} Questions array
+   */
+  static async getQuestionsByAssessmentId(questionSetId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/question-set/${questionSetId}/questions`);
+
+      if (!response.ok) {
+        // Try to parse error JSON if possible
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // ignore JSON parse error (likely HTML response)
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      return data.questions || [];
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+      return []; // return empty array instead of crashing
+    }
   }
 }
 

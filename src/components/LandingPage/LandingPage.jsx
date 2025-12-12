@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   BrainCircuit,
   Search,
@@ -58,6 +59,7 @@ const LandingPage = () => {
     phoneNumber: '',
     message: ''
   });
+  const navigate = useNavigate();
 
   const navigation = [
     { name: 'Home', href: '#home' },
@@ -246,6 +248,9 @@ const LandingPage = () => {
               <button className="border border-[#6D28D9] text-[#6D28D9] px-6 py-1 rounded-2xl font-medium">
                 Register
               </button>
+              <button className="border border-[#6D28D9] text-[#6D28D9] px-6 py-1 rounded-2xl font-medium" onClick={() => navigate('/CandidateLogin')}>
+                Login
+              </button>
             </div>
 
             <button
@@ -275,6 +280,9 @@ const LandingPage = () => {
                   </button>
                   <button className="border border-[#6D28D9] text-[#6D28D9] px-6 py-1 rounded-2xl font-medium">
                     Register
+                  </button>
+                  <button className="border border-[#6D28D9] text-[#6D28D9] px-6 py-1 rounded-2xl font-medium" onClick={() => { setIsOpen(false); navigate('/CandidateLogin'); }}>
+                    Login
                   </button>
                 </div>
               </nav>

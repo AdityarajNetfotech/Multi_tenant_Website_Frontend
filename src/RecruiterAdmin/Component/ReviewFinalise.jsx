@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Info, Clock, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import ReviewAPI from '../api/reviewApi';
+
 
 export default function ReviewFinalise({ formData, questions, onFinalize, onBack, loading }) {
   const navigate = useNavigate();
@@ -78,6 +78,49 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
         type: q.type,
         skill: q.skill
       };
+    } else if (q.type === 'text') {
+      return {
+        id: idx + 1,
+        question_id: q.question_id,
+        text: content.prompt || content.question || '',
+        tags: [q.skill],
+        skills: [q.skill],
+        time: q.time_limit || 60,
+        difficulty: q.difficulty || 'medium',
+        questionType: 'Text',
+        marks: q.positive_marking || 1,
+        type: q.type,
+        skill: q.skill
+      };
+    } else if (q.type === 'rating') {
+      return {
+        id: idx + 1,
+        question_id: q.question_id,
+        text: content.prompt || content.question || '',
+        scale: content.scale || 5,
+        tags: [q.skill],
+        skills: [q.skill],
+        time: q.time_limit || 60,
+        difficulty: q.difficulty || 'medium',
+        questionType: 'Rating',
+        marks: q.positive_marking || 1,
+        type: q.type,
+        skill: q.skill
+      };
+      return {
+        id: idx + 1,
+        question_id: q.question_id,
+        text: content.prompt_text || content.question || '',
+        rubric: content.rubric || '',
+        tags: [q.skill],
+        skills: [q.skill],
+        time: q.time_limit || content.suggested_time_seconds || 180,
+        difficulty: q.difficulty || 'medium',
+        questionType: 'Video',
+        marks: 0,
+        type: q.type,
+        skill: q.skill
+      };
     }
     
     return {
@@ -117,32 +160,54 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
     setError(null);
 
     try {
-      // Prepare payload
-      const payload = ReviewAPI.prepareFinalizePayload(formData, questions);
-      
+      // Prepare payload for backend
+      const payload = {
+        ...formData,
+        title: formData.title || formData.roleTitle || "Untitled Test",
+        questions,
+      };
+
       console.log('Finalizing test with payload:', payload);
 
-      // Call backend API
-      const response = await ReviewAPI.finalizeTest(payload);
+      // Call backend API directly
+      const response = await fetch('http://localhost:4000/api/finalise/finalize-test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json();
 
-      if (response.status === 'success') {
-        console.log('Test finalized successfully:', response);
-        
+      if (result && result.success) {
+        // Save to localStorage
+        const existingTests = JSON.parse(localStorage.getItem("jobDataList")) || [];
+        const newTest = {
+          id: `#${result.data.questionSetId || result.data._id || 'unknown'}`,
+          company: payload.company || formData.selectedJD?.companyName || formData.selectedJD?.offerId?.company || "Unknown Company",
+          jobTitle: payload.title || payload.roleTitle,
+          createdOn: new Date().toLocaleDateString(),
+          skills: [...new Set(questions.map(q => q.skill))],
+          totalQuestions: totalQuestions,
+          totalMarks: totalMarks,
+          expiryTime: result.data.expiry_time || '',
+        };
+        localStorage.setItem("jobDataList", JSON.stringify([...existingTests, newTest]));
+
         // Navigate to success page
         navigate('/RecruiterAdmin-Dashboard/JDDetails/GenerateAssessment/Created', {
           state: {
-            testTitle: response.test_title,
-            questionSetId: response.question_set_id,
+            testTitle: newTest.jobTitle,
+            questionSetId: newTest.id,
             totalQuestions: totalQuestions,
             totalMarks: totalMarks,
-            expiryTime: response.expiry_time
+            expiryTime: newTest.expiryTime,
           }
         });
       } else {
-        throw new Error('Failed to finalize test');
+        setError(result?.message || 'Failed to finalize test');
       }
     } catch (err) {
-      console.error('Error finalizing test:', err);
       setError(err.message || 'Failed to finalize test. Please try again.');
     } finally {
       setLocalLoading(false);
@@ -286,15 +351,16 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
                   <div className="flex-1">
                     <p className="text-base text-gray-900 font-medium mb-3">{question.text}</p>
 
+
                     {/* MCQ Options */}
                     {question.questionType === 'MCQ' && question.options && (
                       <>
+                        {/* ...existing code for MCQ... */}
                         <div className="space-y-2 mb-3">
                           {question.options.map((option, idx) => {
                             const optionText = typeof option === 'string' ? option : option;
                             const isCorrect = question.correctAnswer === String.fromCharCode(65 + idx) ||
                                             question.correctAnswer === optionText;
-                            
                             return (
                               <div 
                                 key={idx} 
@@ -311,7 +377,6 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
                             );
                           })}
                         </div>
-
                         {question.explanation && (
                           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
                             <p className="text-sm text-gray-700">
@@ -368,6 +433,24 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
                       <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-3">
                         <p className="text-sm text-gray-700">
                           <span className="font-semibold">Rubric:</span> {question.rubric}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Text Question */}
+                    {question.questionType === 'Text' && (
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
+                        <p className="text-sm text-gray-700">
+                          <span className="font-semibold">Text Response:</span> Candidate will provide a written answer.
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Rating Question */}
+                    {question.questionType === 'Rating' && (
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
+                        <p className="text-sm text-gray-700">
+                          <span className="font-semibold">Rating Scale:</span> {question.scale || 5} (Candidate will rate on a scale)
                         </p>
                       </div>
                     )}
