@@ -5,6 +5,7 @@ import axios from "axios";
 
 const AllJDs = () => {
     const [jdData, setJdData] = useState([]);
+    const [appliedJdIds, setAppliedJdIds] = useState([]); 
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
@@ -22,6 +23,27 @@ const AllJDs = () => {
     });
 
     useEffect(() => {
+        const fetchAppliedJDs = async () => {
+            try {
+                const response = await axios.get('http://localhost:4000/api/candidate/applied-jobs', {
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem('candidateToken')}`,
+                    },
+                });
+                console.log('Applied JDs data:', response.data);
+                
+                if (response.data.success && response.data.jobs) {
+                    const appliedIds = response.data.jobs.map(job => job._id);
+                    setAppliedJdIds(appliedIds);
+                }
+            } catch (error) {
+                console.error('Error fetching applied JDs:', error);
+            }
+        };
+        fetchAppliedJDs();
+    }, []);
+
+    useEffect(() => {
         const fetchJDs = async () => {
             try {
                 setLoading(true);
@@ -36,6 +58,7 @@ const AllJDs = () => {
                 if (response.data.success && response.data.data) {
                     const mappedData = response.data.data
                         .filter(item => item._id)
+                        .filter(item => !appliedJdIds.includes(item._id))
                         .map(item => ({
                             id: item._id,
                             _id: item._id,
@@ -66,7 +89,7 @@ const AllJDs = () => {
         };
 
         fetchJDs();
-    }, []);
+    }, [appliedJdIds]);
 
     const itemsPerPage = 6;
     const totalPages = Math.ceil(jdData.length / itemsPerPage);
@@ -167,6 +190,8 @@ const AllJDs = () => {
             console.log('Application Response:', response.data);
 
             if (response.data.success) {
+                // Add the newly applied job ID to the appliedJdIds state
+                setAppliedJdIds(prev => [...prev, selectedJob._id]);
                 setShowApplicationForm(false);
                 setShowCandidateModal(true);
                 alert('Application submitted successfully!');

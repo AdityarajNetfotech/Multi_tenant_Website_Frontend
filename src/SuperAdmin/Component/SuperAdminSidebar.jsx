@@ -17,7 +17,8 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
   useEffect(() => {
     const path = location.pathname;
 
-    if (path.includes("/CompaniesRegister")) setActiveNav("RegisteredCompanies");
+    if (path.includes("/EnquiryMessages")) setActiveNav("EnquiryMessages");
+    else if (path.includes("/CompaniesRegister")) setActiveNav("RegisteredCompanies");
     else if (path.includes("/Companies")) setActiveNav("Companies");
     else if (path.includes("/Tickets")) setActiveNav("Tickets");
     else if (path.includes("/RejisteredRecruiters")) setActiveNav("RejisteredRecruiters");
@@ -30,6 +31,11 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
   const handleNavClick = (name, path) => {
     setActiveNav(name);
     navigate(path);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token'); 
+    navigate('/Login');
   };
 
   return (
@@ -141,7 +147,7 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
 
             <li>
               <button
-                onClick={() => handleNavClick('Logout', '/logout')}
+                onClick={handleLogout}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors
                   ${activeNav === 'Logout' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
               >

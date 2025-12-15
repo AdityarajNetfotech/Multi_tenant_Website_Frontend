@@ -11,6 +11,8 @@ function EnquiryMessages() {
     const [searchTerm, setSearchTerm] = useState('');
     const [showPopup, setShowPopup] = useState(false);
     const [popupMessage, setPopupMessage] = useState('Ok, we will look on this issue as soon as possible.');
+    const [selectedTicket, setSelectedTicket] = useState(null);
+    const [sending, setSending] = useState(false);
 
     const itemsPerPage = 5;
     const totalPages = Math.ceil(filteredTickets.length / itemsPerPage);
@@ -47,18 +49,47 @@ function EnquiryMessages() {
         fetchTotalEnquiry();
     }, []);
 
-    const handleEditClick = () => {
+    const handleEditClick = (ticket) => {
+        setSelectedTicket(ticket);
         setShowPopup(true);
     };
 
     const handleClosePopup = () => {
         setShowPopup(false);
+        setSelectedTicket(null);
         setPopupMessage('Ok, we will look on this issue as soon as possible.');
     };
 
-    const handleSaveMessage = () => {
-        console.log('Message saved:', popupMessage);
-        setShowPopup(false);
+    const handleSaveMessage = async () => {
+        if (!selectedTicket) return;
+
+        try {
+            setSending(true);
+            const response = await axios.post('http://localhost:5000/api/enquiry/submit', {
+                companyName: selectedTicket.companyName,
+                emailid: selectedTicket.emailid,
+                message: popupMessage,
+                phone: selectedTicket.phone
+            }, {
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`
+                }
+            });
+
+            if (response.data.status === 'success') {
+                console.log('Message saved and email sent:', popupMessage);
+                alert('Notification sent successfully!');
+            }
+            setSending(false);
+            setShowPopup(false);
+            setSelectedTicket(null);
+            setPopupMessage('Ok, we will look on this issue as soon as possible.');
+        } catch (error) {
+            console.error("Error sending notification:", error);
+            alert('Failed to send notification. Please try again.');
+            setSending(false);
+        }
     };
 
     const handleSearch = () => {
@@ -230,7 +261,7 @@ function EnquiryMessages() {
                                             {/* Actions */}
                                             <td className="px-6 py-4 whitespace-nowrap text-sm">
                                                 <div className="flex items-center gap-2">
-                                                    <button onClick={handleEditClick} className="text-blue-600 hover:text-blue-800">
+                                                    <button onClick={() => handleEditClick(ticket)} className="text-blue-600 hover:text-blue-800">
                                                         <Edit className="w-4 h-4" />
                                                     </button>
                                                     <button className="text-red-600 hover:text-red-800">
@@ -278,14 +309,16 @@ function EnquiryMessages() {
                             <button
                                 onClick={handleClosePopup}
                                 className="flex-1 bg-gray-200 text-gray-800 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors"
+                                disabled={sending}
                             >
                                 Cancel
                             </button>
                             <button
                                 onClick={handleSaveMessage}
-                                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors"
+                                disabled={sending}
+                                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-blue-400"
                             >
-                                Save
+                                {sending ? 'Sending...' : 'Save'}
                             </button>
                         </div>
                     </div>

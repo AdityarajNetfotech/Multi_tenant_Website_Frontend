@@ -1,71 +1,79 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Eye, Trash2, Users, SlidersHorizontal, Search } from 'lucide-react';
 import Pagination from '../components/LandingPage/Pagination';
+import axios from 'axios';
 
 function RejisteredRecruiters() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedRegister, setSelectedRegister] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
+    const [registers, setRegisters] = useState([]);
+    const [logoError, setLogoError] = useState(false);
     const itemsPerPage = 5;
 
-    const registers = [
-        {
-            id: 1,
-            companyName: 'Netfotech Solution',
-            registerName: 'Sneha Singh',
-            email: 'snehasingh147@gmail.com',
-            phoneNumber: 'snehasingh147@gmail.com',
-            companyType: 'Partnership'
-        },
-        {
-            id: 2,
-            companyName: 'Netfotech Solution',
-            registerName: 'Sneha Singh',
-            email: 'snehasingh147@gmail.com',
-            phoneNumber: 'snehasingh147@gmail.com',
-            companyType: 'Partnership'
-        },
-        {
-            id: 3,
-            companyName: 'Netfotech Solution',
-            registerName: 'Sneha Singh',
-            email: 'snehasingh147@gmail.com',
-            phoneNumber: 'snehasingh147@gmail.com',
-            companyType: 'Corporation'
-        },
-        {
-            id: 4,
-            companyName: 'Netfotech Solution',
-            registerName: 'Sneha Singh',
-            email: 'snehasingh147@gmail.com',
-            phoneNumber: 'snehasingh147@gmail.com',
-            companyType: 'Proprietorship'
-        },
-        {
-            id: 5,
-            companyName: 'Netfotech Solution',
-            registerName: 'Sneha Singh',
-            email: 'snehasingh147@gmail.com',
-            phoneNumber: 'snehasingh147@gmail.com',
-            companyType: 'Partnership'
-        },
-        {
-            id: 6,
-            companyName: 'Netfotech Solution',
-            registerName: 'Sneha Singh',
-            email: 'snehasingh147@gmail.com',
-            phoneNumber: 'snehasingh147@gmail.com',
-            companyType: 'Partnership'
-        },
-        {
-            id: 7,
-            companyName: 'Netfotech Solution',
-            registerName: 'Sneha Singh',
-            email: 'snehasingh147@gmail.com',
-            phoneNumber: 'snehasingh147@gmail.com',
-            companyType: 'Partnership'
+    const convertCloudinaryUrl = (url) => {
+        if (!url) return '';
+        
+        if (url.includes('cloudinary.com')) {
+            return url.replace('/upload/', '/upload/f_auto,q_auto/');
         }
-    ];
+        return url;
+    };
+
+    useEffect(() => {
+      const fetchRegisteredRecruiters = async () => {
+        try {
+          const response = await axios.get('http://localhost:5000/api/company/', {
+            headers: {
+              "Authorization": `Bearer ${localStorage.getItem("token")}`
+            }
+          });
+          console.log(response.data);
+          
+          const mappedRegisters = response.data.companies.map((company, index) => ({
+            id: index + 1,
+            _id: company._id,
+            companyName: company.companyName,
+            registerName: 'Sneha Singh',
+            email: company.email,
+            phoneNumber: company.phoneNo,
+            companyType: company.companyType.charAt(0).toUpperCase() + company.companyType.slice(1),
+            contactPerson: 'Rajesh Pandi',
+            employees: company.numberOfEmployees.toString() + '+',
+            gstNumber: company.gstNumber,
+            panNumber: company.panNumber,
+            typeOfStaffing: company.typeOfStaffing.charAt(0).toUpperCase() + company.typeOfStaffing.slice(1),
+            address1: company.address1,
+            address2: company.address2,
+            city: company.city,
+            state: company.state,
+            logo: convertCloudinaryUrl(company.logo),
+            themeColors: ['#6B46C1', '#3B82F6', '#FFFFFF']
+          }));
+          
+          setRegisters(mappedRegisters);
+        } catch (error) {
+          console.error("Error fetching registered recruiters:", error);
+        }   
+        };
+        fetchRegisteredRecruiters();
+    }, [])
+
+    const handleDelete = async (id) => {
+        if (window.confirm('Are you sure you want to delete this company?')) {
+            try {
+                await axios.delete(`http://localhost:5000/api/company/${id}`, {
+                    headers: {
+                        "Authorization": `Bearer ${localStorage.getItem("token")}`
+                    }
+                });
+                setRegisters(registers.filter(register => register._id !== id));
+            } catch (error) {
+                console.error("Error deleting company:", error);
+                alert(error.response?.data?.message || 'Failed to delete company');
+            }
+        }
+    };
 
     const filteredRegisters = registers.filter(register =>
         register.id.toString().includes(searchTerm) ||
@@ -89,41 +97,22 @@ function RejisteredRecruiters() {
         setCurrentPage(1);
     };
 
-    const mockDetails = {
-        id: 1,
-        companyName: 'Netfotech Solutions',
-        registerName: 'Sneha Singh',
-        email: 'rajeshp@netfotech.in',
-        phoneNumber: '9748049201',
-        companyType: 'Partnership',
-        contactPerson: 'Rajesh Pandi',
-        employees: '120+',
-        gstNumber: '27AAOFN2060P1ZQ',
-        panNumber: 'AAOFN2060P',
-        typeOfStaffing: 'Both',
-        address1: 'World Trade Center, Tower 2, Level 9',
-        address2: 'Opp : EON IT Park, Kharadi',
-        city: 'Pune 411014',
-        state: 'Maharashtra',
-        logo: '',
-        themeColors: ['#6B46C1', '#3B82F6', '#FFFFFF']
-    };
-
     const getCompanyTypeColor = (type) => {
-        switch (type) {
-            case 'Partnership':
+        switch (type.toLowerCase()) {
+            case 'partnership':
                 return 'bg-green-100 text-green-700';
-            case 'Corporation':
+            case 'corporation':
                 return 'bg-orange-100 text-orange-700';
-            case 'Proprietorship':
+            case 'proprietorship':
                 return 'bg-blue-100 text-blue-700';
             default:
                 return 'bg-gray-100 text-gray-700';
         }
     };
 
-    const handleViewDetails = () => {
-        setSelectedRegister(mockDetails);
+    const handleViewDetails = (register) => {
+        setSelectedRegister(register);
+        setLogoError(false);
     };
 
     return (
@@ -169,7 +158,7 @@ function RejisteredRecruiters() {
                                 <tr>
                                     <th className="px-6 py-6 text-left text-sm font-semibold text-gray-700 whitespace-nowrap">S.No</th>
                                     <th className="px-6 py-6 text-left text-sm font-semibold text-gray-700 whitespace-nowrap">Company Name</th>
-                                    <th className="px-6 py-6 text-left text-sm font-semibold text-gray-700 whitespace-nowrap">Register Name</th>
+                                    {/* <th className="px-6 py-6 text-left text-sm font-semibold text-gray-700 whitespace-nowrap">Register Name</th> */}
                                     <th className="px-6 py-6 text-left text-sm font-semibold text-gray-700 whitespace-nowrap">Email</th>
                                     <th className="px-6 py-6 text-left text-sm font-semibold text-gray-700 whitespace-nowrap">Phone Number</th>
                                     <th className="px-6 py-6 text-left text-sm font-semibold text-gray-700 whitespace-nowrap">Company Type</th>
@@ -179,10 +168,10 @@ function RejisteredRecruiters() {
                             <tbody className="divide-y divide-gray-200">
                                 {currentItems.length > 0 ? (
                                     currentItems.map((register, index) => (
-                                        <tr key={register.id} className="hover:bg-gray-50 transition-colors">
+                                        <tr key={register._id} className="hover:bg-gray-50 transition-colors">
                                             <td className="px-6 py-4 text-sm text-gray-900">{startIndex + index + 1}.</td>
                                             <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">{register.companyName}</td>
-                                            <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">{register.registerName}</td>
+                                            {/* <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">{register.registerName}</td> */}
                                             <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">{register.email}</td>
                                             <td className="px-6 py-4 text-sm text-gray-900 whitespace-nowrap">{register.phoneNumber}</td>
                                             <td className="px-6 py-4">
@@ -193,13 +182,14 @@ function RejisteredRecruiters() {
                                             <td className="px-4 py-4">
                                                 <div className="flex items-center gap-2">
                                                     <button
-                                                        onClick={handleViewDetails}
+                                                        onClick={() => handleViewDetails(register)}
                                                         className="p-1.5 text-blue-600 hover:bg-blue-50 rounded border border-blue-600 transition-colors"
                                                         title="View Details"
                                                     >
                                                         <Eye className="w-4 h-4" />
                                                     </button>
                                                     <button
+                                                        onClick={() => handleDelete(register._id)}
                                                         className="p-1.5 text-red-600 hover:bg-red-50 rounded border border-red-600 transition-colors"
                                                         title="Delete"
                                                     >
@@ -255,10 +245,10 @@ function RejisteredRecruiters() {
                                     <div className="text-sm text-gray-600 mb-1">Company Name:</div>
                                     <div className="text-sm font-semibold text-gray-900">{selectedRegister.companyName}</div>
                                 </div>
-                                <div>
+                                {/* <div>
                                     <div className="text-sm text-gray-600 mb-1">Contact Person:</div>
                                     <div className="text-sm font-semibold text-gray-900">{selectedRegister.contactPerson}</div>
-                                </div>
+                                </div> */}
                                 <div>
                                     <div className="text-sm text-gray-600 mb-1">Email:</div>
                                     <div className="text-sm font-semibold text-gray-900">{selectedRegister.email}</div>
@@ -308,14 +298,25 @@ function RejisteredRecruiters() {
                             <div className="bg-[#E9E9E9D9] mb-6 rounded-xl p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <div className="text-sm text-gray-600 mb-3">Logo:</div>
-                                    <div className="bg-white rounded-lg p-6 flex items-center justify-center border border-gray-200">
+                                    <div className="bg-white rounded-lg px-6 py-4 flex items-center justify-center border border-gray-200">
                                         <div className="text-center">
-                                            <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-green-400 rounded-lg mx-auto mb-2"></div>
-                                            <div className="text-xs text-gray-500">Netfotech Solutions</div>
+                                            {selectedRegister.logo && !logoError ? (
+                                                <img 
+                                                    src={selectedRegister.logo} 
+                                                    alt="Company Logo" 
+                                                    className="w-30 h-20 object-cover mx-auto mb-2"
+                                                    onError={() => setLogoError(true)}
+                                                />
+                                            ) : (
+                                                <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-green-400 rounded-lg mx-auto mb-2 flex items-center justify-center text-white text-2xl font-bold">
+                                                    {selectedRegister.companyName.charAt(0).toUpperCase()}
+                                                </div>
+                                            )}
+                                            <div className="text-xs text-gray-500">{selectedRegister.companyName}</div>
                                         </div>
                                     </div>
                                 </div>
-                                <div>
+                                {/* <div>
                                     <div className="text-sm text-gray-600 mb-3">Theme Color:</div>
                                     <div className="flex gap-3">
                                         {selectedRegister.themeColors.map((color, index) => (
@@ -326,7 +327,7 @@ function RejisteredRecruiters() {
                                             ></div>
                                         ))}
                                     </div>
-                                </div>
+                                </div> */}
                             </div>
                         </div>
                     </div>
