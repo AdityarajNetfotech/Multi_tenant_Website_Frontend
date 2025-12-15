@@ -1,79 +1,66 @@
 import { Search, Filter, CreditCard as Edit2, Trash2, Edit } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Pagination from '../components/LandingPage/Pagination';
+import axios from 'axios';
 
 function Tickets() {
   const [currentPage, setCurrentPage] = useState(1);
+  const [tickets, setTickets] = useState([]);
+  const [stats, setStats] = useState([
+    { label: 'Total Tickets', value: '0', icon: '🎫', bgColor: 'bg-blue-100', iconColor: 'text-blue-500' },
+    { label: 'Pending Tickets', value: '0', icon: '⏱️', bgColor: 'bg-yellow-100', iconColor: 'text-yellow-500' },
+    { label: 'Closed Tickets', value: '0', icon: '✅', bgColor: 'bg-green-100', iconColor: 'text-green-500' },
+    { label: 'Deleted Tickets', value: '0', icon: '🗑️', bgColor: 'bg-red-100', iconColor: 'text-red-500' }
+  ]);
 
-  const tickets = [
-    {
-      id: '#245784',
-      requestedBy: { name: 'Abhiraj D.', avatar: 'https://i.pravatar.cc/150?img=1' },
-      subject: 'Support for theme',
-      priority: 'Medium',
-      status: 'Open',
-      startDate: '12.04.2025',
-      dueDate: '28.04.2025'
-    },
-    {
-      id: '#245784',
-      requestedBy: { name: 'Abhiraj D.', avatar: 'https://i.pravatar.cc/150?img=2' },
-      subject: 'Support for theme',
-      priority: 'Low',
-      status: 'Closed',
-      startDate: '12.04.2025',
-      dueDate: '28.04.2025'
-    },
-    {
-      id: '#245784',
-      requestedBy: { name: 'Abhiraj D.', avatar: 'https://i.pravatar.cc/150?img=3' },
-      subject: 'Support for theme',
-      priority: 'High',
-      status: 'Open',
-      startDate: '12.04.2025',
-      dueDate: '28.04.2025'
-    },
-    {
-      id: '#245784',
-      requestedBy: { name: 'Abhiraj D.', avatar: 'https://i.pravatar.cc/150?img=4' },
-      subject: 'Support for theme',
-      priority: 'Medium',
-      status: 'Open',
-      startDate: '12.04.2025',
-      dueDate: '28.04.2025'
-    },
-    {
-      id: '#245784',
-      requestedBy: { name: 'Abhiraj D.', avatar: 'https://i.pravatar.cc/150?img=5' },
-      subject: 'Support for theme',
-      priority: 'Medium',
-      status: 'Closed',
-      startDate: '12.04.2025',
-      dueDate: '28.04.2025'
-    },
-    {
-      id: '#245784',
-      requestedBy: { name: 'Abhiraj D.', avatar: 'https://i.pravatar.cc/150?img=6' },
-      subject: 'Support for theme',
-      priority: 'High',
-      status: 'Open',
-      startDate: '12.04.2025',
-      dueDate: '28.04.2025'
-    },
-    {
-      id: '#245784',
-      requestedBy: { name: 'Abhiraj D.', avatar: 'https://i.pravatar.cc/150?img=7' },
-      subject: 'Support for theme',
-      priority: 'Low',
-      status: 'Open',
-      startDate: '12.04.2025',
-      dueDate: '28.04.2025'
-    }
-  ];
+  useEffect(() => {
+    const fetchTickets = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/superAdmin/allTickets', {
+          headers: {
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
+          }
+        });
+        console.log(response.data);
+
+        const ticketsData = response.data.tickets;
+
+        const mappedTickets = ticketsData.map((ticket) => ({
+          id: `#${ticket._id.slice(-6)}`,
+          requestedBy: {
+            name: ticket.adminName
+          },
+          subject: ticket.subject,
+          priority: 'High',
+          status: ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1),
+          startDate: new Date(ticket.createdAt).toLocaleDateString('en-GB').replace(/\//g, '.'),
+        }));
+
+        setTickets(mappedTickets);
+
+        const totalTickets = ticketsData.length;
+        const pendingTickets = ticketsData.filter(t => t.status === 'open').length;
+        const closedTickets = ticketsData.filter(t => t.status === 'closed').length;
+        const deletedTickets = ticketsData.filter(t => t.status === 'deleted').length;
+
+        setStats([
+          { label: 'Total Tickets', value: totalTickets.toString(), icon: '🎫', bgColor: 'bg-blue-100', iconColor: 'text-blue-500' },
+          { label: 'Pending Tickets', value: pendingTickets.toString(), icon: '⏱️', bgColor: 'bg-yellow-100', iconColor: 'text-yellow-500' },
+          { label: 'Closed Tickets', value: closedTickets.toString(), icon: '✅', bgColor: 'bg-green-100', iconColor: 'text-green-500' },
+          { label: 'Deleted Tickets', value: deletedTickets.toString(), icon: '🗑️', bgColor: 'bg-red-100', iconColor: 'text-red-500' }
+        ]);
+
+      } catch (error) {
+        console.error("Error fetching tickets:", error);
+      }
+    };
+
+    fetchTickets();
+  }, [])
 
   const itemsPerPage = 5;
   const totalPages = Math.ceil(tickets.length / itemsPerPage);
-  
+
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
   const currentItems = tickets.slice(indexOfFirstItem, indexOfLastItem);
@@ -81,13 +68,6 @@ function Tickets() {
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };
-
-  const stats = [
-    { label: 'Total Tickets', value: '4004', icon: '🎫', bgColor: 'bg-blue-100', iconColor: 'text-blue-500' },
-    { label: 'Pending Tickets', value: '4124', icon: '⏱️', bgColor: 'bg-yellow-100', iconColor: 'text-yellow-500' },
-    { label: 'Closed Tickets', value: '2487', icon: '✅', bgColor: 'bg-green-100', iconColor: 'text-green-500' },
-    { label: 'Deleted Tickets', value: '5487', icon: '🗑️', bgColor: 'bg-red-100', iconColor: 'text-red-500' }
-  ];
 
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -156,7 +136,6 @@ function Tickets() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
                 </tr>
               </thead>
@@ -167,7 +146,9 @@ function Tickets() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{ticket.id}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <img className="h-8 w-8 rounded-full" src={ticket.requestedBy.avatar} alt="" />
+                        <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold text-sm">
+                          {ticket.requestedBy.name.charAt(0).toUpperCase()}
+                        </div>
                         <span className="ml-3 text-sm text-gray-900">{ticket.requestedBy.name}</span>
                       </div>
                     </td>
@@ -183,7 +164,6 @@ function Tickets() {
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{ticket.startDate}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{ticket.dueDate}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex items-center gap-2">
                         <button className="text-blue-600 hover:text-blue-800">
@@ -203,7 +183,7 @@ function Tickets() {
         </div>
 
         {tickets.length > 0 && (
-          <Pagination 
+          <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
             onPageChange={handlePageChange}
