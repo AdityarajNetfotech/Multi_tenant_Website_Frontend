@@ -141,6 +141,7 @@ const GiveTest = ({ jdId }) => {
     const fetchTest = async () => {
       try {
         setLoading(true);
+        console.log("Question ID:", questionSetId)
         const data = await testApi.startTest(questionSetId);
         console.log("Fetched test data:", data);
 

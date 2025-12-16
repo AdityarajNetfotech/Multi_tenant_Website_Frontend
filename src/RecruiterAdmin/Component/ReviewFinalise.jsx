@@ -10,6 +10,7 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
   const [error, setError] = useState(null);
 
   // Transform questions to display format
+  console.log("Seeyog",questions);
   const displayQuestions = questions.map((q, idx) => {
     const content = q.content || {};
     

@@ -44,6 +44,9 @@ export default function Examination() {
               v => v === null || v === undefined || v === ""
             );
           if (!onlyNull) {
+            console.log("Siuuu: ",
+              finalisedTestResults
+            )
             setJobs(finalisedTestResults.map(test => ({
               title: test.title || "Assessment",
               company: test.company,
@@ -56,7 +59,7 @@ export default function Examination() {
               endDate: test.endDate || "—",
               endTime: test.endTime || "—",
               isActive: typeof test.isActive === 'boolean' ? test.isActive : true,
-              questionSetId: test.questionSetId || test.job_id || "assessment",
+              questionSetId: test.questionSetId || test.question_set_id || "assessment",
               questions: Array.isArray(test.questions) ? test.questions : [],
               aiScore: test.aiScore !== null && test.aiScore !== undefined ? test.aiScore : null,
               aiExplanation: test.aiExplanation !== null && test.aiExplanation !== undefined ? test.aiExplanation : null

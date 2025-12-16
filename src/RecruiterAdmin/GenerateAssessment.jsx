@@ -82,10 +82,12 @@ function GenerateAssessment() {
     try {
       // Transform formData to backend payload format
       const payload = AssessmentAPI.transformToBackendPayload(formData);
+      console.log("Payload for Gen Test: ",payload)
       if (!payload.skills || payload.skills.length === 0) {
         throw new Error('Please select at least one skill with question counts greater than 0');
       }
       // Use AssessmentAPI for generate-test
+
       const result = await AssessmentAPI.generateTest(payload);
       console.log('generateTest API result:', result);
       // Support both {success, data: {questions}} and {status, questions} formats
