@@ -680,9 +680,9 @@ const GiveTest = ({ jdId }) => {
 
                         <WebCamRecorder
                           ref={webcamInterviewRef}
-                          question={currentQuestion}            // 👈 PASS ONE QUESTION
+                          question={currentQuestion}
                           candidateId={finalCandidateId}
-                          questionSetId={questionSetId}         // 👈 REQUIRED FOR backend
+                          questionSetId={questionSetId}
                           baseUrl={window.REACT_APP_BASE_URL || 'http://127.0.0.1:5000'}
                         />
 
