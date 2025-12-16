@@ -5,6 +5,7 @@ import AssessmentAPI from '../../RecruiterAdmin/api/generateAssessmentApi';
 export default function Examination() {
   const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
+  const regex = / \d{2}:\d{2}:\d{2} GMT/;
 
   useEffect(() => {
     const fetchAssessment = async () => {
@@ -54,10 +55,10 @@ export default function Examination() {
               workType: test.workType || "API Response Check",
               skills: Array.isArray(test.skills) ? test.skills : [],
               description: test.description || "This is an assessment for your role.",
-              startDate: test.startDate || "Today",
-              startTime: test.startTime || "10:00 AM",
-              endDate: test.endDate || "—",
-              endTime: test.endTime || "—",
+              startDate: test.exam_date.replace(regex, "") || "Today",
+              startTime: test.test_start || "10:00 AM",
+              endDate: test.end_date.replace(regex, "") || "—",
+              endTime: test.test_end || "—",
               isActive: typeof test.isActive === 'boolean' ? test.isActive : true,
               questionSetId: test.questionSetId || test.question_set_id || "assessment",
               questions: Array.isArray(test.questions) ? test.questions : [],

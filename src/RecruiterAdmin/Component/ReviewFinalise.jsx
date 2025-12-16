@@ -170,13 +170,17 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
       }
 
       const minimalPayload = {
-        test_title: formData.test_title || `${formData.role_title || formData.title || ''} Assessment`,
+        test_title: formData.test_title || `${formData.role_title || formData.title || formData.role_title || formData.roleTitle || ''} Assessment`,
         test_description: formData.test_description || `Assessment for ${formData.role_title || formData.title || ''} position requiring ${formData.experience || ''} experience`,
         job_id: jobIdFromLocal || formData.job_id || formData.jobId || null,
         role_title: formData.role_title || formData.title || null,
         skills: (formData.skills || (formData.skillLevels ? formData.skillLevels.map(s => s.skill) : [])).join(','),
         candidate_ids: candidateIds.join(','),
         company: formData.company || null,
+        startDate: formData.startDate,
+        startTime: formData.startTime,
+        endDate: formData.endDate,
+        endTime: formData.endTime,
         questions: questions.map(q => ({
           question_id: q.question_id,
           type: q.type,
@@ -189,6 +193,7 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
         })),
       };
 
+      console.log("aneesh", formData);
       console.log('Payload sent to finalize API:', JSON.stringify(minimalPayload, null, 2));
 
       // Call backend API directly
