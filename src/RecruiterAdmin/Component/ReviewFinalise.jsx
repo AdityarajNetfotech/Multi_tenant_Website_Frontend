@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Info, Clock, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import axios from "axios";
 import AssessmentAPI from '../api/generateAssessmentApi';
 
 
@@ -191,6 +192,31 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
 
       console.log("aneesh", formData);
       console.log('Payload sent to finalize API:', JSON.stringify(minimalPayload, null, 2));
+      let candidateIdsArray = [];
+
+          // If candidateIds is a string → convert to array
+          if (typeof candidateIds === "string") {
+            candidateIdsArray = candidateIds
+              .split(",")
+              .map(id => id.trim())
+              .filter(Boolean);
+          }
+
+          // If already array → use as-is
+          if (Array.isArray(candidateIds)) {
+            candidateIdsArray = candidateIds;
+          }
+         const token = localStorage.getItem("token");
+         await axios.post(
+          `http://localhost:4000/api/candidate/send-email/${jobIdFromLocal}`,
+          { candidateIds: candidateIdsArray, },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
 
       // Call backend API directly
       // Finalize test using AssessmentAPI
@@ -198,7 +224,6 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
       console.log("-------------: ",result.status)
       if (result.status == 'success') {
         // Save to localStorage
-        console.log("//////////////////")
         // const existingTests = JSON.parse(localStorage.getItem("jobDataList")) || [];
         // const newTest = {
         //   id: `#${result.data.questionSetId || result.data._id || 'unknown'}`,
