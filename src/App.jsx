@@ -119,7 +119,7 @@ const App = () => {
           <Route path="CompaniesRegister" element={<CompaniesRegister />} />
           <Route path="Profile" element={<SuperAdminProfile />} />
           <Route path="Companies" element={<Companies />} />
-          <Route path="Companies/CompanieDetail" element={<CompanyDetail />} />
+          <Route path="RejisteredRecruiters/CompanieDetail" element={<CompanyDetail />} />
           <Route path="Tickets" element={<Tickets />} />
           <Route path="RejisteredRecruiters" element={<RejisteredRecruiters />} />
           <Route path="EnquiryMessages" element={<EnquiryMessages />} />

@@ -14,7 +14,7 @@ const CompanyDetail = () => {
 
     useEffect(() => {
         if (!company) {
-            navigate('/SuperAdmin-Dashboard/Companies');
+            navigate('/SuperAdmin-Dashboard/RejisteredRecruiters');
         } else {
             setFormData({
                 id: company._id,
@@ -146,13 +146,6 @@ const CompanyDetail = () => {
 
     return (
         <div className="max-w-5xl mx-auto p-6">
-            <button
-                onClick={() => navigate(-1)}
-                className="mb-4 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-            >
-                <ArrowLeft className="w-4 h-4" />
-                Back to Companies
-            </button>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-10">
                 <div className="flex justify-between items-center mb-6">
