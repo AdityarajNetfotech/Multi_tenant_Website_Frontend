@@ -507,7 +507,7 @@ const GiveTest = ({ jdId }) => {
         newestOnTop={true}
         closeOnClick
         rtl={false}
-        pauseOnFocusLoss
+        pauseOnFocusLoss={false}
         draggable
         pauseOnHover
       />

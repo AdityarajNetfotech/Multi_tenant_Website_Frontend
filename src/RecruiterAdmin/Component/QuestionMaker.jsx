@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Info, Edit, Copy, Trash2, Clock, RefreshCcw, Check, X } from 'lucide-react';
+import { Info, Edit, Trash2, Clock, Check, X } from 'lucide-react';
 
 export default function QuestionMaker({ questions, onUpdate, onNext, onBack, loading }) {
     const [editingQuestion, setEditingQuestion] = useState(null);
@@ -46,14 +46,11 @@ export default function QuestionMaker({ questions, onUpdate, onNext, onBack, loa
                 id: idx + 1,
                 question_id: q.question_id,
                 text: content.prompt_text || content.question || '',
-                expected_keywords: content.expected_keywords || [],
-                rubric: content.rubric || '',
                 tags: [q.skill],
                 skills: [q.skill],
                 time: q.time_limit || content.suggested_time_seconds || 120,
-                difficulty: q.difficulty || 'medium',
                 questionType: 'Audio',
-                marks: 0,
+                marks: q.positive_marking || 0,
                 type: q.type
             };
         } else if (q.type === 'video') {
@@ -61,13 +58,11 @@ export default function QuestionMaker({ questions, onUpdate, onNext, onBack, loa
                 id: idx + 1,
                 question_id: q.question_id,
                 text: content.prompt_text || content.question || '',
-                rubric: content.rubric || '',
                 tags: [q.skill],
                 skills: [q.skill],
                 time: q.time_limit || content.suggested_time_seconds || 180,
-                difficulty: q.difficulty || 'medium',
                 questionType: 'Video',
-                marks: 0,
+                marks: q.positive_marking || 0,
                 type: q.type
             };
         } else if (q.type === 'text') {
@@ -149,23 +144,18 @@ export default function QuestionMaker({ questions, onUpdate, onNext, onBack, loa
                 ...question,
                 questionType: 'Audio',
                 timeLimit: question.time?.toString() || '120',
-                marks: '0',
-                level: question.difficulty.charAt(0).toUpperCase() + question.difficulty.slice(1) || 'Medium',
+                marks: question.marks?.toString() || '0',
                 skills: question.skills || question.tags || [],
                 questionText: question.text,
-                expected_keywords: question.expected_keywords || [],
-                rubric: question.rubric || ''
             });
         } else if (question.questionType === 'Video') {
             setEditedData({
                 ...question,
                 questionType: 'Video',
                 timeLimit: question.time?.toString() || '180',
-                marks: '0',
-                level: question.difficulty.charAt(0).toUpperCase() + question.difficulty.slice(1) || 'Medium',
+                marks: question.marks?.toString() || '0',
                 skills: question.skills || question.tags || [],
                 questionText: question.text,
-                rubric: question.rubric || ''
             });
         } else if (question.questionType === 'Text') {
             setEditedData({
@@ -187,16 +177,6 @@ export default function QuestionMaker({ questions, onUpdate, onNext, onBack, loa
                 skills: question.skills || question.tags || [],
                 questionText: question.text,
                 scale: question.scale || 5
-            });
-            setEditedData({
-                ...question,
-                questionType: 'Video',
-                timeLimit: question.time?.toString() || '180',
-                marks: '0',
-                level: question.difficulty.charAt(0).toUpperCase() + question.difficulty.slice(1) || 'Medium',
-                skills: question.skills || question.tags || [],
-                questionText: question.text,
-                rubric: question.rubric || ''
             });
         }
     };
@@ -227,15 +207,12 @@ export default function QuestionMaker({ questions, onUpdate, onNext, onBack, loa
             updatedQuestion.content.output_spec = editedData.output_spec;
         } else if (editedData.questionType === 'Audio') {
             updatedQuestion.time_limit = parseInt(editedData.timeLimit);
-            updatedQuestion.difficulty = editedData.level.toLowerCase();
+            updatedQuestion.positive_marking = parseInt(editedData.marks);
             updatedQuestion.content.prompt_text = editedData.questionText;
-            updatedQuestion.content.expected_keywords = editedData.expected_keywords;
-            updatedQuestion.content.rubric = editedData.rubric;
         } else if (editedData.questionType === 'Video') {
             updatedQuestion.time_limit = parseInt(editedData.timeLimit);
-            updatedQuestion.difficulty = editedData.level.toLowerCase();
+            updatedQuestion.positive_marking = parseInt(editedData.marks);
             updatedQuestion.content.prompt_text = editedData.questionText;
-            updatedQuestion.content.rubric = editedData.rubric;
         } else if (editedData.questionType === 'Text') {
             updatedQuestion.time_limit = parseInt(editedData.timeLimit);
             updatedQuestion.positive_marking = parseInt(editedData.marks);
@@ -247,10 +224,6 @@ export default function QuestionMaker({ questions, onUpdate, onNext, onBack, loa
             updatedQuestion.difficulty = editedData.level.toLowerCase();
             updatedQuestion.content.prompt = editedData.questionText;
             updatedQuestion.content.scale = editedData.scale || 5;
-            updatedQuestion.time_limit = parseInt(editedData.timeLimit);
-            updatedQuestion.difficulty = editedData.level.toLowerCase();
-            updatedQuestion.content.prompt_text = editedData.questionText;
-            updatedQuestion.content.rubric = editedData.rubric;
         }
         
         if (onUpdate) {
@@ -428,39 +401,6 @@ export default function QuestionMaker({ questions, onUpdate, onNext, onBack, loa
                                             </div>
                                         )}
 
-                                        {/* Video Question Details */}
-                                        {question.questionType === 'Video' && question.rubric && (
-                                            <div className="bg-purple-50 border border-purple-200 rounded-xl p-3 mb-4">
-                                                <p className="text-xs sm:text-sm text-gray-700">
-                                                    <span className="font-semibold">Rubric:</span> {question.rubric}
-                                                </p>
-                                            </div>
-                                        )}
-
-                                        {/* Audio Question Details */}
-                                        {question.questionType === 'Audio' && (
-                                            <div className="space-y-2 mb-4">
-                                                {question.expected_keywords && question.expected_keywords.length > 0 && (
-                                                    <div className="bg-yellow-50 border border-yellow-200 rounded p-2">
-                                                        <span className="text-xs font-semibold text-gray-700">Expected Keywords:</span>
-                                                        <div className="flex flex-wrap gap-1 mt-1">
-                                                            {question.expected_keywords.map((keyword, idx) => (
-                                                                <span key={idx} className="px-2 py-0.5 bg-yellow-200 text-yellow-800 rounded text-xs">
-                                                                    {keyword}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                                {question.rubric && (
-                                                    <div className="bg-orange-50 border border-orange-200 rounded p-2">
-                                                        <span className="text-xs font-semibold text-gray-700">Rubric:</span>
-                                                        <p className="text-xs text-gray-600 mt-1">{question.rubric}</p>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-
                                         <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-4 text-xs sm:text-sm text-gray-600">
                                             <div className="flex items-center gap-1">
                                                 <Clock size={14} className="sm:w-4 sm:h-4" />
@@ -485,9 +425,11 @@ export default function QuestionMaker({ questions, onUpdate, onNext, onBack, loa
                                                 ))}
                                             </div>
 
+                                            {!['Audio','Video'].includes(question.questionType) && (
                                             <span className="px-2 py-0.5 sm:py-1 bg-blue-100 text-blue-700 rounded text-xs capitalize">
                                                 {question.difficulty}
                                             </span>
+                                            )}
 
                                             <span className="px-2 py-0.5 sm:py-1 bg-purple-100 text-purple-700 rounded text-xs">
                                                 {question.questionType}
@@ -583,25 +525,27 @@ export default function QuestionMaker({ questions, onUpdate, onNext, onBack, loa
                                     <label className="block text-sm font-medium text-gray-700 mb-2">Marks</label>
                                     <input
                                         type="number"
-                                        value={editedData.marks || ''}
-                                        onChange={(e) => setEditedData({...editedData, marks: e.target.value})}
+                                        value={editedData.marks || 0}
+                                        onChange={(e) => setEditedData({...editedData, marks: Number(e.target.value)})}
                                         className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         min="0"
                                     />
                                 </div>
 
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Level</label>
-                                    <select
+                                {!['Audio','Video'].includes(editedData.questionType) && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">Level</label>
+                                        <select
                                         value={editedData.level || 'Medium'}
                                         onChange={(e) => setEditedData({...editedData, level: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    >
+                                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
+                                        >
                                         <option>Easy</option>
                                         <option>Medium</option>
                                         <option>Hard</option>
-                                    </select>
-                                </div>
+                                        </select>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="mb-6">
@@ -689,46 +633,6 @@ export default function QuestionMaker({ questions, onUpdate, onNext, onBack, loa
                                             className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
                                             rows="2"
                                             placeholder="Describe the expected output..."
-                                        />
-                                    </div>
-                                </>
-                            )}
-
-                            {/* Video Specific Fields */}
-                            {editedData?.questionType === 'Video' && (
-                                <div className="mb-6">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">Rubric</label>
-                                    <textarea
-                                        value={editedData.rubric || ''}
-                                        onChange={(e) => setEditedData({...editedData, rubric: e.target.value})}
-                                        className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-                                        rows="3"
-                                        placeholder="Evaluation criteria..."
-                                    />
-                                </div>
-                            )}
-
-                            {/* Audio Specific Fields */}
-                            {editedData?.questionType === 'Audio' && (
-                                <>
-                                    <div className="mb-6">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Expected Keywords (comma-separated)</label>
-                                        <input
-                                            type="text"
-                                            value={Array.isArray(editedData.expected_keywords) ? editedData.expected_keywords.join(', ') : ''}
-                                            onChange={(e) => setEditedData({...editedData, expected_keywords: e.target.value.split(',').map(k => k.trim()).filter(k => k)})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            placeholder="e.g., leadership, teamwork, communication"
-                                        />
-                                    </div>
-                                    <div className="mb-6">
-                                        <label className="block text-sm font-medium text-gray-700 mb-2">Rubric</label>
-                                        <textarea
-                                            value={editedData.rubric || ''}
-                                            onChange={(e) => setEditedData({...editedData, rubric: e.target.value})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-                                            rows="3"
-                                            placeholder="Evaluation criteria..."
                                         />
                                     </div>
                                 </>

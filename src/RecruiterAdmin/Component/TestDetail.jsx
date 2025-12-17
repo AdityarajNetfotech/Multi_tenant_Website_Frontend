@@ -289,60 +289,6 @@ export default function TestDetail({
           />
         </div>
 
-        {/* WORK ARRANGEMENT */}
-        <div className="mb-4">
-          <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">
-            Work Arrangement
-          </label>
-          <select
-            value={formData.workType || ''}
-            onChange={(e) => onUpdate({ workType: e.target.value })}
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition"
-          >
-            <option value="">Select</option>
-            <option value="remote">Remote</option>
-            <option value="on-site">On-Site</option>
-            <option value="hybrid">Hybrid</option>
-          </select>
-        </div>
-
-        {/* LOCATION */}
-        <div className="mb-4">
-          <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">
-            Location
-          </label>
-          <input
-            type="text"
-            placeholder="e.g., Kolkata"
-            value={formData.location || ''}
-            onChange={(e) => onUpdate({ location: e.target.value })}
-            className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition"
-          />
-        </div>
-
-        {/* COMPENSATION RANGE */}
-        <div className="mb-4">
-          <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">
-            Annual Compensation (INR)
-          </label>
-          <div className="flex gap-3">
-            <input
-              type="number"
-              placeholder="Min Amount"
-              value={formData.minCompensation || ''}
-              onChange={(e) => onUpdate({ minCompensation: e.target.value })}
-              className="w-1/2 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition"
-            />
-            <input
-              type="number"
-              placeholder="Max Amount"
-              value={formData.maxCompensation || ''}
-              onChange={(e) => onUpdate({ maxCompensation: e.target.value })}
-              className="w-1/2 px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-500 outline-none transition"
-            />
-          </div>
-        </div>
-
         {/* SCHEDULE BUTTON */}
         <div className="mt-4">
           <label className="block text-xs sm:text-sm font-semibold text-gray-900 mb-2">
@@ -420,10 +366,17 @@ export default function TestDetail({
               </button>
               <button
                 onClick={onNext}
-                disabled={loading || getTotalQuestions() === 0}
-                className="px-5 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300"
+                className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 flex items-center justify-center"
+                disabled={loading}
               >
-                {loading ? 'Generating...' : 'Generate'}
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Generating...
+                  </>
+                ) : (
+                  'Generate'
+                )}
               </button>
             </div>
           </div>

@@ -3,13 +3,11 @@ import aiAvatar from '../../img/interviewer.png';
 
 export default function AudioInterview({
   questions = [],
-  candidateId, // from GiveTest
-  questionSetId, // from GiveTest
+  candidateId,
+  questionSetId,
   baseUrl = window.REACT_APP_BASE_URL || 'http://127.0.0.1:5000',
-  onClose = () => {},
   onComplete = () => {},
 }) {
-  const videoRef = useRef(null);
   const streamRef = useRef(null);
   const audioRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
@@ -20,156 +18,87 @@ export default function AudioInterview({
   const [isRecordingAudio, setIsRecordingAudio] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [currentAnswer, setCurrentAnswer] = useState('');
-  const [answerLanguage, setAnswerLanguage] = useState('en');
-  // Removed unused loadingMedia state
 
-  // Unified getter for question prompt
-  const getPrompt = (q) =>
-    q?.question || q?.prompt_text || q?.content?.prompt || '';
+  const getPrompt = (q) => q?.question || q?.prompt_text || '';
 
-  // Initialize camera + mic
+  /* -------------------- MEDIA INIT -------------------- */
   useEffect(() => {
-    let mounted = true;
-
     async function initMedia() {
       try {
-        // Removed setLoadingMedia(true);
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: true,
-          audio: true,
-        });
-
-        if (!mounted) return;
-
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.muted = true; // Chrome autoplay
-        }
       } catch (err) {
         console.error('Media error', err);
-        alert('Please allow camera and microphone access.');
-      } finally {
-        // Removed setLoadingMedia(false);
+        alert('Please allow microphone access.');
       }
     }
-
     initMedia();
-
     return () => {
-      mounted = false;
-      // Stop all tracks
-      if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
+      if (streamRef.current) streamRef.current.getTracks().forEach(t => t.stop());
       if (recognitionRef.current) recognitionRef.current.stop();
     };
   }, []);
 
-  // TTS playback (server + fallback)
-  const playQuestionTTS = React.useCallback(
-    async (text) => {
-      if (!text) return;
-
-      window.speechSynthesis.cancel();
-      setStatus('Speaking question...');
-
-      try {
-        const res = await fetch(`${baseUrl}/tts_question`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text }),
-        });
-        const data = await res.json();
-        if (data?.status === 'success' && data?.tts_url) {
-          const audio = new Audio(`${baseUrl}${data.tts_url}`);
-          await audio.play();
-          await new Promise((resolve) => (audio.onended = resolve));
-          setStatus('Awaiting answer');
-          return;
-        }
-      } catch {
-        console.warn('Server TTS failed, using browser fallback.');
-      }
-
-      const u = new SpeechSynthesisUtterance(text);
-      u.lang = answerLanguage === 'hi' ? 'hi-IN' : 'en-US';
-      window.speechSynthesis.speak(u);
-      await new Promise((resolve) => {
-        u.onend = resolve;
-        setTimeout(resolve, 15000); // max wait fallback
-      });
-      setStatus('Awaiting answer');
-    },
-    [baseUrl, answerLanguage]
-  );
-
-  // Audio recorder
+  /* -------------------- AUDIO RECORDING -------------------- */
   const startAudioRecording = () => {
     if (!streamRef.current) return;
-    if (isListening) stopSpeechRecognition(); // prevent conflict
-
-    try {
-      audioChunksRef.current = [];
-      const recorder = new MediaRecorder(streamRef.current);
-      recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunksRef.current.push(e.data);
-      };
-      recorder.start(500);
-      audioRecorderRef.current = recorder;
-
-      setIsRecordingAudio(true);
-      setStatus('Recording audio answer...');
-    } catch {
-      alert('Cannot start audio recording.');
-    }
+    audioChunksRef.current = [];
+    const recorder = new MediaRecorder(streamRef.current);
+    recorder.ondataavailable = (e) => {
+      if (e.data.size > 0) audioChunksRef.current.push(e.data);
+    };
+    recorder.start(500);
+    audioRecorderRef.current = recorder;
+    setIsRecordingAudio(true);
+    setStatus('Recording audio answer...');
   };
 
   const stopAudioRecording = () => {
-    if (!audioRecorderRef.current) return;
-    audioRecorderRef.current.stop();
+    audioRecorderRef.current?.stop();
     setIsRecordingAudio(false);
-    setStatus('Recorded audio');
+    setStatus('Audio recorded');
   };
 
-  // STT
+  /* -------------------- SPEECH TO TEXT -------------------- */
   const startSpeechRecognition = () => {
     if (!window.SpeechRecognition && !window.webkitSpeechRecognition) {
       alert('Speech recognition not supported.');
       return;
     }
-    if (isRecordingAudio) stopAudioRecording(); // prevent conflict
+    if (isRecordingAudio) stopAudioRecording();
 
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const rec = new SpeechRecognition();
     rec.continuous = true;
     rec.interimResults = true;
-    rec.lang = answerLanguage === 'hi' ? 'hi-IN' : 'en-US';
+    rec.lang = 'en-US';
 
     rec.onstart = () => {
       setIsListening(true);
       setStatus('🎤 Listening...');
     };
+
     rec.onresult = (event) => {
       let final = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) final += event.results[i][0].transcript + ' ';
       }
-      if (final.trim()) setCurrentAnswer((prev) => prev + ' ' + final.trim());
+      if (final.trim()) setCurrentAnswer(prev => prev + ' ' + final.trim());
     };
-    rec.onerror = (e) => console.error('STT error', e);
-    rec.onend = () => setIsListening(false);
 
+    rec.onend = () => setIsListening(false);
     recognitionRef.current = rec;
     rec.start();
   };
 
   const stopSpeechRecognition = () => {
-    if (recognitionRef.current) recognitionRef.current.stop();
+    recognitionRef.current?.stop();
     setIsListening(false);
   };
 
-  // Submit answer
+  /* -------------------- SUBMIT ANSWER -------------------- */
   const submitCurrentAnswer = async () => {
-    if (!currentAnswer.trim()) {
+    if (!currentAnswer.trim() && audioChunksRef.current.length === 0) {
       alert('Please provide an answer.');
       return;
     }
@@ -177,167 +106,74 @@ export default function AudioInterview({
     let audioFile = null;
     if (audioChunksRef.current.length) {
       const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-      const filename = `answer_${candidateId}_${currentIndex}.webm`;
-      audioFile = new File([blob], filename, { type: 'audio/webm' });
+      audioFile = new File([blob], `answer_${candidateId}_${currentIndex}.webm`, { type: 'audio/webm' });
     }
 
-    const questionText = getPrompt(questions[currentIndex]);
     const qa = {
-      question: questionText,
+      question: getPrompt(questions[currentIndex]),
       questionId: questions[currentIndex]?.id || null,
       answer: currentAnswer.trim(),
       audioFile,
       timestamp: new Date().toISOString(),
     };
 
-    // Update state + call onComplete after last question
-    // Call onComplete after last question
-    if (currentIndex + 1 >= questions.length) {
-      onComplete([qa]);
-      if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
-    }
-    setCurrentAnswer('');
-    stopSpeechRecognition();
-    audioChunksRef.current = [];
-
-    // save to backend (best effort)
     const fd = new FormData();
     fd.append('candidate_id', candidateId);
-    fd.append("question_set_id", questionSetId);
-    fd.append("qa_data", JSON.stringify([qa]));
+    fd.append('question_set_id', questionSetId);
+    fd.append('qa_data', JSON.stringify([qa]));
     if (audioFile) fd.append('audio', audioFile);
+
     fetch(`${baseUrl}/api/v1/upload_audio`, { method: 'POST', body: fd }).catch(() => {});
 
-    // Move to next question
+    setCurrentAnswer('');
+    audioChunksRef.current = [];
+    stopSpeechRecognition();
+
     const nextIndex = currentIndex + 1;
-    if (nextIndex < questions.length) {
-      setCurrentIndex(nextIndex);
-      setTimeout(() => playQuestionTTS(getPrompt(questions[nextIndex])), 400);
-    } else {
-      setStatus('Interview complete');
-    }
+    if (nextIndex < questions.length) setCurrentIndex(nextIndex);
+    else setStatus('Interview complete');
   };
 
-  // Auto-play first question
-  useEffect(() => {
-    if (questions.length > 0) {
-      setTimeout(() => playQuestionTTS(getPrompt(questions[0])), 500);
-    }
-  }, [questions, playQuestionTTS]);
-
-  if (!candidateId || !questionSetId) return <div>Candidate or Question Set ID missing!</div>;
-
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-6xl h-[85vh] rounded-lg overflow-hidden shadow-xl flex">
-        {/* LEFT PANEL */}
-        <div className="w-2/5 bg-slate-50 p-6 flex flex-col items-center">
-          <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-sky-400 shadow">
-            <img src={aiAvatar} alt="AI Interviewer" className="w-full h-full object-cover" />
-          </div>
-          <h2 className="mt-4 text-2xl font-semibold">AI Interviewer</h2>
-          <p className="text-sm text-slate-600 mt-2 text-center px-4">
-            Listen to the question and respond using voice or text.
-          </p>
+    <div className="p-4 bg-white rounded shadow">
+      <h2 className="text-xl font-bold mb-4">Audio Interview</h2>
 
-          <div className="mt-6 w-full">
-            <div className="border bg-white p-4 rounded">
-              <div className="text-sm text-slate-500">
-                Question {currentIndex + 1} of {questions.length}
-              </div>
-              <div className="mt-2 text-lg font-medium text-slate-800">
-                {getPrompt(questions[currentIndex]) || 'Loading...'}
-              </div>
-            </div>
-
-            <div className="mt-4 flex gap-2">
-              <button
-                className="flex-1 py-2 bg-blue-600 text-white rounded"
-                onClick={() => playQuestionTTS(getPrompt(questions[currentIndex]))}
-              >
-                🔁 Replay Question
-              </button>
-              <button
-                className="py-2 px-4 bg-gray-200 rounded"
-                onClick={() => {
-                  if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
-                  onClose();
-                }}
-              >
-                ✕ Cancel
-              </button>
-            </div>
-          </div>
-
-          <div className="mt-auto text-sm text-slate-600">
-            Status: <span className="font-semibold">{status}</span>
-          </div>
-        </div>
-
-        {/* RIGHT PANEL */}
-        <div className="w-3/5 p-6 flex flex-col">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex gap-3 items-center">
-              <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">You</div>
-              <div>
-                <div className="font-semibold text-sm">{candidateId}</div>
-                <div className="text-xs text-slate-500">Camera & mic ON</div>
-              </div>
-            </div>
-
-            <select
-              value={answerLanguage}
-              onChange={(e) => setAnswerLanguage(e.target.value)}
-              className="border rounded px-2 py-1 text-sm"
-            >
-              <option value="en">English</option>
-              <option value="hi">हिंदी</option>
-            </select>
-          </div>
-
-          <div className="flex-1 bg-black rounded overflow-hidden">
-            <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
-          </div>
-
-          <label className="mt-4 text-sm font-medium">
-            {answerLanguage === 'hi' ? 'आपका उत्तर' : 'Your Answer'}
-          </label>
-          <textarea
-            value={currentAnswer}
-            onChange={(e) => setCurrentAnswer(e.target.value)}
-            className={`w-full border rounded p-3 mt-1 min-h-[100px] ${
-              isListening ? 'border-green-500' : 'border-gray-300'
-            }`}
-          />
-
-          <div className="flex gap-3 mt-3">
-            <button
-              className={`px-4 py-2 rounded text-white ${isRecordingAudio ? 'bg-red-600' : 'bg-green-600'}`}
-              onClick={() => (isRecordingAudio ? stopAudioRecording() : startAudioRecording())}
-            >
-              {isRecordingAudio ? 'Stop Recording' : 'Record Answer (Audio)'}
-            </button>
-
-            <button
-              className={`px-4 py-2 rounded text-white ${isListening ? 'bg-red-600' : 'bg-indigo-600'}`}
-              onClick={() => (isListening ? stopSpeechRecognition() : startSpeechRecognition())}
-            >
-              {isListening ? 'Stop STT' : 'Voice Input (STT)'}
-            </button>
-
-            <button
-              className="ml-auto px-4 py-2 bg-sky-600 text-white rounded"
-              onClick={submitCurrentAnswer}
-            >
-              {currentIndex < questions.length - 1 ? 'Next →' : 'Finish'}
-            </button>
-          </div>
-
-          <div className="text-xs text-slate-500 mt-3">
-            Your audio answer will be saved for evaluation.
-          </div>
-        </div>
+      <div className="mb-4">
+        <p className="font-semibold">Question {currentIndex + 1}:</p>
+        <p className="p-2 bg-gray-100 rounded">{getPrompt(questions[currentIndex])}</p>
       </div>
+
+      <textarea
+        value={currentAnswer}
+        onChange={e => setCurrentAnswer(e.target.value)}
+        className="w-full p-2 border rounded min-h-[100px]"
+        placeholder="Type your answer here..."
+      />
+
+      <div className="flex gap-2 mt-3">
+        <button
+          className="px-3 py-2 bg-green-600 text-white rounded"
+          onClick={isRecordingAudio ? stopAudioRecording : startAudioRecording}
+        >
+          {isRecordingAudio ? 'Stop Recording' : 'Record Answer'}
+        </button>
+
+        <button
+          className="px-3 py-2 bg-indigo-600 text-white rounded"
+          onClick={isListening ? stopSpeechRecognition : startSpeechRecognition}
+        >
+          {isListening ? 'Stop STT' : 'Voice Input'}
+        </button>
+
+        <button
+          className="ml-auto px-3 py-2 bg-sky-600 text-white rounded"
+          onClick={submitCurrentAnswer}
+        >
+          {currentIndex < questions.length - 1 ? 'Next →' : 'Finish'}
+        </button>
+      </div>
+
+      <p className="text-sm mt-2">Status: {status}</p>
     </div>
   );
 }

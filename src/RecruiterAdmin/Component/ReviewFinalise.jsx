@@ -50,37 +50,33 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
         skill: q.skill
       };
     } else if (q.type === 'audio') {
-      return {
-        id: idx + 1,
-        question_id: q.question_id,
-        text: content.prompt_text || content.question || '',
-        expected_keywords: content.expected_keywords || [],
-        rubric: content.rubric || '',
-        tags: [q.skill],
-        skills: [q.skill],
-        time: q.time_limit || content.suggested_time_seconds || 120,
-        difficulty: q.difficulty || 'medium',
-        questionType: 'Audio',
-        marks: 0,
-        type: q.type,
-        skill: q.skill
-      };
-    } else if (q.type === 'video') {
-      return {
-        id: idx + 1,
-        question_id: q.question_id,
-        text: content.prompt_text || content.question || '',
-        rubric: content.rubric || '',
-        tags: [q.skill],
-        skills: [q.skill],
-        time: q.time_limit || content.suggested_time_seconds || 180,
-        difficulty: q.difficulty || 'medium',
-        questionType: 'Video',
-        marks: 0,
-        type: q.type,
-        skill: q.skill
-      };
-    } else if (q.type === 'text') {
+        return {
+          id: idx + 1,
+          question_id: q.question_id,
+          text: content.prompt_text || content.question || '',
+          tags: [q.skill],
+          skills: [q.skill],
+          time: q.time_limit || content.suggested_time_seconds || 120,
+          questionType: 'Audio',
+          marks: q.positive_marking || 0,
+          type: q.type,
+          skill: q.skill
+        };
+      } else if (q.type === 'video') {
+        return {
+          id: idx + 1,
+          question_id: q.question_id,
+          text: content.prompt_text || content.question || '',
+          tags: [q.skill],
+          skills: [q.skill],
+          time: q.time_limit || content.suggested_time_seconds || 180,
+          questionType: 'Video',
+          marks: q.positive_marking || 0,
+          type: q.type,
+          skill: q.skill
+        };
+      }
+      else if (q.type === 'text') {
       return {
         id: idx + 1,
         question_id: q.question_id,
@@ -418,40 +414,6 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
                       </div>
                     )}
 
-                    {/* Audio Question */}
-                    {question.questionType === 'Audio' && (
-                      <div className="space-y-2 mb-3">
-                        {question.expected_keywords && question.expected_keywords.length > 0 && (
-                          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                            <span className="text-sm font-semibold text-gray-700">Expected Keywords:</span>
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {question.expected_keywords.map((keyword, idx) => (
-                                <span key={idx} className="px-2 py-1 bg-yellow-200 text-yellow-800 rounded text-xs font-medium">
-                                  {keyword}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        {question.rubric && (
-                          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-                            <p className="text-sm text-gray-700">
-                              <span className="font-semibold">Rubric:</span> {question.rubric}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Video Question */}
-                    {question.questionType === 'Video' && question.rubric && (
-                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-3">
-                        <p className="text-sm text-gray-700">
-                          <span className="font-semibold">Rubric:</span> {question.rubric}
-                        </p>
-                      </div>
-                    )}
-
                     {/* Text Question */}
                     {question.questionType === 'Text' && (
                       <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3">
@@ -474,14 +436,14 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
                     <div className="flex flex-wrap items-center gap-3 text-sm text-gray-600">
                       <div className="flex items-center gap-1">
                         <Clock size={14} />
-                        <span>{question.time}s</span>
+                        <span>{Math.ceil(question.time/60)} min</span>
                       </div>
                       {question.marks > 0 && (
                         <span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-medium">
                           +{question.marks} marks
                         </span>
                       )}
-                      {question.negative_marking > 0 && (
+                      {question.negative_marking > 0 && !['Audio','Video'].includes(question.questionType) && (
                         <span className="px-2 py-1 bg-red-100 text-red-700 rounded text-xs font-medium">
                           -{question.negative_marking}
                         </span>
@@ -489,9 +451,12 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
                       <span className="px-2 py-1 bg-orange-100 text-orange-700 rounded text-xs font-medium">
                         {question.skill}
                       </span>
-                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs capitalize">
-                        {question.difficulty}
-                      </span>
+                      {!['Audio','Video'].includes(question.questionType) && (
+                        <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs capitalize">
+                          {question.difficulty}
+                        </span>
+                      )}
+
                       <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs">
                         {question.questionType}
                       </span>

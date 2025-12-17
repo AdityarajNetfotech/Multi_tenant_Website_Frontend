@@ -38,9 +38,6 @@ function GenerateAssessment() {
     job_id: selectedJD?._id || null,
     total_questions: 0,
     total_duration: 0,
-    mini_compensation: '',
-    max_compensation: '',
-    currency: 'INR',
     created_at: new Date(),
     expiry_time: '',
     status: 'active',
@@ -220,7 +217,8 @@ function GenerateAssessment() {
         </div>
       )}
 
-      {loading && (
+      {/* uncomment the following code if you need black screen showing Generating questions */}
+      {/* {loading && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-xl flex items-center space-x-3">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
@@ -229,7 +227,7 @@ function GenerateAssessment() {
             </p>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Step Progress Bar */}
       <div className="bg-white rounded-2xl border border-gray-300 px-6 pt-5 pb-7 shadow-md relative">

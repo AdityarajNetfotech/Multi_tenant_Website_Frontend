@@ -37,7 +37,7 @@ const FaceDetection = ({ faceEventRef, submitted }) => {
         } catch (err) {
           console.warn("Face detection error:", err);
         }
-      }, 3000);
+      }, 120);
     };
 
     const init = async () => {
