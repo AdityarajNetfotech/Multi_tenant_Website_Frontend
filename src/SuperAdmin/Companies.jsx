@@ -36,7 +36,7 @@ function Companies() {
 
       const data = response.data.companies;
       console.log(data);
-      
+
 
       const mapped = data.map((item) => ({
         id: item._id,
@@ -133,9 +133,8 @@ function Companies() {
               {currentData.map((company, index) => (
                 <tr
                   key={company.id}
-                  className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${
-                    index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
-                  }`}
+                  className={`border-b border-gray-100 hover:bg-gray-50 transition-colors ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
+                    }`}
                 >
                   <td className="py-4 px-6">
                     <div className="flex items-center gap-3">
@@ -168,11 +167,6 @@ function Companies() {
                     <div className="flex items-center gap-2">
 
                       <button
-                        onClick={() =>
-                          navigate("/SuperAdmin-Dashboard/Companies/CompanieDetail", {
-                            state: { company }
-                          })
-                        }
                         className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
                       >
                         <Eye className="w-4 h-4" />

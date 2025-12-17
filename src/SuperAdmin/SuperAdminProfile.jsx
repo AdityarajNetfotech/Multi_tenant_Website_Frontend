@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Upload, Trash2, Check } from 'lucide-react';
+import axios from 'axios';
 
 const RecruiterProfile = () => {
     const [formData, setFormData] = useState({
@@ -12,6 +13,27 @@ const RecruiterProfile = () => {
         state: 'Bozorgi',
         password: 'sbdfbnd65sfdvb s'
     });
+
+    useEffect(() => {
+        const fetchProfileData = async () => {
+            try {
+                const response = await axios.get('http://localhost:5000/api/superadmin/profile', {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${localStorage.getItem("token")}`
+                    }
+                });
+                const data = response.data;
+
+                console.log(data);
+                
+            } catch (error) {
+                console.error("Error fetching profile data:", error);
+            }
+        };
+        fetchProfileData();
+    }, [])
+
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;

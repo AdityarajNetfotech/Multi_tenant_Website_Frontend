@@ -21,7 +21,6 @@ const CandidateAdminSidebar = ({ isOpen, onToggle }) => {
     else if (path.includes("/AppliedJD")) setActiveNav("AppliedJD");
     else if (path.includes("/Examination")) setActiveNav("Examination");
     else if (path.includes("/Report")) setActiveNav("Reports");
-    else if (path.includes("/Results")) setActiveNav("Results");
     else setActiveNav("CandidateDashboard");
 
   }, [location.pathname]);
@@ -122,16 +121,6 @@ const CandidateAdminSidebar = ({ isOpen, onToggle }) => {
               </button>
             </li>
 
-            <li>
-              <button
-                onClick={() => handleNavClick('Results', '/Candidate-Dashboard/Results')}
-                className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
-                  ${activeNav === 'Results' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
-              >
-                <Building2 size={20} />
-                <span>Results</span>
-              </button>
-            </li>
 
             <li>
               <button

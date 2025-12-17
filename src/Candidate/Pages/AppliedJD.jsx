@@ -136,7 +136,7 @@ function AppliedJD() {
                                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Department</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Applied On</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Skills</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Action</th>
+
                             </tr>
                         </thead>
                         <tbody>
@@ -162,11 +162,7 @@ function AppliedJD() {
                                                 View
                                             </button>
                                         </td>
-                                        <td className="py-4 px-4">
-                                            <button className="p-1.5 border border-red-300 rounded hover:bg-red-50" aria-label="Delete">
-                                                <Trash2 size={16} className="text-red-600" />
-                                            </button>
-                                        </td>
+                                      
                                     </tr>
                                 ))
                             ) : (

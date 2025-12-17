@@ -19,7 +19,6 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
 
     if (path.includes("/EnquiryMessages")) setActiveNav("EnquiryMessages");
     else if (path.includes("/CompaniesRegister")) setActiveNav("RegisteredCompanies");
-    else if (path.includes("/Companies")) setActiveNav("Companies");
     else if (path.includes("/Tickets")) setActiveNav("Tickets");
     else if (path.includes("/RejisteredRecruiters")) setActiveNav("RejisteredRecruiters");
     else if (path.includes("/Profile")) setActiveNav("Profile");
@@ -101,16 +100,7 @@ const AdminSidebar = ({ isOpen, onToggle }) => {
               </button>
             </li>
 
-            <li>
-              <button
-                onClick={() => handleNavClick('Companies', '/SuperAdmin-Dashboard/Companies')}
-                className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors
-                  ${activeNav === 'Companies' ? 'bg-white text-black' : 'hover:bg-white hover:text-black'}`}
-              >
-                <UserPlus size={20} />
-                <span>Recently Registered</span>
-              </button>
-            </li>
+           
 
             <li>
               <button
