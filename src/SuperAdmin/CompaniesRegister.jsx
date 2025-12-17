@@ -40,6 +40,13 @@ function CompaniesRegister() {
         'Rajasthan'
     ];
 
+    const staffingTypes = [
+        { value: '', label: 'Select Type of Staffing' },
+        { value: 'contract', label: 'Contract' },
+        { value: 'permanent', label: 'Permanent' },
+        { value: 'both', label: 'Both' }
+    ];
+
     const handleInputChange = (e) => {
         setFormData({
             ...formData,
@@ -413,18 +420,25 @@ function CompaniesRegister() {
 
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium mb-2">
-                                    Type of Staffing (Contract/Permanentfl) <span className="text-red-500">*</span>
+                                    Type of Staffing <span className="text-red-500">*</span>
                                 </label>
-                                <input
-                                    type="text"
-                                    name="typeOfStaffing"
-                                    value={formData.typeOfStaffing}
-                                    onChange={handleInputChange}
-                                    placeholder="Enter Type of Staffing"
-                                    required
-                                    disabled={isSubmitting}
-                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                />
+                                <div className="relative">
+                                    <select
+                                        name="typeOfStaffing"
+                                        value={formData.typeOfStaffing}
+                                        onChange={handleInputChange}
+                                        required
+                                        disabled={isSubmitting}
+                                        className="w-full appearance-none px-4 py-1 bg-gray-100 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 pr-10 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {staffingTypes.map((type) => (
+                                            <option key={type.value} value={type.value} disabled={type.value === ''}>
+                                                {type.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                                </div>
                             </div>
                         </div>
                     </div>
