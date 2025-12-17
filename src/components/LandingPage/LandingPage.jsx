@@ -48,6 +48,7 @@ import suzuki from '../../img/suzuki.png'
 import deloitte from '../../img/deloitte.png'
 import toyo from '../../img/toyo.png'
 import quote from '../../img/quote.png'
+import axios from 'axios';
 
 const LandingPage = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -59,6 +60,8 @@ const LandingPage = () => {
     phoneNumber: '',
     message: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState({ type: '', message: '' });
   const navigate = useNavigate();
 
   const navigation = [
@@ -212,9 +215,38 @@ const LandingPage = () => {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
+    setIsSubmitting(true);
+    setSubmitStatus({ type: '', message: '' });
+
+    try {
+      const response = await axios.post('http://localhost:5000/api/enquiry/submit', {
+        companyName: `${formData.firstName} ${formData.lastName}`,
+        emailid: formData.email,
+        phone: formData.phoneNumber,
+        message: formData.message
+      });
+      // console.log(response.data);
+
+      if (response.data.status === 'success') {
+        setSubmitStatus({ type: 'success', message: 'Your enquiry has been submitted successfully!' });
+        setFormData({
+          firstName: '',
+          lastName: '',
+          email: '',
+          phoneNumber: '',
+          message: ''
+        });
+      } else {
+        setSubmitStatus({ type: 'error', message: response.data.message || 'Something went wrong. Please try again.' });
+      }
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || 'Network error. Please check your connection and try again.';
+      setSubmitStatus({ type: 'error', message: errorMessage });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -709,6 +741,12 @@ const LandingPage = () => {
                     </p>
                   </div>
 
+                  {submitStatus.message && (
+                    <div className={`mb-4 p-4 rounded-lg ${submitStatus.type === 'success' ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-red-100 text-red-700 border border-red-300'}`}>
+                      {submitStatus.message}
+                    </div>
+                  )}
+
                   <form onSubmit={handleSubmit} className="space-y-6">
                     {/* Name Fields */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -720,6 +758,7 @@ const LandingPage = () => {
                         onChange={handleChange}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                         required
+                        disabled={isSubmitting}
                       />
                       <input
                         type="text"
@@ -729,6 +768,7 @@ const LandingPage = () => {
                         onChange={handleChange}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                         required
+                        disabled={isSubmitting}
                       />
                     </div>
 
@@ -742,6 +782,7 @@ const LandingPage = () => {
                         onChange={handleChange}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                         required
+                        disabled={isSubmitting}
                       />
                       <input
                         type="tel"
@@ -751,6 +792,7 @@ const LandingPage = () => {
                         onChange={handleChange}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
                         required
+                        disabled={isSubmitting}
                       />
                     </div>
 
@@ -763,14 +805,18 @@ const LandingPage = () => {
                       onChange={handleChange}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 resize-none"
                       required
+                      disabled={isSubmitting}
                     ></textarea>
 
                     {/* Submit Button */}
                     <button
                       type="submit"
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-semibold transition-transform duration-200 transform hover:scale-105"
+                      disabled={isSubmitting}
+                      className={`w-full py-3 px-6 rounded-lg font-semibold transition-transform duration-200 transform ${isSubmitting
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700 hover:scale-105'} text-white`}
                     >
-                      Book your Demo Now!
+                      {isSubmitting ? 'Submitting...' : 'Book your Demo Now!'}
                     </button>
                   </form>
                 </div>
