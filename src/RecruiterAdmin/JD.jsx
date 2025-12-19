@@ -73,7 +73,7 @@ function JD() {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
-      console.log(response.data);
+      // console.log("aaa", response.data);
 
       if (response.data.success) {
         const filteredData = response.data.data.filter(jd => jd.isJDCreated === false);
@@ -319,7 +319,7 @@ function JD() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">ID</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Sr.No</th>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Company</th>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Job Title</th>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Created On</th>
@@ -334,8 +334,8 @@ function JD() {
                 <tbody>
                   {currentData.length > 0 ? (
                     currentData.map((row, index) => (
-                      <tr key={row._id || index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                        <td className="py-4 px-6 text-sm text-gray-900 font-medium">{formatId(row._id)}</td>
+                      <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <td className="py-4 px-6 text-sm text-gray-900 font-medium">{index+1}</td>
                         <td className="py-4 px-6 text-sm text-gray-700">{row.companyName || row.offerId?.company || 'N/A'}</td>
                         <td className="py-4 px-6 text-sm text-gray-700">{row.offerId?.jobTitle || 'N/A'}</td>
                         <td className="py-4 px-6 text-sm text-gray-700">{formatDate(row.createdAt)}</td>
@@ -435,9 +435,6 @@ function JD() {
                       Sr.No
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ID
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Job Title
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -465,9 +462,6 @@ function JD() {
                     <tr key={jd._id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {index + 1}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {jd._id || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {jd.jobTitle || '-'}
