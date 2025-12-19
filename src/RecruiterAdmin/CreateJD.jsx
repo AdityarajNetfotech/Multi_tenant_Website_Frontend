@@ -9,8 +9,8 @@ function CreateJD() {
     const [formData, setFormData] = useState({
         offerId: '',
         companyName: '',
-        department: '',
-        reportingManager: '',
+        // department: '',
+        // reportingManager: '',
         keyResponsibilities: '',
         qualifications: '',
         benefits: '',
@@ -54,8 +54,8 @@ function CreateJD() {
                 `http://localhost:4000/api/jd/${formData.offerId}/ai`,
                 {
                     companyName: formData.companyName,
-                    department: formData.department,
-                    reportingManager: formData.reportingManager,
+                    // department: formData.department,
+                    // reportingManager: formData.reportingManager,
                     keyResponsibilities: formData.keyResponsibilities,
                     qualifications: formData.qualifications,
                     benefits: formData.benefits,
@@ -335,7 +335,7 @@ function CreateJD() {
                                 />
                             </div>
 
-                            <div>
+                            {/* <div>
                                 <label htmlFor="department" className="block text-sm font-medium mb-2">
                                     Department
                                 </label>
@@ -367,7 +367,7 @@ function CreateJD() {
                                         focus:ring-2 focus:ring-gray-900 focus:border-transparent 
                                         outline-none transition-all text-sm"
                                 />
-                            </div>
+                            </div> */}
 
                             <div className="md:col-span-2">
                                 <label htmlFor="keyResponsibilities" className="block text-sm font-medium mb-2">
