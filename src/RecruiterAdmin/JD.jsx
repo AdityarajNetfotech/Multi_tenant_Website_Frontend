@@ -31,7 +31,7 @@ function JD() {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:4000/api/jd/all-jd-hr', {
+      const response = await axios.get('http://localhost:4000/api/jd//created-by/hr', {
         headers: {
           'Authorization': `Bearer ${token}`,
         }
@@ -73,7 +73,7 @@ function JD() {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
-      // console.log("aaa", response.data);
+      console.log("aaa", response.data);
 
       if (response.data.success) {
         const filteredData = response.data.data.filter(jd => jd.isJDCreated === false);
@@ -87,7 +87,7 @@ function JD() {
   };
 
   const handleSelectJD = (jd) => {
-    navigate("/RecruiterAdmin-Dashboard/JD/CreateJD", { state: { offerId: jd._id } });
+    navigate("/RecruiterAdmin-Dashboard/JD/CreateJD", { state: { offerId: jd._id, companyName: jd.companyName } });
   };
 
   const statsDisplay = [
@@ -168,11 +168,11 @@ function JD() {
     <div className="min-h-screen">
       {showSummaryPopup && selectedJDSummary && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div 
+          <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={handleCloseSummary}
           ></div>
-          
+
           <div className="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-4 max-h-[85vh] overflow-hidden z-10">
             <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
               <div>
@@ -335,7 +335,7 @@ function JD() {
                   {currentData.length > 0 ? (
                     currentData.map((row, index) => (
                       <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                        <td className="py-4 px-6 text-sm text-gray-900 font-medium">{index+1}</td>
+                        <td className="py-4 px-6 text-sm text-gray-900 font-medium">{startIndex + index + 1}</td>
                         <td className="py-4 px-6 text-sm text-gray-700">{row.companyName || row.offerId?.company || 'N/A'}</td>
                         <td className="py-4 px-6 text-sm text-gray-700">{row.offerId?.jobTitle || 'N/A'}</td>
                         <td className="py-4 px-6 text-sm text-gray-700">{formatDate(row.createdAt)}</td>
@@ -438,6 +438,9 @@ function JD() {
                       Job Title
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Company Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Priority
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -465,6 +468,9 @@ function JD() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {jd.jobTitle || '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {jd.companyName || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {jd.priority || '-'}

@@ -1,31 +1,53 @@
 import axios from 'axios';
 import React, { useState, useEffect } from 'react';
+import { useCompany } from '../../Context/companyContext';
 
 function AddNewRecruiter({ onSave, onCancel, editData }) {
+    const { companies } = useCompany();
+    
+    const companiesList = companies?.data || [];
+
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
         phone: '',
-        companyId: '691ae85a4dbdd8a81680459e'
+        companyId: '',    
+        companyName: ''    
     });
 
     useEffect(() => {
         if (editData) {
+            const company = companiesList.find(c => c._id === editData.company);
             setFormData({
                 fullName: editData.name || '',
                 email: editData.email || '',
                 phone: editData.phone || '',
-                companyId: editData.company || '691ae85a4dbdd8a81680459e'
+                companyId: editData.company || '',
+                companyName: company?.companyName || editData.companyName || ''
             });
         } else {
-            setFormData({
-                fullName: '',
-                email: '',
-                phone: '',
-                companyId: '691ae85a4dbdd8a81680459e'
-            });
+            if (companiesList.length > 0) {
+                setFormData({
+                    fullName: '',
+                    email: '',
+                    phone: '',
+                    companyId: companiesList[0]._id,
+                    companyName: companiesList[0].companyName
+                });
+            }
         }
-    }, [editData]);
+    }, [editData, companiesList]);
+
+    const handleCompanyChange = (e) => {
+        const selectedId = e.target.value;
+        const selectedCompany = companiesList.find(c => c._id === selectedId);
+        
+        setFormData({
+            ...formData,
+            companyId: selectedId,
+            companyName: selectedCompany?.companyName || ''
+        });
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -38,7 +60,7 @@ function AddNewRecruiter({ onSave, onCancel, editData }) {
                         name: formData.fullName,
                         phone: formData.phone,
                         email: formData.email,
-                        company: formData.companyId
+                        company: formData.companyId  
                     },
                     {
                         headers: {
@@ -59,7 +81,7 @@ function AddNewRecruiter({ onSave, onCancel, editData }) {
                     name: formData.fullName,
                     phone: formData.phone,
                     email: formData.email,
-                    company: formData.companyId
+                    company: formData.companyId 
                 }, {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem('token')}`
@@ -74,7 +96,8 @@ function AddNewRecruiter({ onSave, onCancel, editData }) {
                 fullName: '',
                 email: '',
                 phone: '',
-                companyId: '691ae85a4dbdd8a81680459e'
+                companyId: companiesList[0]?._id || '',
+                companyName: companiesList[0]?.companyName || ''
             });
 
         } catch (error) {
@@ -128,14 +151,20 @@ function AddNewRecruiter({ onSave, onCancel, editData }) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-end">
                     <div>
-                        <label className="block text-sm font-medium text-gray-900 mb-2">Company ID</label>
-                        <input
-                            type="text"
+                        <label className="block text-sm font-medium text-gray-900 mb-2">Company Name</label>
+                        <select
                             value={formData.companyId}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed"
-                            disabled
-                            readOnly
-                        />
+                            onChange={handleCompanyChange}
+                            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent bg-white"
+                            required
+                        >
+                            <option value="">Select Company</option>
+                            {companiesList.map((company) => (
+                                <option key={company._id} value={company._id}>
+                                    {company.companyName}
+                                </option>
+                            ))}
+                        </select>
                     </div>
                     <div className="flex gap-3">
                         <button
