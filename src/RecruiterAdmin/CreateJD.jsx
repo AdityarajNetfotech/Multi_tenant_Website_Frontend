@@ -9,8 +9,8 @@ function CreateJD() {
     const [formData, setFormData] = useState({
         offerId: '',
         companyName: '',
-        department: '',
-        reportingManager: '',
+        // department: '',
+        // reportingManager: '',
         keyResponsibilities: '',
         qualifications: '',
         benefits: '',
@@ -28,6 +28,7 @@ function CreateJD() {
             setFormData((prev) => ({
                 ...prev,
                 offerId: location.state.offerId,
+                companyName: location.state.companyName || '',
             }));
         }
     }, [location.state]);
@@ -54,8 +55,8 @@ function CreateJD() {
                 `http://localhost:4000/api/jd/${formData.offerId}/ai`,
                 {
                     companyName: formData.companyName,
-                    department: formData.department,
-                    reportingManager: formData.reportingManager,
+                    // department: formData.department,
+                    // reportingManager: formData.reportingManager,
                     keyResponsibilities: formData.keyResponsibilities,
                     qualifications: formData.qualifications,
                     benefits: formData.benefits,
@@ -219,7 +220,7 @@ function CreateJD() {
 
                             <div>
                                 <label htmlFor="companyName" className="block text-sm font-medium mb-2">
-                                    Company Name
+                                    Company Name <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -227,14 +228,14 @@ function CreateJD() {
                                     name="companyName"
                                     value={formData.companyName}
                                     onChange={handleInputChange}
-                                    placeholder="Enter Company Name"
+                                    readOnly
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl 
                                         focus:ring-2 focus:ring-gray-900 focus:border-transparent 
-                                        outline-none transition-all text-sm"
+                                        outline-none transition-all text-sm bg-gray-50 cursor-not-allowed"
                                 />
                             </div>
 
-                            <div>
+                            {/* <div>
                                 <label htmlFor="department" className="block text-sm font-medium mb-2">
                                     Department
                                 </label>
@@ -266,7 +267,7 @@ function CreateJD() {
                                         focus:ring-2 focus:ring-gray-900 focus:border-transparent 
                                         outline-none transition-all text-sm"
                                 />
-                            </div>
+                            </div> */}
 
                             <div className="md:col-span-2">
                                 <label htmlFor="keyResponsibilities" className="block text-sm font-medium mb-2">

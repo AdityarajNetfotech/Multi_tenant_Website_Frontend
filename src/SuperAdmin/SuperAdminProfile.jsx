@@ -1,17 +1,44 @@
-import React, { useState } from 'react';
-import { Upload, Trash2, Check } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Check } from 'lucide-react';
+import axios from 'axios';
 
 const RecruiterProfile = () => {
     const [formData, setFormData] = useState({
-        firstName: 'Mehrab',
-        lastName: 'Mehrab',
-        email: 'Mehrabbozorgi.business@gmail.com',
-        address: '33062 Zboncak isle',
-        contactNumber: '9876543210',
-        city: 'Mehrab',
-        state: 'Bozorgi',
-        password: 'sbdfbnd65sfdvb s'
+        name: '',
+        email: '',
+        role: ''
     });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchProfileData = async () => {
+            try {
+                setLoading(true);
+                const response = await axios.get('http://localhost:5000/api/superadmin/profile', {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${localStorage.getItem("token")}`
+                    }
+                });
+                const data = response.data;
+
+                console.log(data);
+
+                if (data.status === 'success' && data.data) {
+                    setFormData({
+                        name: data.data.name || '',
+                        email: data.data.email || '',
+                        role: data.data.role || ''
+                    });
+                }
+                setLoading(false);
+            } catch (error) {
+                console.error("Error fetching profile data:", error);
+                setLoading(false);
+            }
+        };
+        fetchProfileData();
+    }, []);
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
@@ -26,6 +53,19 @@ const RecruiterProfile = () => {
         console.log('Cancelling changes');
     };
 
+    const getInitials = (name) => {
+        if (!name) return 'NA';
+        return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    };
+
+    if (loading) {
+        return (
+            <div className="p-4 md:p-6 lg:p-8 shadow-[0px_0px_10px_0px_rgba(0,_0,_0,_0.1)] max-w-3xl mx-auto rounded-xl">
+                <p className="text-center text-gray-500">Loading...</p>
+            </div>
+        );
+    }
+
     return (
         <div className="p-4 md:p-6 lg:p-8 shadow-[0px_0px_10px_0px_rgba(0,_0,_0,_0.1)] max-w-3xl mx-auto rounded-xl">
             <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-8 text-center">Profile</h1>
@@ -33,7 +73,7 @@ const RecruiterProfile = () => {
             {/* Profile Avatar Section */}
             <div className="flex flex-col md:flex-row items-center mb-8 space-x-8">
                 <div className="w-20 h-20 md:w-24 md:h-24 bg-purple-500 rounded-full flex items-center justify-center text-white text-2xl md:text-3xl font-bold mb-4">
-                    MB
+                    {getInitials(formData.name)}
                 </div>
                 <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
                     <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
@@ -47,31 +87,17 @@ const RecruiterProfile = () => {
 
             {/* Profile Form */}
             <form className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            First Name
-                        </label>
-                        <input
-                            type="text"
-                            name="firstName"
-                            value={formData.firstName}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Last Name
-                        </label>
-                        <input
-                            type="text"
-                            name="lastName"
-                            value={formData.lastName}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        />
-                    </div>
+                <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Name
+                    </label>
+                    <input
+                        type="text"
+                        name="name"
+                        value={formData.name}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
                 </div>
 
                 <div>
@@ -92,79 +118,15 @@ const RecruiterProfile = () => {
 
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Address
+                        Role
                     </label>
                     <input
                         type="text"
-                        name="address"
-                        value={formData.address}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        name="role"
+                        value={formData.role}
+                        readOnly
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed"
                     />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Contact Number
-                    </label>
-                    <input
-                        type="tel"
-                        name="contactNumber"
-                        value={formData.contactNumber}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            City
-                        </label>
-                        <select
-                            name="city"
-                            value={formData.city}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
-                        >
-                            <option value="Mehrab">Mehrab</option>
-                            <option value="Mumbai">Mumbai</option>
-                            <option value="Delhi">Delhi</option>
-                            <option value="Bangalore">Bangalore</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            State
-                        </label>
-                        <select
-                            name="state"
-                            value={formData.state}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white"
-                        >
-                            <option value="Bozorgi">Bozorgi</option>
-                            <option value="Maharashtra">Maharashtra</option>
-                            <option value="Delhi">Delhi</option>
-                            <option value="Karnataka">Karnataka</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Password
-                    </label>
-                    <div className="relative">
-                        <input
-                            type="password"
-                            name="password"
-                            value={formData.password}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        />
-                        <Check className="absolute right-3 top-2.5 h-5 w-5 text-green-500" />
-                    </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row justify-center space-y-3 sm:space-y-0 sm:space-x-4 pt-6">

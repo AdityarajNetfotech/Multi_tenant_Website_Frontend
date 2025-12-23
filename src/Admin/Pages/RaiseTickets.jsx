@@ -1,8 +1,13 @@
-import React from "react";
+import React, { useState } from "react";
 import { Calendar, Download } from "lucide-react";
 import robot from '../../assets/robot.png'
+import axios from 'axios';
 
 export default function RaiseTickets() {
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const supportHistory = [
     {
       supportId: "#254798",
@@ -34,9 +39,48 @@ export default function RaiseTickets() {
     }
   ];
 
+  const handleSubmitTicket = async () => {
+    if (!subject.trim() || !message.trim()) {
+      alert("Please fill in both request type and remarks");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const token = localStorage.getItem("token");
+
+      const response = await axios.post(
+        "http://localhost:4000/api/tickets/raise-ticket-admin",
+        {
+          subject,
+          message
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      console.log(response.data);
+      
+
+      alert("Ticket raised successfully!");
+      setSubject("");
+      setMessage("");
+      console.log("Ticket response:", response.data);
+
+    } catch (error) {
+      console.error("Error raising ticket:", error);
+      alert(error.response?.data?.message || "Failed to raise ticket");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleExportCSV = () => {
     const headers = ['Support ID', 'Request Type', 'Start Date', 'End Date', 'Status'];
-    
+
     const rows = supportHistory.map(item => [
       item.supportId,
       item.requestType,
@@ -44,27 +88,27 @@ export default function RaiseTickets() {
       item.endDate,
       item.status
     ]);
-    
+
     const csvContent = [
       headers.join(','),
       ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
     ].join('\n');
-    
+
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
-    
+
     const currentDate = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
     const fileName = `Support_History_${currentDate}.csv`;
-    
+
     link.setAttribute('href', url);
     link.setAttribute('download', fileName);
     link.style.visibility = 'hidden';
-    
+
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     URL.revokeObjectURL(url);
   };
 
@@ -74,30 +118,23 @@ export default function RaiseTickets() {
         <h2 className="text-2xl font-semibold text-gray-900">
           Create New Ticket
         </h2>
-        
+
         <p className="text-gray-400 mt-1">
           Fill up all the information here, then click submit button
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              Support ID
-            </label>
-            <input
-              type="text"
-              value="#254798"
-              className="w-full border-b border-gray-300 focus:outline-none text-gray-700"
-            />
-          </div>
+
 
           <div>
             <label className="block text-gray-700 font-medium mb-1">
-              Enter Request Type
+              Request Type
             </label>
             <input
               type="text"
-              value="Issue with Candidate Selection"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="Write your request type"
               className="w-full border-b border-gray-300 focus:outline-none text-gray-700"
             />
           </div>
@@ -109,7 +146,8 @@ export default function RaiseTickets() {
             <div className="flex items-center border-b border-gray-300">
               <input
                 type="text"
-                value="20 Mar, 2024"
+                value={new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}
+                readOnly
                 className="w-full focus:outline-none text-gray-700"
               />
               <Calendar className="text-gray-500 w-5 h-5" />
@@ -124,18 +162,24 @@ export default function RaiseTickets() {
             </label>
             <input
               type="text"
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
               placeholder="Write your remark"
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-gray-400"
             />
           </div>
 
-          <button className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800">
-            Submit Tickets
+          <button
+            onClick={handleSubmitTicket}
+            disabled={isSubmitting}
+            className="bg-black text-white px-6 py-2 rounded-md hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
+          >
+            {isSubmitting ? "Submitting..." : "Submit Tickets"}
           </button>
         </div>
       </div>
 
-      <div className="w-full max-w-6xl flex flex-col md:flex-row items-start gap-8">
+      {/* <div className="w-full max-w-6xl flex flex-col md:flex-row items-start gap-8">
         <div className="w-full md:w-1/3 flex justify-center md:justify-start">
           <img
             src={robot}
@@ -193,7 +237,7 @@ export default function RaiseTickets() {
             </table>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

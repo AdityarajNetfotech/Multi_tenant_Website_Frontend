@@ -1,4 +1,4 @@
-import { Search, Filter, CreditCard as Edit2, Trash2, Edit } from 'lucide-react';
+import { Search, Filter, CreditCard as Edit2, Trash2, Edit, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Pagination from '../components/LandingPage/Pagination';
 import axios from 'axios';
@@ -12,6 +12,11 @@ function Tickets() {
     { label: 'Closed Tickets', value: '0', icon: '✅', bgColor: 'bg-green-100', iconColor: 'text-green-500' },
     { label: 'Deleted Tickets', value: '0', icon: '🗑️', bgColor: 'bg-red-100', iconColor: 'text-red-500' }
   ]);
+
+  const [isReplyModalOpen, setIsReplyModalOpen] = useState(false);
+  const [selectedTicketId, setSelectedTicketId] = useState(null);
+  const [replyMessage, setReplyMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchTickets = async () => {
@@ -27,6 +32,7 @@ function Tickets() {
 
         const mappedTickets = ticketsData.map((ticket) => ({
           id: `#${ticket._id.slice(-6)}`,
+          fullId: ticket._id,
           requestedBy: {
             name: ticket.adminName
           },
@@ -82,6 +88,46 @@ function Tickets() {
     return status === 'Open'
       ? 'bg-green-100 text-green-700'
       : 'bg-gray-200 text-gray-700';
+  };
+
+  const handleEditClick = (ticketFullId) => {
+    setSelectedTicketId(ticketFullId);
+    setReplyMessage('');
+    setIsReplyModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsReplyModalOpen(false);
+    setSelectedTicketId(null);
+    setReplyMessage('');
+  };
+
+  const handleSubmitReply = async () => {
+    if (!replyMessage.trim()) {
+      alert('Please enter a reply message');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const response = await axios.post(
+        `http://localhost:5000/api/superadmin/reply-to-ticket/${selectedTicketId}`,
+        { message: replyMessage },
+        {
+          headers: {
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
+          }
+        }
+      );
+      console.log('Reply sent successfully:', response.data);
+      alert('Reply sent successfully!');
+      handleCloseModal();
+    } catch (error) {
+      console.error('Error sending reply:', error);
+      alert('Failed to send reply. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -166,7 +212,10 @@ function Tickets() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{ticket.startDate}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex items-center gap-2">
-                        <button className="text-blue-600 hover:text-blue-800">
+                        <button 
+                          className="text-blue-600 hover:text-blue-800"
+                          onClick={() => handleEditClick(ticket.fullId)}
+                        >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button className="text-red-600 hover:text-red-800">
@@ -190,6 +239,49 @@ function Tickets() {
           />
         )}
       </div>
+
+      {isReplyModalOpen && (
+        <div className="fixed inset-0 bg-black/50 background-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">Reply to Ticket</h2>
+              <button 
+                onClick={handleCloseModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Your Reply
+              </label>
+              <textarea
+                value={replyMessage}
+                onChange={(e) => setReplyMessage(e.target.value)}
+                placeholder="Enter your reply message..."
+                rows={4}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              />
+            </div>
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-gray-200">
+              <button
+                onClick={handleCloseModal}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitReply}
+                disabled={isSubmitting}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isSubmitting ? 'Sending...' : 'Send Reply'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

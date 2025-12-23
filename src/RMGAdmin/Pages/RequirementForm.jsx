@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useCompany } from '../../Context/companyContext';
 
 function RequirementForm() {
+  const { companies } = useCompany();
+  const companyName = companies?.data?.[0]?.companyName || "NA";
+
+  console.log("Companies in RequirementForm:", companies);
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     jobTitle: '',
@@ -85,6 +90,7 @@ function RequirementForm() {
 
       const submitData = {
         ...formData,
+        companyName: companyName,
         skills: skillsArray,
         preferredSkills: preferredSkillsArray,
         salary: salaryValue,
@@ -109,6 +115,7 @@ function RequirementForm() {
         setSuccess(response.data.message || 'Requirement created successfully!');
         setFormData({
           jobTitle: '',
+          companyName: companyName,
           priority: '',
           dueDate: '',
           assignedTo: '',
@@ -173,6 +180,20 @@ function RequirementForm() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Company Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="jobTitle"
+                  value={companyName}
+                  readOnly
+                  disabled
+                  className="w-full cursor-not-allowed px-3 py-2 border bg-[#D9D9D940] border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Priority <span className="text-red-500">*</span>
                 </label>
                 <select
@@ -184,7 +205,7 @@ function RequirementForm() {
                 >
                   <option value="">Select Priority</option>
                   <option value="Low">Low</option>
-                  <option value="Model">Model</option>
+                  <option value="Model">Medium</option>
                   <option value="High">High</option>
                   <option value="Critical">Critical</option>
                 </select>
@@ -470,8 +491,8 @@ function RequirementForm() {
                 type="submit"
                 disabled={loading}
                 className={`w-full sm:w-auto px-6 py-2 text-white rounded-md transition-colors font-medium ${loading
-                    ? 'bg-gray-400 cursor-not-allowed'
-                    : 'bg-gray-600 hover:bg-gray-700'
+                  ? 'bg-gray-400 cursor-not-allowed'
+                  : 'bg-gray-600 hover:bg-gray-700'
                   }`}
               >
                 {loading ? 'Creating...' : 'Create Requirement'}

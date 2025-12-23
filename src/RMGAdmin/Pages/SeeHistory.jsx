@@ -13,7 +13,7 @@ const SeeHistory = () => {
     const location = useLocation();
     const { jdData } = location.state || {};
 
-    // console.log("Received JD Data from Parent/Assigned Recruiter:", jdData);
+    console.log("Received JD Data from Parent/Assigned Recruiter:", jdData);
 
     const [showFilteredPopup, setShowFilteredPopup] = useState(false);
     const [showUnfilteredPopup, setShowUnfilteredPopup] = useState(false);

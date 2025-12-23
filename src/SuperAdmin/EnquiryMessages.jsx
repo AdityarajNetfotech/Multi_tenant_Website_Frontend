@@ -60,36 +60,13 @@ function EnquiryMessages() {
         setPopupMessage('Ok, we will look on this issue as soon as possible.');
     };
 
-    const handleSaveMessage = async () => {
+    const handleSaveMessage = () => {
         if (!selectedTicket) return;
 
-        try {
-            setSending(true);
-            const response = await axios.post('http://localhost:5000/api/enquiry/submit', {
-                companyName: selectedTicket.companyName,
-                emailid: selectedTicket.emailid,
-                message: popupMessage,
-                phone: selectedTicket.phone
-            }, {
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`
-                }
-            });
-
-            if (response.data.status === 'success') {
-                console.log('Message saved and email sent:', popupMessage);
-                alert('Notification sent successfully!');
-            }
-            setSending(false);
-            setShowPopup(false);
-            setSelectedTicket(null);
-            setPopupMessage('Ok, we will look on this issue as soon as possible.');
-        } catch (error) {
-            console.error("Error sending notification:", error);
-            alert('Failed to send notification. Please try again.');
-            setSending(false);
-        }
+        console.log('Message saved:', popupMessage);
+        setShowPopup(false);
+        setSelectedTicket(null);
+        setPopupMessage('Ok, we will look on this issue as soon as possible.');
     };
 
     const handleSearch = () => {

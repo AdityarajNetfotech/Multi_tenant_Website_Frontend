@@ -7,6 +7,8 @@ import axios from 'axios';
 function RMGManagement() {
   const [recruiters, setRecruiters] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [editingRMG, setEditingRMG] = useState(null);
 
   useEffect(() => {
     const fetchAllRMG = async () => {
@@ -37,10 +39,33 @@ function RMGManagement() {
             candidateNotSelected: rmg.candidateNotSelected || 0,
             successRate: rmg.successRate || 0,
             role: rmg.role || 'NA',
-            company: rmg.company || 'NA'
+            company: rmg.company || 'NA',
+            createdAt: rmg.createdAt
           }));
           
           setRecruiters(mappedData);
+
+          const initialLogs = mappedData.map(rmg => ({
+            date: rmg.registerDate,
+            action: `RMG ${rmg.name} Created`,
+            by: "Admin",
+            timestamp: new Date(rmg.createdAt).getTime()
+          }));
+          
+          const deactivatedLogs = mappedData
+            .filter(rmg => rmg.status === 'Inactive')
+            .map(rmg => ({
+              date: rmg.registerDate,
+              action: `RMG ${rmg.name} Deactivated`,
+              by: "Admin",
+              timestamp: new Date(rmg.createdAt).getTime() + 1000 
+            }));
+          
+          const allLogs = [...initialLogs, ...deactivatedLogs]
+            .sort((a, b) => b.timestamp - a.timestamp)
+            .slice(0, 5);
+          
+          setActivityLogs(allLogs);
         }
         setLoading(false);
       } catch (error) {
@@ -51,11 +76,6 @@ function RMGManagement() {
 
     fetchAllRMG();
   }, []);
-
-  const activities = [
-    { date: "10 Apr, 2024", action: "RMG Aniket Sharma Created", by: "Admin" },
-    { date: "10 Apr, 2024", action: "RMG Aniket Sharma Deactivated", by: "Admin" },
-  ];
 
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
@@ -91,16 +111,42 @@ function RMGManagement() {
     }
   };
 
-  const handleDelete = (id) => {
-    setRecruiters(recruiters.filter(r => r.id !== id));
-    if (selectedRecruiter?.id === id) {
-      const remaining = recruiters.filter(r => r.id !== id);
-      setSelectedRecruiter(remaining.length > 0 ? remaining[0] : null);
-    }
-    const newFilteredLength = recruiters.filter(r => r.id !== id).length;
-    const newTotalPages = Math.ceil(newFilteredLength / itemsPerPage);
-    if (currentPage > newTotalPages && newTotalPages > 0) {
-      setCurrentPage(newTotalPages);
+  const handleDelete = async (id) => {
+    try {
+      const rmgToDelete = recruiters.find(r => r.id === id);
+      
+      const res = await axios.delete(`http://localhost:4000/api/admin/rmg/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      alert("RMG deleted successfully!");
+
+      if (res.data.success) {
+        const newLog = {
+          date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+          action: `RMG ${rmgToDelete.name} Deleted`,
+          by: "Admin",
+          timestamp: Date.now()
+        };
+        
+        setActivityLogs(prev => [newLog, ...prev].slice(0, 5));
+        
+        setRecruiters(recruiters.filter(r => r.id !== id));
+        if (selectedRecruiter?.id === id) {
+          const remaining = recruiters.filter(r => r.id !== id);
+          setSelectedRecruiter(remaining.length > 0 ? remaining[0] : null);
+        }
+        const newFilteredLength = recruiters.filter(r => r.id !== id).length;
+        const newTotalPages = Math.ceil(newFilteredLength / itemsPerPage);
+        if (currentPage > newTotalPages && newTotalPages > 0) {
+          setCurrentPage(newTotalPages);
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting RMG:", error);
+      alert(error.response?.data?.message || 'Failed to delete RMG');
     }
   };
 
@@ -108,29 +154,114 @@ function RMGManagement() {
     setSelectedRecruiter(recruiter);
   };
 
-  const handleSaveRMG = (formData) => {
-    const newRecruiter = {
-      id: `temp_${Date.now()}`,
-      name: formData.fullName || 'NA',
-      email: formData.email || 'NA',
-      phone: formData.phone || 'NA',
-      status: 'Active',
-      registerId: `#324459${recruiters.length}`,
-      registerDate: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
-      lastLogin: 'Just now',
-      associates: [],
-      totalRecruiterManaged: 0,
-      totalJDHandled: 0,
-      candidateSelected: 0,
-      candidateNotSelected: 0,
-      successRate: 0
-    };
-    setRecruiters([...recruiters, newRecruiter]);
+  const handleEditRMG = (recruiter) => {
+    setEditingRMG(recruiter);
+    setShowAddForm(true);
+  };
+
+  const handleSaveRMG = (responseData) => {
+    if (editingRMG) {
+      const updatedRecruiters = recruiters.map(r => 
+        r.id === editingRMG.id 
+          ? {
+              ...r,
+              name: responseData.name || responseData.fullName,
+              email: responseData.email,
+              phone: responseData.phone
+            }
+          : r
+      );
+      
+      setRecruiters(updatedRecruiters);
+      
+      if (selectedRecruiter?.id === editingRMG.id) {
+        setSelectedRecruiter({
+          ...selectedRecruiter,
+          name: responseData.name || responseData.fullName,
+          email: responseData.email,
+          phone: responseData.phone
+        });
+      }
+
+      const newLog = {
+        date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+        action: `RMG ${responseData.name || responseData.fullName} Updated`,
+        by: "Admin",
+        timestamp: Date.now()
+      };
+      
+      setActivityLogs(prev => [newLog, ...prev].slice(0, 5));
+    } else {
+      const newRecruiter = {
+        id: responseData.data?._id || `temp_${Date.now()}`,
+        name: responseData.data?.name || responseData.fullName || 'NA',
+        email: responseData.data?.email || responseData.email || 'NA',
+        phone: responseData.data?.phone || responseData.phone || 'NA',
+        status: 'Active',
+        registerId: `#324459${recruiters.length}`,
+        registerDate: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+        lastLogin: 'Just now',
+        associates: [],
+        totalRecruiterManaged: 0,
+        totalJDHandled: 0,
+        candidateSelected: 0,
+        candidateNotSelected: 0,
+        successRate: 0,
+        role: 'RMG',
+        company: responseData.data?.company || 'NA',
+        createdAt: new Date()
+      };
+      
+      const newLog = {
+        date: newRecruiter.registerDate,
+        action: `RMG ${newRecruiter.name} Created`,
+        by: "Admin",
+        timestamp: Date.now()
+      };
+      
+      setActivityLogs(prev => [newLog, ...prev].slice(0, 5));
+      setRecruiters([...recruiters, newRecruiter]);
+    }
+    
     setShowAddForm(false);
+    setEditingRMG(null);
   };
 
   const handleCancelForm = () => {
     setShowAddForm(false);
+    setEditingRMG(null);
+  };
+
+  const handleToggleStatus = (recruiter) => {
+    const updatedRecruiters = recruiters.map(r => {
+      if (r.id === recruiter.id) {
+        return { ...r, status: r.status === 'Active' ? 'Inactive' : 'Active' };
+      }
+      return r;
+    });
+    
+    setRecruiters(updatedRecruiters);
+    setSelectedRecruiter({ ...recruiter, status: recruiter.status === 'Active' ? 'Inactive' : 'Active' });
+    
+    const newLog = {
+      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      action: `RMG ${recruiter.name} ${recruiter.status === 'Active' ? 'Deactivated' : 'Activated'}`,
+      by: "Admin",
+      timestamp: Date.now()
+    };
+    
+    setActivityLogs(prev => [newLog, ...prev].slice(0, 5));
+  };
+
+  const handleSuspend = (recruiter) => {
+    const newLog = {
+      date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      action: `RMG ${recruiter.name} Suspended`,
+      by: "Admin",
+      timestamp: Date.now()
+    };
+    
+    setActivityLogs(prev => [newLog, ...prev].slice(0, 5));
   };
 
   if (loading) {
@@ -311,19 +442,31 @@ function RMGManagement() {
 
               <div className="flex flex-col gap-2 mt-6">
                 <div className="flex gap-2">
-                  <button className={`border ${selectedRecruiter.status === 'Active' ? 'border-red-500 text-red-500' : 'border-green-500 text-green-500'} px-4 py-2 rounded-md font-medium hover:bg-opacity-10 transition flex-1`}>
-                    {selectedRecruiter.status === 'Active' ? 'Suspend' : 'Activate'}
+                  <button 
+                    onClick={() => handleSuspend(selectedRecruiter)}
+                    className="border border-red-500 text-red-500 px-4 py-2 rounded-md font-medium hover:bg-red-50 transition flex-1"
+                  >
+                    Suspend
                   </button>
-                  <button className={`border ${selectedRecruiter.status === 'Active' ? 'border-gray-300 text-gray-700' : 'border-red-500 text-red-500'} px-4 py-2 rounded-md font-medium ${selectedRecruiter.status === 'Active' ? 'bg-gray-50 hover:bg-gray-100' : 'hover:bg-red-50'} transition flex-1`}>
-                    {selectedRecruiter.status === 'Active' ? 'Activate' : 'Deactivate'}
+                  <button 
+                    onClick={() => handleToggleStatus(selectedRecruiter)}
+                    className={`border ${selectedRecruiter.status === 'Active' ? 'border-gray-300 text-gray-700 bg-gray-50 hover:bg-gray-100' : 'border-green-500 text-green-500 hover:bg-green-50'} px-4 py-2 rounded-md font-medium transition flex-1`}
+                  >
+                    {selectedRecruiter.status === 'Active' ? 'Activate' : 'Activate'}
                   </button>
                 </div>
                 <div className="flex gap-2">
-                  <button className="border border-blue-500 text-blue-500 px-4 py-2 rounded-md font-medium hover:bg-blue-50 transition flex-1">
+                  <button 
+                    onClick={() => handleEditRMG(selectedRecruiter)}
+                    className="border border-blue-500 text-blue-500 px-4 py-2 rounded-md font-medium hover:bg-blue-50 transition flex-1"
+                  >
                     Edit RMG
                   </button>
-                  <button className="border border-blue-300 text-blue-500 px-4 py-2 rounded-md font-medium hover:bg-blue-50 transition flex-1">
-                    Deactivate
+                  <button 
+                    onClick={() => handleToggleStatus(selectedRecruiter)}
+                    className={`border ${selectedRecruiter.status === 'Active' ? 'border-red-500 text-red-500' : 'border-green-500 text-green-500'} px-4 py-2 rounded-md font-medium hover:bg-opacity-10 transition flex-1`}
+                  >
+                    {selectedRecruiter.status === 'Active' ? 'Deactivate' : 'Activate'}
                   </button>
                 </div>
               </div>
@@ -335,22 +478,29 @@ function RMGManagement() {
           <AddNewRMG
             onSave={handleSaveRMG}
             onCancel={handleCancelForm}
+            editData={editingRMG}
           />
         )}
 
         <div className="w-full">
           <h1 className='text-3xl font-medium pl-1 mb-4'>Activity Logs</h1>
           <div className="w-full space-y-3">
-            {activities.map((item, index) => (
-              <div
-                key={index}
-                className="border border-gray-300 shadow-md rounded-2xl flex justify-between items-center px-6 py-4"
-              >
-                <span className="text-gray-700 font-medium w-1/3">{item.date}</span>
-                <span className="text-gray-800 font-medium text-center flex-1">{item.action}</span>
-                <span className="text-gray-700 font-semibold text-right w-1/4">{item.by}</span>
+            {activityLogs.length > 0 ? (
+              activityLogs.map((item, index) => (
+                <div
+                  key={index}
+                  className="border border-gray-300 shadow-md rounded-2xl flex justify-between items-center px-6 py-4"
+                >
+                  <span className="text-gray-700 font-medium w-1/3">{item.date}</span>
+                  <span className="text-gray-800 font-medium text-center flex-1">{item.action}</span>
+                  <span className="text-gray-700 font-semibold text-right w-1/4">{item.by}</span>
+                </div>
+              ))
+            ) : (
+              <div className="border border-gray-300 shadow-md rounded-2xl flex justify-center items-center px-6 py-4">
+                <span className="text-gray-500">No activity logs available</span>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </div>

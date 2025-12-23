@@ -16,6 +16,8 @@ function JD() {
     unfilteredResumes: 0
   });
   const [loading, setLoading] = useState(true);
+  const [showSummaryPopup, setShowSummaryPopup] = useState(false);
+  const [selectedJDSummary, setSelectedJDSummary] = useState(null);
   const navigate = useNavigate();
 
   const rowsPerPage = 5;
@@ -29,7 +31,7 @@ function JD() {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:4000/api/jd/all-jd-hr', {
+      const response = await axios.get('http://localhost:4000/api/jd//created-by/hr', {
         headers: {
           'Authorization': `Bearer ${token}`,
         }
@@ -71,7 +73,7 @@ function JD() {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }
       });
-      console.log(response.data);
+      console.log("aaa", response.data);
 
       if (response.data.success) {
         const filteredData = response.data.data.filter(jd => jd.isJDCreated === false);
@@ -85,7 +87,7 @@ function JD() {
   };
 
   const handleSelectJD = (jd) => {
-    navigate("/RecruiterAdmin-Dashboard/JD/CreateJD", { state: { offerId: jd._id } });
+    navigate("/RecruiterAdmin-Dashboard/JD/CreateJD", { state: { offerId: jd._id, companyName: jd.companyName } });
   };
 
   const statsDisplay = [
@@ -115,7 +117,6 @@ function JD() {
   };
 
   const handleViewJD = (jd) => {
-    // Save selected JD to localStorage for later use (e.g., for job_id)
     localStorage.setItem("selectedJD", JSON.stringify(jd));
     console.log("Saved selectedJD to localStorage:", jd);
     navigate("/RecruiterAdmin-Dashboard/JDDetails", { state: { jdData: jd } });
@@ -125,7 +126,36 @@ function JD() {
     console.log('Delete JD:', jdId);
   };
 
-  // Show full page loader if both APIs are loading
+  const parseRawAIResponse = (rawResponse) => {
+    if (!rawResponse) return null;
+    try {
+      let cleanedResponse = rawResponse;
+      if (rawResponse.includes('```json')) {
+        cleanedResponse = rawResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '');
+      }
+      return JSON.parse(cleanedResponse);
+    } catch (error) {
+      console.error('Error parsing rawAIResponse:', error);
+      return null;
+    }
+  };
+
+  const handleShowSummary = (jd) => {
+    const parsedData = parseRawAIResponse(jd.aiGenerationDetails?.rawAIResponse);
+    setSelectedJDSummary({
+      jobTitle: jd.offerId?.jobTitle || 'N/A',
+      companyName: jd.companyName || jd.offerId?.company || 'N/A',
+      parsedData: parsedData,
+      jobSummary: jd.jobSummary
+    });
+    setShowSummaryPopup(true);
+  };
+
+  const handleCloseSummary = () => {
+    setShowSummaryPopup(false);
+    setSelectedJDSummary(null);
+  };
+
   if (loading && loadingIncoming) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -136,6 +166,126 @@ function JD() {
 
   return (
     <div className="min-h-screen">
+      {showSummaryPopup && selectedJDSummary && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={handleCloseSummary}
+          ></div>
+
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-3xl w-full mx-4 max-h-[85vh] overflow-hidden z-10">
+            <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">{selectedJDSummary.jobTitle}</h2>
+                <p className="text-sm text-gray-500">{selectedJDSummary.companyName}</p>
+              </div>
+              <button
+                onClick={handleCloseSummary}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[calc(85vh-80px)]">
+              {selectedJDSummary.parsedData ? (
+                <div className="space-y-6">
+                  {selectedJDSummary.parsedData.jobSummary && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                        <FileText className="w-5 h-5 text-blue-500" />
+                        Job Summary
+                      </h3>
+                      <p className="text-gray-700 leading-relaxed bg-blue-50 p-4 rounded-lg">
+                        {selectedJDSummary.parsedData.jobSummary}
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedJDSummary.parsedData.responsibilities?.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                        </svg>
+                        Responsibilities
+                      </h3>
+                      <ul className="space-y-2">
+                        {selectedJDSummary.parsedData.responsibilities.map((item, index) => (
+                          <li key={index} className="flex items-start gap-2 text-gray-700">
+                            <span className="text-green-500 mt-1">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {selectedJDSummary.parsedData.requirements?.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                        </svg>
+                        Requirements
+                      </h3>
+                      <ul className="space-y-2">
+                        {selectedJDSummary.parsedData.requirements.map((item, index) => (
+                          <li key={index} className="flex items-start gap-2 text-gray-700">
+                            <span className="text-purple-500 mt-1">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {selectedJDSummary.parsedData.benefits?.length > 0 && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Benefits
+                      </h3>
+                      <ul className="space-y-2">
+                        {selectedJDSummary.parsedData.benefits.map((item, index) => (
+                          <li key={index} className="flex items-start gap-2 text-gray-700">
+                            <span className="text-amber-500 mt-1">•</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {selectedJDSummary.parsedData.additionalInfo && (
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                        <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Additional Information
+                      </h3>
+                      <p className="text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-lg">
+                        {selectedJDSummary.parsedData.additionalInfo}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Job Summary</h3>
+                  <p className="text-gray-700 leading-relaxed">
+                    {selectedJDSummary.jobSummary || 'No summary available'}
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto">
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-4">
@@ -169,7 +319,7 @@ function JD() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">ID</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Sr.No</th>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Company</th>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Job Title</th>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Created On</th>
@@ -177,14 +327,15 @@ function JD() {
                     <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Filtered</th>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Unfiltered</th>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Action</th>
+                    <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">See JD</th>
                     <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Send Invite</th>
                   </tr>
                 </thead>
                 <tbody>
                   {currentData.length > 0 ? (
                     currentData.map((row, index) => (
-                      <tr key={row._id || index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                        <td className="py-4 px-6 text-sm text-gray-900 font-medium">{formatId(row._id)}</td>
+                      <tr key={index} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <td className="py-4 px-6 text-sm text-gray-900 font-medium">{startIndex + index + 1}</td>
                         <td className="py-4 px-6 text-sm text-gray-700">{row.companyName || row.offerId?.company || 'N/A'}</td>
                         <td className="py-4 px-6 text-sm text-gray-700">{row.offerId?.jobTitle || 'N/A'}</td>
                         <td className="py-4 px-6 text-sm text-gray-700">{formatDate(row.createdAt)}</td>
@@ -218,6 +369,17 @@ function JD() {
                             </button>
                           </div>
                         </td>
+
+                        <td className="py-4 px-6">
+                          <button
+                            onClick={() => handleShowSummary(row)}
+                            className="p-1 border border-blue-500 rounded-lg transition-colors hover:bg-blue-50"
+                            aria-label="View JD Summary"
+                          >
+                            <Eye className="w-4 h-4 text-blue-600" />
+                          </button>
+                        </td>
+
                         <td className="py-4 px-6">
                           <button
                               onClick={() => {
@@ -234,7 +396,7 @@ function JD() {
                     ))
                   ) : (
                     <tr>
-                      <td colSpan="8" className="py-8 text-center text-gray-500">
+                      <td colSpan="10" className="py-8 text-center text-gray-500">
                         No JDs found
                       </td>
                     </tr>
@@ -276,10 +438,10 @@ function JD() {
                       Sr.No
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      ID
+                      Job Title
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Job Title
+                      Company Name
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Priority
@@ -308,10 +470,10 @@ function JD() {
                         {index + 1}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {jd._id || '-'}
+                        {jd.jobTitle || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {jd.jobTitle || '-'}
+                        {jd.companyName || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {jd.priority || '-'}

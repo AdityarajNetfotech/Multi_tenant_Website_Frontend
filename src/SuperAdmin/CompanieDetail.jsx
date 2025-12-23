@@ -13,31 +13,37 @@ const CompanyDetail = () => {
     const [error, setError] = useState("");
 
     useEffect(() => {
+        console.log(company);
+        
         if (!company) {
-            navigate('/SuperAdmin-Dashboard/Companies');
+            navigate('/SuperAdmin-Dashboard/RejisteredRecruiters');
         } else {
-            setFormData({
-                id: company._id,
-                companyName: company.companyName || '',
-                phone: company.phone || '',
-                email: company.email || '',
-                address: {
-                    street: company.address?.street || '',
-                    city: company.address?.city || '',
-                    state: company.address?.state || '',
-                    country: company.address?.country || '',
-                    zipCode: company.address?.zipCode || ''
-                },
-                subscription: {
-                    maxUsers: company.subscription?.maxUsers || '',
-                    maxRecruiters: company.subscription?.maxRecruiters || ''
-                },
-                settings: {
-                    maxApplicationsPerCandidate: company.settings?.maxApplicationsPerCandidate || ''
-                }
-            });
+            initializeFormData(company);
         }
     }, [company, navigate]);
+
+    const initializeFormData = (companyData) => {
+        setFormData({
+            id: companyData._id,
+            companyName: companyData.companyName || '',
+            phone: companyData.phone || companyData.phoneNumber || '',
+            email: companyData.email || '',
+            registerName: companyData.registerName || '',
+            contactPerson: companyData.contactPerson || '',
+            gstNumber: companyData.gstNumber || '',
+            panNumber: companyData.panNumber || '',
+            companyType: companyData.companyType || '',
+            typeOfStaffing: companyData.typeOfStaffing || '',
+            employees: companyData.employees || '',
+            city: companyData.city || '',
+            state: companyData.state || '',
+            address: {
+                street: companyData.address?.street || companyData.address1 || '',
+                city: companyData.address?.city || companyData.city || '',
+                state: companyData.address?.state || companyData.state || '',
+            }
+        });
+    };
 
     const handleInputChange = (field, value) => {
         if (field.includes('.')) {
@@ -64,26 +70,63 @@ const CompanyDetail = () => {
         try {
             const token = localStorage.getItem('token');
 
+            const formDataToSend = new FormData();
+            
+            formDataToSend.append('companyName', formData.companyName);
+            formDataToSend.append('phone', formData.phone);
+            formDataToSend.append('email', formData.email);
+            formDataToSend.append('registerName', formData.registerName);
+            formDataToSend.append('contactPerson', formData.contactPerson);
+            formDataToSend.append('gstNumber', formData.gstNumber);
+            formDataToSend.append('panNumber', formData.panNumber);
+            formDataToSend.append('companyType', formData.companyType);
+            formDataToSend.append('typeOfStaffing', formData.typeOfStaffing);
+            formDataToSend.append('employees', formData.employees);
+            formDataToSend.append('city', formData.city);
+            formDataToSend.append('state', formData.state);
+            
+            formDataToSend.append('address', JSON.stringify(formData.address));
+
+            console.log('Sending data for ID:', company._id);
+
             const response = await axios.put(
-                `http://localhost:5000/api/super-admin/tenants/${company._id}`,
-                formData,
+                `http://localhost:5000/api/company/${company._id}`,
+                formDataToSend,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'multipart/form-data'
                     }
                 }
             );
-            console.log(response.data);
 
-            if (response.data.success) {
-                setCompany(response.data.data.tenant);
+            console.log('Full Response:', response);
+            console.log('Response Data:', response.data);
+
+            if (response.status === 200) {
+                const updatedCompany = response.data.company || response.data.data || response.data;
+                
+                console.log('Updated Company:', updatedCompany);
+
+                setCompany(updatedCompany);
+                
+                initializeFormData(updatedCompany);
+                
                 setIsEditing(false);
+                
                 alert('Company details updated successfully!');
+            } else {
+                setError('Update failed. Please try again.');
             }
         } catch (err) {
-            setError(err.response?.data?.message || 'Error updating company details');
             console.error('Update error:', err);
+            console.error('Error response:', err.response);
+            setError(
+                err.response?.data?.message || 
+                err.response?.data?.error || 
+                err.message ||
+                'Error updating company details'
+            );
         } finally {
             setLoading(false);
         }
@@ -92,42 +135,7 @@ const CompanyDetail = () => {
     const handleCancel = () => {
         setIsEditing(false);
         setError("");
-        setFormData({
-            companyName: company.companyName || '',
-            phone: company.phone || '',
-            email: company.email || '',
-            address: {
-                street: company.address?.street || '',
-                city: company.address?.city || '',
-                state: company.address?.state || '',
-                country: company.address?.country || '',
-                zipCode: company.address?.zipCode || ''
-            },
-            subscription: {
-                maxUsers: company.subscription?.maxUsers || '',
-                maxRecruiters: company.subscription?.maxRecruiters || ''
-            },
-            settings: {
-                maxApplicationsPerCandidate: company.settings?.maxApplicationsPerCandidate || ''
-            }
-        });
-    };
-
-    const formatDate = (dateString) => {
-        if (!dateString) return '-';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-GB', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric'
-        }).replace(/\//g, '.');
-    };
-
-    const calculateValidTill = (createdAt) => {
-        if (!createdAt) return '-';
-        const date = new Date(createdAt);
-        date.setMonth(date.getMonth() + 3);
-        return formatDate(date);
+        initializeFormData(company);
     };
 
     const getInitial = (name) => {
@@ -146,13 +154,6 @@ const CompanyDetail = () => {
 
     return (
         <div className="max-w-5xl mx-auto p-6">
-            <button
-                onClick={() => navigate(-1)}
-                className="mb-4 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-            >
-                <ArrowLeft className="w-4 h-4" />
-                Back to Companies
-            </button>
 
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 sm:p-10">
                 <div className="flex justify-between items-center mb-6">
@@ -194,11 +195,19 @@ const CompanyDetail = () => {
                 )}
 
                 <div className="flex flex-col sm:flex-row items-center gap-4 mb-8">
-                    <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-blue-600 font-bold text-2xl">
-                            {getInitial(isEditing ? formData.companyName : company.companyName)}
-                        </span>
-                    </div>
+                    {company.logo ? (
+                        <img
+                            src={company.logo}
+                            alt="Company Logo"
+                            className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
+                        />
+                    ) : (
+                        <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-blue-600 font-bold text-2xl">
+                                {getInitial(isEditing ? formData.companyName : company.companyName)}
+                            </span>
+                        </div>
+                    )}
                     <div className="flex-1">
                         {isEditing ? (
                             <input
@@ -209,61 +218,24 @@ const CompanyDetail = () => {
                                 placeholder="Company Name"
                             />
                         ) : (
-                            <>
-                                <h3 className="text-lg font-semibold text-gray-900">
-                                    {company.companyName || 'N/A'}
-                                </h3>
-                                <p className="text-sm text-gray-500">
-                                    {company.subdomain ? `Subdomain: ${company.subdomain}` : ''}
-                                </p>
-                            </>
+                            <h3 className="text-lg font-semibold text-gray-900">
+                                {company.companyName || 'N/A'}
+                            </h3>
                         )}
                     </div>
                 </div>
 
                 <div className="">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        
                         <div>
                             <label className="block text-sm font-medium text-gray-700">
-                                Registration Date
+                                Register Name
                             </label>
                             <input
                                 type="text"
-                                value={formatDate(company.createdAt)}
-                                readOnly
-                                className="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">
-                                Valid Till
-                            </label>
-                            <input
-                                type="text"
-                                value={calculateValidTill(company.createdAt)}
-                                readOnly
-                                className="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">
-                                Contact Person Name
-                            </label>
-                            <input
-                                type="text"
-                                value={company.createdBy?.name || 'N/A'}
-                                readOnly
-                                className="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">
-                                Phone Number
-                            </label>
-                            <input
-                                type="text"
-                                value={isEditing ? formData.phone : company.phone || 'N/A'}
-                                onChange={isEditing ? (e) => handleInputChange('phone', e.target.value) : undefined}
+                                value={isEditing ? formData.registerName : company.registerName || 'N/A'}
+                                onChange={isEditing ? (e) => handleInputChange('registerName', e.target.value) : undefined}
                                 readOnly={!isEditing}
                                 className={`mt-1 w-full border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}
                             />
@@ -271,41 +243,28 @@ const CompanyDetail = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700">
-                                Booking Date
+                                Contact Person
                             </label>
                             <input
                                 type="text"
-                                value={formatDate(company.subscription?.startDate || company.createdAt)}
-                                readOnly
-                                className="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50"
+                                value={isEditing ? formData.contactPerson : company.contactPerson || 'N/A'}
+                                onChange={isEditing ? (e) => handleInputChange('contactPerson', e.target.value) : undefined}
+                                readOnly={!isEditing}
+                                className={`mt-1 w-full border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}
                             />
                         </div>
 
-                        <div className="flex justify-between">
-                            <div className="">
-                                <label className="block mb-2 text-md font-medium text-gray-700">
-                                    Free Trial
-                                </label>
-                                <div className="mt-1">
-                                    <span className="px-3 py-1 text-sm font-medium bg-green-100 text-green-700 rounded-full">
-                                        3 Months
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-md mb-2 font-medium text-gray-700">
-                                    Subscription Plan
-                                </label>
-                                <div className="mt-1">
-                                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${company.subscription?.status === 'active'
-                                        ? 'bg-green-100 text-green-700'
-                                        : 'bg-gray-100 text-gray-700'
-                                        }`}>
-                                        {company.subscription?.plan || 'Free Trial'} - {company.subscription?.status || 'N/A'}
-                                    </span>
-                                </div>
-                            </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">
+                                Phone Number
+                            </label>
+                            <input
+                                type="text"
+                                value={isEditing ? formData.phone : (company.phone || company.phoneNumber || 'N/A')}
+                                onChange={isEditing ? (e) => handleInputChange('phone', e.target.value) : undefined}
+                                readOnly={!isEditing}
+                                className={`mt-1 w-full border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}
+                            />
                         </div>
 
                         <div>
@@ -323,13 +282,79 @@ const CompanyDetail = () => {
 
                         <div>
                             <label className="block text-sm font-medium text-gray-700">
-                                Admin Username
+                                State
                             </label>
                             <input
                                 type="text"
-                                value={company.adminCredentials?.username || 'N/A'}
-                                readOnly
-                                className="mt-1 w-full border rounded-lg px-3 py-2 bg-gray-50"
+                                value={isEditing ? formData.state : company.state || 'N/A'}
+                                onChange={isEditing ? (e) => handleInputChange('state', e.target.value) : undefined}
+                                readOnly={!isEditing}
+                                className={`mt-1 w-full border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">
+                                City
+                            </label>
+                            <input
+                                type="text"
+                                value={isEditing ? formData.city : company.city || 'N/A'}
+                                onChange={isEditing ? (e) => handleInputChange('city', e.target.value) : undefined}
+                                readOnly={!isEditing}
+                                className={`mt-1 w-full border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">
+                                Number of Employees
+                            </label>
+                            <input
+                                type="text"
+                                value={isEditing ? formData.employees : company.employees || 'N/A'}
+                                onChange={isEditing ? (e) => handleInputChange('employees', e.target.value) : undefined}
+                                readOnly={!isEditing}
+                                className={`mt-1 w-full border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">
+                                Type of Staffing
+                            </label>
+                            <input
+                                type="text"
+                                value={isEditing ? formData.typeOfStaffing : company.typeOfStaffing || 'N/A'}
+                                onChange={isEditing ? (e) => handleInputChange('typeOfStaffing', e.target.value) : undefined}
+                                readOnly={!isEditing}
+                                className={`mt-1 w-full border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">
+                                GST Number
+                            </label>
+                            <input
+                                type="text"
+                                value={isEditing ? formData.gstNumber : company.gstNumber || 'N/A'}
+                                onChange={isEditing ? (e) => handleInputChange('gstNumber', e.target.value) : undefined}
+                                readOnly={!isEditing}
+                                className={`mt-1 w-full border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">
+                                PAN Number
+                            </label>
+                            <input
+                                type="text"
+                                value={isEditing ? formData.panNumber : company.panNumber || 'N/A'}
+                                onChange={isEditing ? (e) => handleInputChange('panNumber', e.target.value) : undefined}
+                                readOnly={!isEditing}
+                                className={`mt-1 w-full border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}
                             />
                         </div>
 
@@ -338,105 +363,44 @@ const CompanyDetail = () => {
                                 Company Address
                             </label>
                             {isEditing ? (
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                                     <input
                                         type="text"
                                         placeholder="Street"
-                                        value={formData.address.street}
+                                        value={formData.address?.street || ''}
                                         onChange={(e) => handleInputChange('address.street', e.target.value)}
                                         className="border rounded-lg px-3 py-2"
                                     />
                                     <input
                                         type="text"
                                         placeholder="City"
-                                        value={formData.address.city}
+                                        value={formData.address?.city || ''}
                                         onChange={(e) => handleInputChange('address.city', e.target.value)}
                                         className="border rounded-lg px-3 py-2"
                                     />
                                     <input
                                         type="text"
                                         placeholder="State"
-                                        value={formData.address.state}
+                                        value={formData.address?.state || ''}
                                         onChange={(e) => handleInputChange('address.state', e.target.value)}
-                                        className="border rounded-lg px-3 py-2"
-                                    />
-                                    <input
-                                        type="text"
-                                        placeholder="Country"
-                                        value={formData.address.country}
-                                        onChange={(e) => handleInputChange('address.country', e.target.value)}
-                                        className="border rounded-lg px-3 py-2"
-                                    />
-                                    <input
-                                        type="text"
-                                        placeholder="Zip Code"
-                                        value={formData.address.zipCode}
-                                        onChange={(e) => handleInputChange('address.zipCode', e.target.value)}
                                         className="border rounded-lg px-3 py-2"
                                     />
                                 </div>
                             ) : (
                                 <div className="border rounded-lg px-3 py-2 bg-gray-50">
                                     <p className="text-gray-700">
-                                        {company.address?.street || ''}{company.address?.street ? ', ' : ''}
-                                        {company.address?.city || ''}{company.address?.city ? ', ' : ''}
-                                        {company.address?.state || ''}{company.address?.state ? ', ' : ''}
-                                        {company.address?.country || ''}{company.address?.country ? ' - ' : ''}
-                                        {company.address?.zipCode || ''}
+                                        {(() => {
+                                            const street = company.address?.street || company.address1 || '';
+                                            const city = company.address?.city || company.city || '';
+                                            const state = company.address?.state || company.state || '';
+                                            const parts = [street, city, state].filter(Boolean);
+                                            return parts.length > 0 ? parts.join(', ') : 'No address provided';
+                                        })()}
                                     </p>
-                                    {!company.address?.street && !company.address?.city && (
-                                        <p className="text-gray-500">No address provided</p>
-                                    )}
                                 </div>
                             )}
                         </div>
 
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Settings & Limits
-                            </label>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className={`border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}>
-                                    <p className="text-xs text-gray-500">Max Users</p>
-                                    {isEditing ? (
-                                        <input
-                                            type="number"
-                                            value={formData.subscription.maxUsers}
-                                            onChange={(e) => handleInputChange('subscription.maxUsers', e.target.value)}
-                                            className="font-semibold w-full border-0 focus:outline-none"
-                                        />
-                                    ) : (
-                                        <p className="font-semibold">{company.subscription?.maxUsers || 'N/A'}</p>
-                                    )}
-                                </div>
-                                <div className={`border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}>
-                                    <p className="text-xs text-gray-500">Max Recruiters</p>
-                                    {isEditing ? (
-                                        <input
-                                            type="number"
-                                            value={formData.subscription.maxRecruiters}
-                                            onChange={(e) => handleInputChange('subscription.maxRecruiters', e.target.value)}
-                                            className="font-semibold w-full border-0 focus:outline-none"
-                                        />
-                                    ) : (
-                                        <p className="font-semibold">{company.subscription?.maxRecruiters || 'N/A'}</p>
-                                    )}
-                                </div>
-                                <div className={`border rounded-lg px-3 py-2 ${isEditing ? 'bg-white' : 'bg-gray-50'}`}>
-                                    <p className="text-xs text-gray-500">Max Applications/Candidate</p>
-                                    {isEditing ? (
-                                        <input
-                                            type="number"
-                                            value={formData.settings.maxApplicationsPerCandidate}
-                                            onChange={(e) => handleInputChange('settings.maxApplicationsPerCandidate', e.target.value)}
-                                            className="font-semibold w-full border-0 focus:outline-none"
-                                        />
-                                    ) : (
-                                        <p className="font-semibold">{company.settings?.maxApplicationsPerCandidate || 'N/A'}</p>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

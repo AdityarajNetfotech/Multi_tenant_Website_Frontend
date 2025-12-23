@@ -64,86 +64,101 @@ import UniversalLogin from './components/UniversalLogin';
 import TestDetails from "./Candidate/Component/TestDetails";
 import CameraCheckWrapper from './Candidate/instructions_page/CameraCheckWrapper';
 import GiveTest from './Candidate/Pages/GiveTest';
+import ForgotPassword from './components/ForgotPassword';
+import ProtectedRoute from './components/ProtectedRoute';
+import { CompanyProvider } from './Context/companyContext';
 
 const App = () => {
   return (
 
+    <CompanyProvider>
+      <Router>
+        <Routes>
 
-    <Router>
-      <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/ForgotPassword" element={<ForgotPassword />} />
+          <Route path="/SuperAdminLogin" element={<SuperAdminLogin />} />
+          <Route path="/CandidateLogin" element={<CandidateLogin />} />
+          <Route path="/Candidate-Chatbot" element={<Chatbot />} />
+          <Route path="/Login" element={<UniversalLogin />} />
+          <Route path="/SuperAdminRegister" element={<SuperAdminRegister />} />
 
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/SuperAdminLogin" element={<SuperAdminLogin />} />
-        <Route path="/CandidateLogin" element={<CandidateLogin />} />
-        <Route path="/Candidate-Chatbot" element={<Chatbot />} />
-        <Route path="/Login" element={<UniversalLogin />} />
-        <Route path="/SuperAdminRegister" element={<SuperAdminRegister />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/Admin-Dashboard" element={<AdminLayout />}>
+              <Route index element={<AdminDashboard />} />
+              <Route path='RecruiterManagement' element={<RecruiterManagement />} />
+              <Route path='RMGManagement' element={<RMGManagement />} />
+              <Route path='Tickets' element={<AdminTickets />} />
+              <Route path='RaiseTickets' element={<RaiseTickets />} />
+            </Route>
+          </Route>
 
-        <Route path="/Admin-Dashboard" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path='RecruiterManagement' element={<RecruiterManagement />} />
-          <Route path='RMGManagement' element={<RMGManagement />} />
-          <Route path='Tickets' element={<AdminTickets />} />
-          <Route path='RaiseTickets' element={<RaiseTickets />} />
-        </Route>
+          <Route element={<ProtectedRoute />}>
+            <Route path="/RMGAdmin-Dashboard" element={<RMGLayout />}>
+              <Route index element={<RMGDashboard />} />
+              <Route path="RequirementForm" element={<RequirementForm />} />
+              <Route path="Requirement" element={<Requirement />} />
+              <Route path="AssignedRecruiters" element={<AssignedRecruiters />} />
+              <Route path="EyeButton" element={<EyeButton />} />
+              <Route path="FilteredCandidate" element={<FilteredCandidate />} />
+              <Route path="UnfilteredCandidate" element={<UnfilteredCandidate />} />
+              <Route path="SeeHistory" element={<SeeHistory />} />
+              <Route path="RMGSupportTickets" element={<RMGSupportTickets />} />
+              <Route path="RMGRaiseTickets" element={<RMGRaiseTickets />} />
+            </Route>
+          </Route>
 
-        <Route path="/RMGAdmin-Dashboard" element={<RMGLayout />}>
-          <Route index element={<RMGDashboard />} />
-          <Route path="RequirementForm" element={<RequirementForm />} />
-          <Route path="Requirement" element={<Requirement />} />
-          <Route path="AssignedRecruiters" element={<AssignedRecruiters />} />
-          <Route path="EyeButton" element={<EyeButton />} />
-          <Route path="FilteredCandidate" element={<FilteredCandidate />} />
-          <Route path="UnfilteredCandidate" element={<UnfilteredCandidate />} />
-          <Route path="SeeHistory" element={<SeeHistory />} />
-          <Route path="RMGSupportTickets" element={<RMGSupportTickets />} />
-          <Route path="RMGRaiseTickets" element={<RMGRaiseTickets />} />
-        </Route>
+          <Route element={<ProtectedRoute />}>
+            <Route path="/Candidate-Dashboard" element={<CandidateLayout />}>
+              <Route index element={<CandidateDashboard />} />
+              <Route path="AllJDs" element={<AllJDs />} />
+              <Route path="Report" element={<Report />} />
+              <Route path="AppliedJD" element={<AppliedJD />} />
+              <Route path="Examination" element={<Examination />} />
+              <Route path="Examination/TestDetails/:questionSetId" element={<TestDetails />} />
+              <Route path="CandidateProfile" element={<CandidateProfile />} />
+              {/* Camera Check (must contain the questionSetId) */}
+              <Route path="Examination/CameraCheck/:questionSetId" element={<CameraCheckWrapper />} />
+              {/* Candidate Test Route */}
+              <Route path="give-test/:questionSetId" element={<GiveTest />} />
+            </Route>
+          </Route>
 
-        <Route path="/Candidate-Dashboard" element={<CandidateLayout />}>
-          <Route index element={<CandidateDashboard />} />
-          <Route path="AllJDs" element={<AllJDs />} />
-          <Route path="Report" element={<Report />} />
-          <Route path="AppliedJD" element={<AppliedJD />} />
-          <Route path="Examination" element={<Examination />} />
-          <Route path="Examination/TestDetails/:questionSetId" element={<TestDetails />} />
-          <Route path="CandidateProfile" element={<CandidateProfile />} />
-          {/* Camera Check (must contain the questionSetId) */}
-          <Route path="Examination/CameraCheck/:questionSetId" element={<CameraCheckWrapper />} />
-          {/* Candidate Test Route */}
-          <Route path="give-test/:questionSetId" element={<GiveTest />} />
-        </Route>
+          <Route element={<ProtectedRoute />}>
+            <Route path="/SuperAdmin-Dashboard" element={<SuperAdminLayout />}>
+              <Route index element={<SuperAdminDashboard />} />
+              <Route path="CompaniesRegister" element={<CompaniesRegister />} />
+              <Route path="Profile" element={<SuperAdminProfile />} />
+              <Route path="Companies" element={<Companies />} />
+              <Route path="RejisteredRecruiters/CompanieDetail" element={<CompanyDetail />} />
+              <Route path="Tickets" element={<Tickets />} />
+              <Route path="RejisteredRecruiters" element={<RejisteredRecruiters />} />
+              <Route path="EnquiryMessages" element={<EnquiryMessages />} />
+            </Route>
+          </Route>
 
-        <Route path="/SuperAdmin-Dashboard" element={<SuperAdminLayout />}>
-          <Route index element={<SuperAdminDashboard />} />
-          <Route path="CompaniesRegister" element={<CompaniesRegister />} />
-          <Route path="Profile" element={<SuperAdminProfile />} />
-          <Route path="Companies" element={<Companies />} />
-          <Route path="Companies/CompanieDetail" element={<CompanyDetail />} />
-          <Route path="Tickets" element={<Tickets />} />
-          <Route path="RejisteredRecruiters" element={<RejisteredRecruiters />} />
-          <Route path="EnquiryMessages" element={<EnquiryMessages />} />
-        </Route>
+          <Route element={<ProtectedRoute />}>
+            <Route path="/RecruiterAdmin-Dashboard" element={<RecruiterAdminLayout />}>
+              <Route index element={<RecruiterDashboard />} />
+              <Route path="JD" element={<JD />} />
+              <Route path="JD/CreateJD" element={<CreateJD />} />
+              <Route path="Assessment" element={<Assessment />} />
+              <Route path="Assessment/QuestionsList/:questionSetId" element={<QuestionsList />} />
+              <Route path="Results" element={<Results />} />
+              <Route path="JDDetails" element={<JDDetails />} />
+              <Route path="JDDetails/GenerateAssessment" element={<GenerateAssessment />} />
+              {/* ✅ NEW ROUTE: Questions editing page after generation */}
+              <Route path="JDDetails/GenerateAssessment/QuestionsList/:questionSetId" element={<QuestionsList />} />
+              <Route path="JDDetails/GenerateAssessment/Created" element={<QuestionCreated />} />
+              {/* ✅ NEW ROUTE: Standalone Review page (optional) */}
+              <Route path="Review" element={<Review />} />
+              <Route path="NonCandidateList" element={<NonCandidateList />} />
+            </Route>
+          </Route>
 
-        <Route path="/RecruiterAdmin-Dashboard" element={<RecruiterAdminLayout />}>
-          <Route index element={<RecruiterDashboard />} />
-          <Route path="JD" element={<JD />} />
-          <Route path="JD/CreateJD" element={<CreateJD />} />
-          <Route path="Assessment" element={<Assessment />} />
-          <Route path="Assessment/QuestionsList/:questionSetId" element={<QuestionsList />} />
-          <Route path="Results" element={<Results />} />
-          <Route path="JDDetails" element={<JDDetails />} />
-          <Route path="JDDetails/GenerateAssessment" element={<GenerateAssessment />} />
-          {/* ✅ NEW ROUTE: Questions editing page after generation */}
-          <Route path="JDDetails/GenerateAssessment/QuestionsList/:questionSetId" element={<QuestionsList />} />
-          <Route path="JDDetails/GenerateAssessment/Created" element={<QuestionCreated />} />
-          {/* ✅ NEW ROUTE: Standalone Review page (optional) */}
-          <Route path="Review" element={<Review />} />
-          <Route path="NonCandidateList" element={<NonCandidateList />} />
-        </Route>
-
-      </Routes>
-    </Router>
+        </Routes>
+      </Router >
+    </CompanyProvider>
 
 
   )

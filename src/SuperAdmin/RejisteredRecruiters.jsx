@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Eye, Trash2, Users, SlidersHorizontal, Search } from 'lucide-react';
 import Pagination from '../components/LandingPage/Pagination';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 function RejisteredRecruiters() {
     const [searchTerm, setSearchTerm] = useState('');
@@ -9,6 +10,7 @@ function RejisteredRecruiters() {
     const [currentPage, setCurrentPage] = useState(1);
     const [registers, setRegisters] = useState([]);
     const [logoError, setLogoError] = useState(false);
+    const navigate = useNavigate();
     const itemsPerPage = 5;
 
     const convertCloudinaryUrl = (url) => {
@@ -48,7 +50,21 @@ function RejisteredRecruiters() {
             city: company.city,
             state: company.state,
             logo: convertCloudinaryUrl(company.logo),
-            themeColors: ['#6B46C1', '#3B82F6', '#FFFFFF']
+            themeColors: ['#6B46C1', '#3B82F6', '#FFFFFF'],
+            phone: company.phoneNo,
+            subdomain: company.subdomain,
+            createdAt: company.createdAt,
+            createdBy: company.createdBy,
+            adminCredentials: company.adminCredentials,
+            subscription: company.subscription,
+            settings: company.settings,
+            address: {
+              street: company.address1,
+              city: company.city,
+              state: company.state,
+              country: company.country,
+              zipCode: company.zipCode
+            }
           }));
           
           setRegisters(mappedRegisters);
@@ -195,8 +211,10 @@ function RejisteredRecruiters() {
                                                     >
                                                         <Trash2 className="w-4 h-4" />
                                                     </button>
-                                                    <button className="px-3 py-1 text-sm text-green-700 bg-white hover:bg-green-50 rounded border border-green-700 transition-colors font-medium">
-                                                        Approve
+                                                    <button
+                                                    onClick={() => navigate("/SuperAdmin-Dashboard/RejisteredRecruiters/CompanieDetail", { state: { company: register } })}
+                                                    className="px-3 py-1 text-sm text-green-700 bg-white hover:bg-green-50 rounded border border-green-700 transition-colors font-medium">
+                                                        Update
                                                     </button>
                                                 </div>
                                             </td>
@@ -316,18 +334,7 @@ function RejisteredRecruiters() {
                                         </div>
                                     </div>
                                 </div>
-                                {/* <div>
-                                    <div className="text-sm text-gray-600 mb-3">Theme Color:</div>
-                                    <div className="flex gap-3">
-                                        {selectedRegister.themeColors.map((color, index) => (
-                                            <div
-                                                key={index}
-                                                className="w-20 h-20 rounded-lg border border-gray-200 shadow-sm"
-                                                style={{ backgroundColor: color }}
-                                            ></div>
-                                        ))}
-                                    </div>
-                                </div> */}
+                             
                             </div>
                         </div>
                     </div>

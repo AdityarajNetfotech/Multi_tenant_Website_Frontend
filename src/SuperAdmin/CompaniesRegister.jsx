@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Upload, ChevronDown, Trash2, CheckCircle, AlertCircle, Loader2, Mail, Globe, Key } from 'lucide-react';
-import img from '../img/RRejister.png';
+import SpinLoader from '../components/SpinLoader';
 
 function CompaniesRegister() {
     const [formData, setFormData] = useState({
@@ -8,17 +8,16 @@ function CompaniesRegister() {
         companyType: '',
         contactPerson: '',
         email: '',
-        phoneNumber: '',
-        employeeCount: '',
+        phoneNo: '',
+        numberOfEmployees: '',
         gstNumber: '',
         panNumber: '',
-        staffingType: '',
+        typeOfStaffing: '',
         address1: '',
         address2: '',
         city: '',
         state: '',
-        logo: null,
-        themeColor: '#8B5CF6'
+        logo: null
     });
 
     const [selectedCountryCode, setSelectedCountryCode] = useState('+91');
@@ -40,7 +39,13 @@ function CompaniesRegister() {
         'West Bengal',
         'Rajasthan'
     ];
-    const themeColors = ['#6D28D9', '#3B82F6', '#C5C5C5'];
+
+    const staffingTypes = [
+        { value: '', label: 'Select Type of Staffing' },
+        { value: 'contract', label: 'Contract' },
+        { value: 'permanent', label: 'Permanent' },
+        { value: 'both', label: 'Both' }
+    ];
 
     const handleInputChange = (e) => {
         setFormData({
@@ -67,9 +72,13 @@ function CompaniesRegister() {
         const errors = [];
 
         if (!formData.companyName.trim()) errors.push('Company name is required');
+        if (!formData.companyType.trim()) errors.push('Company type is required');
         if (!formData.email.trim()) errors.push('Email is required');
-        if (!formData.contactPerson.trim()) errors.push('Contact person is required');
-        if (!formData.phoneNumber.trim()) errors.push('Phone number is required');
+        if (!formData.phoneNo.trim()) errors.push('Phone number is required');
+        if (!formData.numberOfEmployees.trim()) errors.push('Number of employees is required');
+        if (!formData.gstNumber.trim()) errors.push('GST number is required');
+        if (!formData.panNumber.trim()) errors.push('PAN number is required');
+        if (!formData.typeOfStaffing.trim()) errors.push('Type of staffing is required');
         if (!formData.address1.trim()) errors.push('Address is required');
         if (!formData.city.trim()) errors.push('City is required');
         if (formData.state === 'Select State' || !formData.state) errors.push('Please select a state');
@@ -80,7 +89,7 @@ function CompaniesRegister() {
         }
 
         const phoneRegex = /^\d{10}$/;
-        if (formData.phoneNumber && !phoneRegex.test(formData.phoneNumber)) {
+        if (formData.phoneNo && !phoneRegex.test(formData.phoneNo)) {
             errors.push('Please enter a valid 10-digit phone number');
         }
 
@@ -108,18 +117,21 @@ function CompaniesRegister() {
             const apiData = {
                 companyName: formData.companyName,
                 email: formData.email,
-                phone: `${selectedCountryCode}${formData.phoneNumber}`,
-                address: `${formData.address1}, ${formData.address2 ? formData.address2 + ', ' : ''}${formData.city}, ${formData.state}`,
-                subscription: {
-                    plan: 'basic',
-                    maxUsers: 10,
-                    maxRecruiters: 5
-                }
+                companyType: formData.companyType,
+                gstNumber: formData.gstNumber,
+                typeOfStaffing: formData.typeOfStaffing,
+                panNumber: formData.panNumber,
+                phoneNo: `${selectedCountryCode}${formData.phoneNo}`,
+                numberOfEmployees: formData.numberOfEmployees,
+                address1: formData.address1,
+                address2: formData.address2,
+                city: formData.city,
+                state: formData.state
             };
 
-            // console.log('Sending data:', apiData); 
+            console.log('Sending data:', apiData);
 
-            const response = await fetch('http://localhost:5000/api/super-admin/tenants', {
+            const response = await fetch('http://localhost:5000/api/company/register', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -128,13 +140,13 @@ function CompaniesRegister() {
                 body: JSON.stringify(apiData)
             });
 
-            // console.log('Response status:', response.status); 
+            console.log('Response status:', response.status);
 
             const data = await response.json();
-            if (response.ok && data.success) {
+            if (response.ok && (data.success || data.company)) {
                 setSubmitStatus('success');
-                setMessage('Registration successful! Check your email for login credentials.');
-                setTenantDetails(data.data);
+                setMessage('Registration successful! Company has been registered.');
+                setTenantDetails(data.data || data);
                 setShowSuccessDetails(true);
 
                 setTimeout(() => {
@@ -143,24 +155,23 @@ function CompaniesRegister() {
                         companyType: '',
                         contactPerson: '',
                         email: '',
-                        phoneNumber: '',
-                        employeeCount: '',
+                        phoneNo: '',
+                        numberOfEmployees: '',
                         gstNumber: '',
                         panNumber: '',
-                        staffingType: '',
+                        typeOfStaffing: '',
                         address1: '',
                         address2: '',
                         city: '',
                         state: '',
-                        logo: null,
-                        themeColor: '#8B5CF6'
+                        logo: null
                     });
                     setShowSuccessDetails(false);
                     setSubmitStatus(null);
                 }, 5000);
             } else {
                 setSubmitStatus('error');
-                setMessage(data.message || 'Registration failed. Please try again.');
+                setMessage(data.message || data.error || 'Registration failed. Please try again.');
             }
         } catch (error) {
             setSubmitStatus('error');
@@ -172,15 +183,13 @@ function CompaniesRegister() {
     };
 
     return (
-        <div className="min-h-screen py-6 px-4 sm:px-6 lg:px-8 items-start">
-            {/* <div className="min-h-screen py-6 px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-[45%_55%] gap-6 items-start">
-            <div className="hidden lg:flex justify-center items-start pt-20">
-                <img
-                    src={img}
-                    alt=""
-                    className="max-h-full max-w-full object-contain"
-                />
-            </div> */}
+        <div className="min-h-screen py-6 px-4 sm:px-6 lg:px-8 items-start relative">
+            
+            {isSubmitting && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <SpinLoader />
+                </div>
+            )}
 
             <div className="">
                 <div className="text-center mb-6">
@@ -209,39 +218,45 @@ function CompaniesRegister() {
                                             <Mail className="h-4 w-4 text-purple-600 mt-0.5" />
                                             <div className="text-sm">
                                                 <p className="font-medium text-gray-700">Email Sent To:</p>
-                                                <p className="text-gray-600">{tenantDetails.tenant.email}</p>
+                                                <p className="text-gray-600">{tenantDetails.tenant?.email || tenantDetails.company?.email}</p>
                                             </div>
                                         </div>
 
-                                        <div className="flex items-start gap-3">
-                                            <Globe className="h-4 w-4 text-purple-600 mt-0.5" />
-                                            <div className="text-sm">
-                                                <p className="font-medium text-gray-700">Your Subdomain:</p>
-                                                <p className="text-gray-900 font-mono bg-gray-100 px-2 py-1 rounded inline-block">
-                                                    {tenantDetails.tenant.subdomain}
-                                                </p>
+                                        {tenantDetails.tenant?.subdomain && (
+                                            <div className="flex items-start gap-3">
+                                                <Globe className="h-4 w-4 text-purple-600 mt-0.5" />
+                                                <div className="text-sm">
+                                                    <p className="font-medium text-gray-700">Your Subdomain:</p>
+                                                    <p className="text-gray-900 font-mono bg-gray-100 px-2 py-1 rounded inline-block">
+                                                        {tenantDetails.tenant.subdomain}
+                                                    </p>
+                                                </div>
                                             </div>
-                                        </div>
+                                        )}
 
-                                        <div className="flex items-start gap-3">
-                                            <Key className="h-4 w-4 text-purple-600 mt-0.5" />
-                                            <div className="text-sm">
-                                                <p className="font-medium text-gray-700">Login Credentials:</p>
-                                                <p className="text-gray-600">Username: <span className="font-mono">{tenantDetails.credentials.username}</span></p>
-                                                <p className="text-xs text-gray-500 mt-1">Password has been sent to your email</p>
-                                            </div>
-                                        </div>
+                                        {tenantDetails.credentials && (
+                                            <>
+                                                <div className="flex items-start gap-3">
+                                                    <Key className="h-4 w-4 text-purple-600 mt-0.5" />
+                                                    <div className="text-sm">
+                                                        <p className="font-medium text-gray-700">Login Credentials:</p>
+                                                        <p className="text-gray-600">Username: <span className="font-mono">{tenantDetails.credentials.username}</span></p>
+                                                        <p className="text-xs text-gray-500 mt-1">Password has been sent to your email</p>
+                                                    </div>
+                                                </div>
 
-                                        <div className="pt-3 border-t border-gray-200">
-                                            <a
-                                                href={tenantDetails.credentials.loginUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-block px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
-                                            >
-                                                Go to Login Page →
-                                            </a>
-                                        </div>
+                                                <div className="pt-3 border-t border-gray-200">
+                                                    <a
+                                                        href={tenantDetails.credentials.loginUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-block px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
+                                                    >
+                                                        Go to Login Page →
+                                                    </a>
+                                                </div>
+                                            </>
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -274,7 +289,7 @@ function CompaniesRegister() {
 
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    Company Type
+                                    Company Type <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -282,6 +297,7 @@ function CompaniesRegister() {
                                     value={formData.companyType}
                                     onChange={handleInputChange}
                                     placeholder="Enter Company Type"
+                                    required
                                     disabled={isSubmitting}
                                     className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
@@ -289,7 +305,7 @@ function CompaniesRegister() {
 
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    Contact Person <span className="text-red-500">*</span>
+                                    Contact Person
                                 </label>
                                 <input
                                     type="text"
@@ -297,7 +313,6 @@ function CompaniesRegister() {
                                     value={formData.contactPerson}
                                     onChange={handleInputChange}
                                     placeholder="Enter Contact Person"
-                                    required
                                     disabled={isSubmitting}
                                     className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
@@ -342,8 +357,8 @@ function CompaniesRegister() {
 
                                     <input
                                         type="tel"
-                                        name="phoneNumber"
-                                        value={formData.phoneNumber}
+                                        name="phoneNo"
+                                        value={formData.phoneNo}
                                         onChange={handleInputChange}
                                         placeholder="Enter Phone Number"
                                         required
@@ -357,14 +372,15 @@ function CompaniesRegister() {
 
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    How many Employees do you have?
+                                    Number of Employees <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
-                                    name="employeeCount"
-                                    value={formData.employeeCount}
+                                    name="numberOfEmployees"
+                                    value={formData.numberOfEmployees}
                                     onChange={handleInputChange}
                                     placeholder="Number of Employees"
+                                    required
                                     disabled={isSubmitting}
                                     className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
@@ -372,7 +388,7 @@ function CompaniesRegister() {
 
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    GST Number
+                                    GST Number <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -380,6 +396,7 @@ function CompaniesRegister() {
                                     value={formData.gstNumber}
                                     onChange={handleInputChange}
                                     placeholder="Enter GST Number"
+                                    required
                                     disabled={isSubmitting}
                                     className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
@@ -387,7 +404,7 @@ function CompaniesRegister() {
 
                             <div>
                                 <label className="block text-sm font-medium mb-2">
-                                    Pan Number
+                                    PAN Number <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -395,6 +412,7 @@ function CompaniesRegister() {
                                     value={formData.panNumber}
                                     onChange={handleInputChange}
                                     placeholder="Enter PAN Number"
+                                    required
                                     disabled={isSubmitting}
                                     className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                                 />
@@ -402,17 +420,25 @@ function CompaniesRegister() {
 
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium mb-2">
-                                    Type of Staffing (Contract/Permanent/Both)
+                                    Type of Staffing <span className="text-red-500">*</span>
                                 </label>
-                                <input
-                                    type="text"
-                                    name="staffingType"
-                                    value={formData.staffingType}
-                                    onChange={handleInputChange}
-                                    placeholder="Enter Type of Staffing"
-                                    disabled={isSubmitting}
-                                    className="w-full px-4 py-1 border border-gray-300 bg-gray-100 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                                />
+                                <div className="relative">
+                                    <select
+                                        name="typeOfStaffing"
+                                        value={formData.typeOfStaffing}
+                                        onChange={handleInputChange}
+                                        required
+                                        disabled={isSubmitting}
+                                        className="w-full appearance-none px-4 py-1 bg-gray-100 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 pr-10 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        {staffingTypes.map((type) => (
+                                            <option key={type.value} value={type.value} disabled={type.value === ''}>
+                                                {type.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -495,89 +521,61 @@ function CompaniesRegister() {
                         </div>
                     </div>
 
-                    <div className="bg-white">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            <div className='border-gray-500 border rounded-4xl'>
-                                <div className='border-b border-gray-500 text-xl py-1 px-6 sm:px-8'>
-                                    <label className="block font-medium text-gray-900">Logo</label>
-                                </div>
+                    <div className="bg-white border-gray-500 border rounded-4xl">
+                        <div className='border-b border-gray-500 text-xl py-1 px-6 sm:px-8'>
+                            <label className="block font-medium text-gray-900">Logo</label>
+                        </div>
 
-                                <div className="flex flex-col justify-between sm:flex-row items-start gap-4 py-3 px-6 sm:px-8">
-                                    <div className="w-35 h-20 bg-gray-50 border border-gray-500 rounded-md flex items-center justify-center overflow-hidden">
-                                        {formData.logo ? (
-                                            <img
-                                                src={typeof formData.logo === 'string' ? formData.logo : URL.createObjectURL(formData.logo)}
-                                                alt="Logo preview"
-                                                className="max-h-full max-w-full object-contain p-2"
-                                            />
-                                        ) : (
-                                            <span className="text-xs text-gray-400">No logo</span>
-                                        )}
-                                    </div>
-
-                                    <div className="flex sm:flex-col items-stretch gap-2">
-                                        <input
-                                            id="logo-upload"
-                                            type="file"
-                                            accept="image/*"
-                                            onChange={handleFileUpload}
-                                            disabled={isSubmitting}
-                                            className="hidden"
-                                        />
-                                        <label
-                                            htmlFor="logo-upload"
-                                            className={`inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full border border-gray-500 bg-white text-sm text-gray-800 hover:bg-gray-50 cursor-pointer ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                        >
-                                            <Upload className="h-4 w-4" />
-                                            Upload a file
-                                        </label>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                if (formData.logo && typeof formData.logo === 'string' && formData.logo.startsWith('blob:')) {
-                                                    try { URL.revokeObjectURL(formData.logo); } catch { }
-                                                }
-                                                setFormData({ ...formData, logo: null });
-                                                const input = document.getElementById('logo-upload');
-                                                if (input) input.value = '';
-                                            }}
-                                            disabled={!formData.logo || isSubmitting}
-                                            className={`inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full border text-sm
-              ${formData.logo && !isSubmitting
-                                                    ? 'bg-red-50 text-red-700 border-red-500 hover:bg-red-100'
-                                                    : 'bg-red-50/50 text-red-400 cursor-not-allowed'
-                                                }`}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                            Delete
-                                        </button>
-                                    </div>
-                                </div>
+                        <div className="flex flex-col justify-between sm:flex-row items-start gap-4 py-3 px-6 sm:px-8">
+                            <div className="w-35 h-20 bg-gray-50 border border-gray-500 rounded-md flex items-center justify-center overflow-hidden">
+                                {formData.logo ? (
+                                    <img
+                                        src={typeof formData.logo === 'string' ? formData.logo : URL.createObjectURL(formData.logo)}
+                                        alt="Logo preview"
+                                        className="max-h-full max-w-full object-contain p-2"
+                                    />
+                                ) : (
+                                    <span className="text-xs text-gray-400">No logo</span>
+                                )}
                             </div>
 
-                            <div className='border-gray-500 border rounded-4xl'>
-                                <div className='border-b border-gray-500 py-1 text-xl px-6 sm:px-8'>
-                                    <label className="block font-medium text-gray-900">Theme Color</label>
-                                </div>
+                            <div className="flex sm:flex-col items-stretch gap-2">
+                                <input
+                                    id="logo-upload"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleFileUpload}
+                                    disabled={isSubmitting}
+                                    className="hidden"
+                                />
+                                <label
+                                    htmlFor="logo-upload"
+                                    className={`inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full border border-gray-500 bg-white text-sm text-gray-800 hover:bg-gray-50 cursor-pointer ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    <Upload className="h-4 w-4" />
+                                    Upload a file
+                                </label>
 
-                                <div className="flex items-center gap-3 py-3 px-6 sm:px-8">
-                                    {themeColors.map((color) => (
-                                        <button
-                                            key={color}
-                                            type="button"
-                                            onClick={() => setFormData({ ...formData, themeColor: color })}
-                                            disabled={isSubmitting}
-                                            title={color}
-                                            className={`h-12 w-16 rounded-md border-2 transition-all ${isSubmitting ? 'cursor-not-allowed opacity-50' : ''}
-              ${formData.themeColor === color
-                                                    ? 'border-purple-600 shadow-[inset_0_0_0_2px_rgba(255,255,255,0.75)]'
-                                                    : 'border-gray-300 hover:border-gray-400'
-                                                }`}
-                                            style={{ backgroundColor: color }}
-                                        />
-                                    ))}
-                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        if (formData.logo && typeof formData.logo === 'string' && formData.logo.startsWith('blob:')) {
+                                            try { URL.revokeObjectURL(formData.logo); } catch { }
+                                        }
+                                        setFormData({ ...formData, logo: null });
+                                        const input = document.getElementById('logo-upload');
+                                        if (input) input.value = '';
+                                    }}
+                                    disabled={!formData.logo || isSubmitting}
+                                    className={`inline-flex items-center justify-center gap-2 px-3 py-2 rounded-full border text-sm
+                                        ${formData.logo && !isSubmitting
+                                            ? 'bg-red-50 text-red-700 border-red-500 hover:bg-red-100'
+                                            : 'bg-red-50/50 text-red-400 cursor-not-allowed'
+                                        }`}
+                                >
+                                    <Trash2 className="h-4 w-4" />
+                                    Delete
+                                </button>
                             </div>
                         </div>
                     </div>

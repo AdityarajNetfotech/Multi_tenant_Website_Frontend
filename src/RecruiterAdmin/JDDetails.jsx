@@ -37,7 +37,7 @@ function JDDetails() {
                     return;
                 }
 
-                const response = await axios.get(`http://localhost:4000/api/jd/${jdId}/candidates`, {
+                const response = await axios.get(`http://localhost:4000/api/jd/${jdId}/candidatess`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                     }
