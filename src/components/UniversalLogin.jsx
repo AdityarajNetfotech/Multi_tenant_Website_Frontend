@@ -24,7 +24,6 @@ const UniversalLogin = () => {
             );
 
             const decodedToken = JSON.parse(jsonPayload);
-            // console.log("Decoded Token:", decodedToken);
             return decodedToken;
         } catch (error) {
             console.error("Error decoding token:", error);
@@ -69,31 +68,43 @@ const UniversalLogin = () => {
                 { email, password },
                 { withCredentials: true }
             );
+            console.log(response.data);
 
             if (response.data.success) {
                 const token = response.data.token;
+                const user = response.data.user;
 
                 localStorage.setItem("token", token);
+                
+                if (!user.ispasswordchanged) {
+                    // console.log("Password not changed, redirecting to change password page");
+                    navigate("/ForgotPassword", { 
+                        state: { 
+                            email: user.email,
+                            message: "Please change your password before continuing",
+                            isFirstLogin: true 
+                        } 
+                    });
+                } else {
+                    const decoded = decodeToken(token);
 
-                const decoded = decodeToken(token);
+                    if (!decoded || !decoded.role) {
+                        setError("Invalid token received");
+                        setLoading(false);
+                        return;
+                    }
 
-                if (!decoded || !decoded.role) {
-                    setError("Invalid token received");
-                    setLoading(false);
-                    return;
+                    navigateBasedOnRole(decoded.role);
                 }
-
-                navigateBasedOnRole(decoded.role);
             }
 
         } catch (err) {
             console.error("Login Error:", err);
-            setError("Invalid email or password");
+            setError(err.response?.data?.message || "Invalid email or password");
         }
 
         setLoading(false);
     };
-
 
     return (
         <div className="min-h-screen bg-[#FFFFFF05] flex items-center justify-center px-4">
@@ -156,11 +167,11 @@ const UniversalLogin = () => {
                                 </div>
                             )}
 
-                            <div className="mb-4">
+                            {/* <div className="mb-4">
                                 <span onClick={() => navigate("/ForgotPassword")} className="text-blue-600 cursor-pointer text-sm">
                                     Forgot Password?
                                 </span>
-                            </div>
+                            </div> */}
 
                             <div className="flex justify-center">
                                 <button
@@ -182,12 +193,12 @@ const UniversalLogin = () => {
                                 </button>
                             </div>
 
-                            <p className="text-center text-sm text-gray-600 mt-4">
+                            {/* <p className="text-center text-sm text-gray-600 mt-4">
                                 Don't have an account?{" "}
                                 <a href="/signup" className="text-blue-600 hover:underline">
                                     Sign Up
                                 </a>
-                            </p>
+                            </p> */}
                         </form>
                     </div>
                 </div>

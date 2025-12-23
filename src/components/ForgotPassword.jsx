@@ -2,6 +2,7 @@ import React, { useState, useRef } from "react";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import img from "../assets/RecruiterLogin.png";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const ForgotPassword = () => {
     const [step, setStep] = useState(1);
@@ -11,6 +12,8 @@ const ForgotPassword = () => {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
     const navigate = useNavigate();
 
     const otpRefs = [
@@ -40,40 +43,80 @@ const ForgotPassword = () => {
         }
     };
 
-    const handlePaste = (e) => {
+    const handleSendOtp = async (e) => {
         e.preventDefault();
-        const pastedData = e.clipboardData.getData("text").slice(0, 6);
-        if (!/^\d+$/.test(pastedData)) return;
+        setError("");
+        setLoading(true);
 
-        const newOtp = [...otp];
-        pastedData.split("").forEach((char, index) => {
-            if (index < 6) newOtp[index] = char;
-        });
-        setOtp(newOtp);
-
-        const focusIndex = Math.min(pastedData.length, 5);
-        otpRefs[focusIndex].current.focus();
+        try {
+            const response = await axios.post("http://localhost:4000/api/forgot/forgot-password", { email });
+            console.log("Email:", email);
+            setStep(2);
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to send OTP");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleSendOtp = (e) => {
+    // Step 2: API Call - validate-otp
+    const handleVerifyOtp = async (e) => {
         e.preventDefault();
-        console.log("Email:", email);
-        setStep(2);
-    };
+        setError("");
+        setLoading(true);
 
-    const handleVerifyOtp = (e) => {
-        e.preventDefault();
         const otpValue = otp.join("");
-        console.log("OTP:", otpValue);
-        setStep(3);
+
+        try {
+            const response = await axios.post("http://localhost:4000/api/forgot/validate-otp", { email, otp: otpValue });
+            console.log("OTP:", otpValue);
+            setStep(3);
+        } catch (err) {
+            setError(err.response?.data?.message || "Invalid OTP");
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleResetPassword = (e) => {
+    // Step 3: API Call - change-password
+    const handleResetPassword = async (e) => {
         e.preventDefault();
-        console.log("New Password:", password);
-        console.log("Confirm Password:", confirmPassword);
-        alert("Password Reset Done!");
-        navigate("/login");
+        setError("");
+
+        if (password !== confirmPassword) {
+            setError("Passwords do not match");
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const response = await axios.post("http://localhost:4000/api/forgot/change-password", { email, newPassword: password });
+            console.log("New Password:", password);
+            console.log("Confirm Password:", confirmPassword);
+            alert("Password Reset Done!");
+            navigate("/login");
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to change password");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Resend OTP handler
+    const handleResendOtp = async () => {
+        setError("");
+        setLoading(true);
+
+        try {
+            const response = await axios.post("http://localhost:4000/api/forgot/forgot-password", { email });
+            setOtp(["", "", "", "", "", ""]);
+            alert("OTP resent successfully!");
+        } catch (err) {
+            setError(err.response?.data?.message || "Failed to resend OTP");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -96,10 +139,16 @@ const ForgotPassword = () => {
 
                     <div className="flex-1 bg-white rounded-2xl shadow-md border border-gray-100 p-8 max-w-md mx-auto">
 
+                        {error && (
+                            <div className="mb-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-md text-center">
+                                {error}
+                            </div>
+                        )}
+
                         {step === 1 && (
                             <form onSubmit={handleSendOtp}>
                                 <p className="text-gray-600 text-center mb-6">
-                                    Enter your email to receive OTP
+                                    Please update your password to secure your account
                                 </p>
 
                                 <div className="mb-6">
@@ -117,9 +166,10 @@ const ForgotPassword = () => {
 
                                 <button
                                     type="submit"
-                                    className="w-full bg-blue-500 text-white py-2 rounded-md font-medium hover:bg-blue-600 mb-4"
+                                    disabled={loading}
+                                    className="w-full bg-blue-500 text-white py-2 rounded-md font-medium hover:bg-blue-600 mb-4 disabled:bg-blue-300 disabled:cursor-not-allowed"
                                 >
-                                    Send OTP
+                                    {loading ? "Sending..." : "Send OTP"}
                                 </button>
 
                                 <button
@@ -155,7 +205,6 @@ const ForgotPassword = () => {
                                                 value={digit}
                                                 onChange={(e) => handleOtpChange(index, e.target.value)}
                                                 onKeyDown={(e) => handleKeyDown(index, e)}
-                                                onPaste={handlePaste}
                                                 maxLength={1}
                                                 className="w-12 h-12 text-center text-xl font-semibold border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                             />
@@ -165,17 +214,19 @@ const ForgotPassword = () => {
 
                                 <button
                                     type="submit"
-                                    className="w-full bg-blue-500 text-white py-2 rounded-md font-medium hover:bg-blue-600 mb-4"
+                                    disabled={loading}
+                                    className="w-full bg-blue-500 text-white py-2 rounded-md font-medium hover:bg-blue-600 mb-4 disabled:bg-blue-300 disabled:cursor-not-allowed"
                                 >
-                                    Verify OTP
+                                    {loading ? "Verifying..." : "Verify OTP"}
                                 </button>
 
                                 <p className="text-center text-sm text-gray-600">
                                     Didn't receive OTP?{" "}
                                     <button
                                         type="button"
-                                        onClick={() => console.log("Resend OTP")}
-                                        className="text-blue-600 hover:underline"
+                                        onClick={handleResendOtp}
+                                        disabled={loading}
+                                        className="text-blue-600 hover:underline disabled:text-blue-300"
                                     >
                                         Resend
                                     </button>
@@ -231,9 +282,10 @@ const ForgotPassword = () => {
 
                                 <button
                                     type="submit"
-                                    className="w-full bg-blue-500 text-white py-2 rounded-md font-medium hover:bg-blue-600"
+                                    disabled={loading}
+                                    className="w-full bg-blue-500 text-white py-2 rounded-md font-medium hover:bg-blue-600 disabled:bg-blue-300 disabled:cursor-not-allowed"
                                 >
-                                    Reset Password
+                                    {loading ? "Resetting..." : "Reset Password"}
                                 </button>
                             </form>
                         )}

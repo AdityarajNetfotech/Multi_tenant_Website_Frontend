@@ -28,6 +28,7 @@ function CreateJD() {
             setFormData((prev) => ({
                 ...prev,
                 offerId: location.state.offerId,
+                companyName: location.state.companyName || '',
             }));
         }
     }, [location.state]);
@@ -320,7 +321,7 @@ function CreateJD() {
 
                             <div>
                                 <label htmlFor="companyName" className="block text-sm font-medium mb-2">
-                                    Company Name
+                                    Company Name <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -328,10 +329,10 @@ function CreateJD() {
                                     name="companyName"
                                     value={formData.companyName}
                                     onChange={handleInputChange}
-                                    placeholder="Enter Company Name"
+                                    readOnly
                                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl 
                                         focus:ring-2 focus:ring-gray-900 focus:border-transparent 
-                                        outline-none transition-all text-sm"
+                                        outline-none transition-all text-sm bg-gray-50 cursor-not-allowed"
                                 />
                             </div>
 
