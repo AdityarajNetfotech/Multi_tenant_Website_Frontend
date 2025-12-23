@@ -75,7 +75,7 @@ const UniversalLogin = () => {
                 const user = response.data.user;
  
                 localStorage.setItem("token", token);
-               
+                console.log("Check paasword",user);
                 if (!user.ispasswordchanged) {
                     // console.log("Password not changed, redirecting to change password page");
                     navigate("/ForgotPassword", {
