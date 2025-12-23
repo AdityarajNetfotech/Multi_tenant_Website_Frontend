@@ -5,18 +5,14 @@ import AssessmentAPI from '../../RecruiterAdmin/api/generateAssessmentApi';
 export default function Examination() {
   const navigate = useNavigate();
   const [jobs, setJobs] = useState([]);
+  const regex = / \d{2}:\d{2}:\d{2} GMT/;
 
   useEffect(() => {
     const fetchAssessment = async () => {
       try {
         const candidateRaw = sessionStorage.getItem("candidateData");
         const candidate = candidateRaw ? JSON.parse(candidateRaw) : null;
-        const selectedJDRaw = localStorage.getItem("selectedJD");
-        const selectedJD = selectedJDRaw ? JSON.parse(selectedJDRaw) : null;
-        console.log("Loaded candidate:", candidate);
-        console.log("Loaded selectedJD:", selectedJD);
-
-        if (!candidate || !selectedJD || !selectedJD._id) {
+        if (!candidate) {
           setJobs([
             {
               title: "No Examination Available",
@@ -32,85 +28,118 @@ export default function Examination() {
           return;
         }
 
-        // Robustly check if candidate is filtered for this JD
-        let isFiltered = false;
-        let filteredEntry = null;
-        if (candidate && selectedJD && Array.isArray(selectedJD.filteredCandidates)) {
-          const candidateIdStr = String(candidate._id || candidate.id || "");
-          filteredEntry = selectedJD.filteredCandidates.find(c => String(c.candidate) === candidateIdStr);
-          isFiltered = !!filteredEntry;
-          console.log("Checking filteredCandidates:", selectedJD.filteredCandidates.map(c => c.candidate), "against candidateId:", candidateIdStr);
-        }
-        console.log("Is candidate filtered?", isFiltered);
-
-        if (!isFiltered) {
-          setJobs([
-            {
-              title: "No Examination Available",
-              location: "—",
-              description: "You have not been shortlisted for the test.",
-              isActive: false,
-              startDate: "—",
-              startTime: "—",
-              endDate: "—",
-              endTime: "—",
-            },
-          ]);
-          return;
-        }
-
-        // Use AssessmentAPI to fetch finalized test for candidate and JD
+        // Use AssessmentAPI to fetch all finalized tests for candidate
         const candidateId = candidate._id || candidate.id;
-        let finalisedTestResult = null;
+        let finalisedTestResults = null;
         try {
-          finalisedTestResult = await AssessmentAPI.getFinalizedTest(candidateId, selectedJD._id);
+          finalisedTestResults = await AssessmentAPI.getFinalizedTest(candidateId);
         } catch (apiErr) {
           console.error('Error fetching finalized test from AssessmentAPI:', apiErr);
         }
-        console.log("Finalised test API result for candidate", candidateId, "and JD", selectedJD._id, ":", finalisedTestResult);
+        // console.log("Finalised test API result for candidate", candidateId, ":", finalisedTestResults);
 
-        if (
-          finalisedTestResult 
-        ) {
-          // If the backend returns an array, use the first one
-          const test = Array.isArray(finalisedTestResult.data) ? finalisedTestResult.data[0] : finalisedTestResult.data;
-          setJobs([
-            {
-              title: finalisedTestResult.title || "Assessment",
-              company: finalisedTestResult.company || "Unknown Company",
-              location: finalisedTestResult.location || "Remote",
-              workType: finalisedTestResult.workType || "Full-time",
-              employmentMode: finalisedTestResult.employmentMode || "On-site",
-              skills: Array.isArray(finalisedTestResult.skills) ? finalisedTestResult.skills : [],
-              description: finalisedTestResult.description || "This is an assessment for your role.",
-              startDate: finalisedTestResult.startDate || "Today",
-              startTime: finalisedTestResult.startTime || "10:00 AM",
-              endDate: finalisedTestResult.endDate || "—",
-              endTime: finalisedTestResult.endTime || "—",
-              isActive: typeof finalisedTestResult.isActive === 'boolean' ? finalisedTestResult.isActive : true,
-              questionSetId: finalisedTestResult.questionSetId || finalisedTestResult.job_id || "assessment",
-              questions: Array.isArray(finalisedTestResult.questions) ? finalisedTestResult.questions : [],
-              aiScore: finalisedTestResult.aiScore !== null && finalisedTestResult.aiScore !== undefined ? finalisedTestResult.aiScore : (filteredEntry?.aiScore ?? null),
-              aiExplanation: finalisedTestResult.aiExplanation !== null && finalisedTestResult.aiExplanation !== undefined ? finalisedTestResult.aiExplanation : (filteredEntry?.aiExplanation ?? null)
-            },
-          ]);
-        } else {
-          setJobs([
-            {
-              title: "No Assessment Found",
-              location: "—",
-              workType: "—",
-              employmentMode: "—",
-              description:
-                "No assessment has been generated yet. Please check back later.",
-              startDate: "—",
-              startTime: "—",
-              endDate: "—",
-              endTime: "—",
-              isActive: false,
-            },
-          ]);
+        if (Array.isArray(finalisedTestResults) && finalisedTestResults.length > 0) {
+          // Check if the only result is a null/empty object (API: no assessment found)
+          const onlyNull = finalisedTestResults.length === 1 &&
+            Object.values(finalisedTestResults[0]).every(
+              v => v === null || v === undefined || v === ""
+            );
+          if (!onlyNull) {
+            // console.log("Siuuu: ",
+            //   finalisedTestResults
+            // )
+            // helper to parse date/time into a Date object
+            const parseDateTime = (dateStr, timeStr) => {
+              if (!dateStr && !timeStr) return null;
+              try {
+                // Try combined parse first
+                const combined = `${dateStr || ''} ${timeStr || ''}`.trim();
+                let dt = combined ? new Date(combined) : null;
+                if (dt && !isNaN(dt)) return dt;
+                // fallback to dateStr alone
+                dt = dateStr ? new Date(dateStr) : null;
+                if (dt && !isNaN(dt)) return dt;
+              } catch (e) {}
+              return null;
+            };
+
+            const now = new Date();
+
+            setJobs(finalisedTestResults.map(test => {
+              const rawStart = test.exam_date ? test.exam_date.replace(regex, '') : test.startDate || '';
+              const rawEnd = test.end_date ? test.end_date.replace(regex, '') : test.endDate || '';
+              let startDT = parseDateTime(rawStart, test.test_start || test.startTime);
+              let endDT = parseDateTime(rawEnd, test.test_end || test.endTime);
+
+              // If parsing failed for date-only strings, try treating date-only as start/end of day
+              const tryDateOnlyAsEndOfDay = (dateStr) => {
+                if (!dateStr) return null;
+                try {
+                  const d = new Date(dateStr);
+                  if (d && !isNaN(d)) {
+                    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+                  }
+                } catch (e) {}
+                return null;
+              };
+
+              const tryDateOnlyAsStartOfDay = (dateStr) => {
+                if (!dateStr) return null;
+                try {
+                  const d = new Date(dateStr);
+                  if (d && !isNaN(d)) {
+                    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
+                  }
+                } catch (e) {}
+                return null;
+              };
+
+              if (!startDT) startDT = tryDateOnlyAsStartOfDay(rawStart) || null;
+              if (!endDT) endDT = tryDateOnlyAsEndOfDay(rawEnd) || null;
+
+              // Debug logging to help verify parsing (can be removed later)
+              // console.debug('Exam parse', { rawStart, rawEnd, startDT, endDT });
+
+              const isActiveFlag = typeof test.isActive === 'boolean' ? test.isActive : true;
+              // isAvailable = within scheduled window (if provided) and active
+              const isWithinWindow = (startDT ? now >= startDT : true) && (endDT ? now <= endDT : true);
+              const isAvailable = isActiveFlag && isWithinWindow;
+
+              return {
+                title: test.title || "Assessment",
+                company: test.company,
+                location: test.location || "API Response Check",
+                workType: test.workType || "API Response Check",
+                skills: Array.isArray(test.skills) ? test.skills : [],
+                description: test.description || "This is an assessment for your role.",
+                startDate: rawStart || "Today",
+                startTime: test.test_start || test.startTime || "10:00 AM",
+                endDate: rawEnd || "—",
+                endTime: test.test_end || test.endTime || "—",
+                isActive: isActiveFlag,
+                isAvailable,
+                questionSetId: test.questionSetId || test.question_set_id || "assessment",
+                questions: Array.isArray(test.questions) ? test.questions : [],
+                aiScore: test.aiScore !== null && test.aiScore !== undefined ? test.aiScore : null,
+                aiExplanation: test.aiExplanation !== null && test.aiExplanation !== undefined ? test.aiExplanation : null
+              };
+            }));
+            return;
+          }
         }
+        // If not found or not eligible, show not shortlisted message
+        setJobs([
+          {
+            title: "No Examination Available",
+            location: "—",
+            description: "You have not been shortlisted for the test.",
+            isActive: false,
+            startDate: "—",
+            startTime: "—",
+            endDate: "—",
+            endTime: "—",
+          },
+        ]);
       } catch (err) {
         console.error("Error fetching assessment from backend", err);
         setJobs([
@@ -156,9 +185,9 @@ export default function Examination() {
                     {job.workType}
                   </span>
 
-                  <span className="px-3 py-1 text-xs sm:text-sm font-medium text-purple-700 bg-purple-50 border border-purple-300 rounded-xl">
+                  {/* <span className="px-3 py-1 text-xs sm:text-sm font-medium text-purple-700 bg-purple-50 border border-purple-300 rounded-xl">
                     {job.employmentMode}
-                  </span>
+                  </span> */}
                 </div>
               )}
 
@@ -198,9 +227,9 @@ export default function Examination() {
                 onClick={() =>
                   navigate(`/Candidate-Dashboard/Examination/TestDetails/${job.questionSetId}`)
                 }
-                disabled={!job.isActive}
+                disabled={!job.isActive || !job.isAvailable}
                 className={`mt-2 w-[100px] py-2 rounded-2xl font-medium text-sm sm:text-base transition-all duration-300 ${
-                  job.isActive
+                  job.isActive && job.isAvailable
                     ? "bg-blue-500 hover:bg-blue-600 text-white shadow-md hover:shadow-lg"
                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                 }`}

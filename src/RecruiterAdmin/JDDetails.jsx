@@ -540,9 +540,13 @@ function JDDetails() {
                         <button
                             onClick={() => {
                                 const onlyFiltered = mappedCandidates.filter(c => c.isFiltered === true);
+                                // Store filtered candidate IDs in localStorage
+                                const filteredIds = onlyFiltered.map(c => c.id);
+                                localStorage.setItem('filteredCandidateIds', JSON.stringify(filteredIds));
                                 navigate("/RecruiterAdmin-Dashboard/JDDetails/GenerateAssessment", {
                                     state: {
-                                        filteredCandidates: onlyFiltered
+                                        filteredCandidates: onlyFiltered,
+                                        jdData: jdDetails
                                     }
                                 });
                             }}
