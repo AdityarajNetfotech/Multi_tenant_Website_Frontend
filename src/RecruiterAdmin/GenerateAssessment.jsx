@@ -13,11 +13,20 @@ function GenerateAssessment() {
   const filteredCandidates = location.state?.filteredCandidates || [];
   console.log("Filtered candidates received:", filteredCandidates);
 
-  // Load selected JD from localStorage
+  // Prefer JD passed via navigation state; fallback to localStorage
+  const jdFromLocation = location.state?.jdData || null;
   const [selectedJD, setSelectedJD] = useState(() => {
-    const saved = localStorage.getItem("selectedJD");
-    return saved ? JSON.parse(saved) : null;
+    if (jdFromLocation) return jdFromLocation;
+    try {
+      const saved = localStorage.getItem("selectedJD");
+      return saved ? JSON.parse(saved) : null;
+    } catch (e) {
+      return null;
+    }
   });
+
+  // Log selected JD for debugging
+  console.log('Selected JD in GenerateAssessment:', selectedJD);
 
   // Prefill formData with selected JD info if available, using full payload structure
   const [formData, setFormData] = useState({
@@ -47,12 +56,29 @@ function GenerateAssessment() {
     duration: 0,
     questions: [],
     candidates: filteredCandidates,
+    jobDetails: selectedJD,
     skillLevels: [],
   });
 
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // Normalize question defaults so editing UI shows correct default marks/time
+  const normalizeQuestionDefaults = (q) => {
+    if (!q || typeof q !== 'object') return q;
+    const type = q.type || (q.content && (q.content.code ? 'coding' : q.content.audio ? 'audio' : q.content.video ? 'video' : 'mcq'));
+    const defaultPositive = q.positive_marking ?? (type === 'coding' ? 2 : (['mcq', 'audio', 'video'].includes(type) ? 5 : 1));
+    const defaultNegative = q.negative_marking ?? 0;
+    const defaultTime = q.time_limit ?? (type === 'coding' ? 300 : type === 'audio' ? 120 : type === 'video' ? 180 : 60);
+
+    return {
+      ...q,
+      positive_marking: defaultPositive,
+      negative_marking: defaultNegative,
+      time_limit: defaultTime,
+    };
+  };
 
   const handleNext = async () => {
     if (currentStep === 1) {
@@ -82,27 +108,31 @@ function GenerateAssessment() {
     try {
       // Transform formData to backend payload format
       const payload = AssessmentAPI.transformToBackendPayload(formData);
+      console.log("Payload for Gen Test: ",payload)
       if (!payload.skills || payload.skills.length === 0) {
         throw new Error('Please select at least one skill with question counts greater than 0');
       }
       // Use AssessmentAPI for generate-test
+
       const result = await AssessmentAPI.generateTest(payload);
       console.log('generateTest API result:', result);
       // Support both {success, data: {questions}} and {status, questions} formats
       if (result && Array.isArray(result.questions)) {
-        setQuestions(result.questions);
+        const normalized = result.questions.map(q => normalizeQuestionDefaults(q));
+        setQuestions(normalized);
         setFormData(prev => ({
           ...prev,
-          questions: result.questions,
-          total_questions: result.questions.length,
+          questions: normalized,
+          total_questions: normalized.length,
         }));
         setCurrentStep(2);
       } else if (result && result.success && result.data && Array.isArray(result.data.questions)) {
-        setQuestions(result.data.questions);
+        const normalized = result.data.questions.map(q => normalizeQuestionDefaults(q));
+        setQuestions(normalized);
         setFormData(prev => ({
           ...prev,
-          questions: result.data.questions,
-          total_questions: result.data.questions.length,
+          questions: normalized,
+          total_questions: normalized.length,
         }));
         setCurrentStep(2);
       } else {
@@ -124,14 +154,17 @@ function GenerateAssessment() {
     try {
       // Use full formData as payload for backend
       const payload = { ...formData };
-      // Ensure up-to-date questions and counts
-      payload.questions = questions;
+      // Ensure up-to-date questions and counts; normalize defaults
+      const normalizedQuestions = questions.map(q => normalizeQuestionDefaults(q));
+      payload.questions = normalizedQuestions;
       payload.total_questions = questions.length;
       payload.title = formData.title || formData.roleTitle;
       payload.company = formData.company || selectedJD?.companyName || selectedJD?.offerId?.company || "Unknown Company";
       payload.job_id = formData.job_id || selectedJD?._id || null;
       payload.questionSetId = formData.questionSetId || (questions.length > 0 ? 'set_' + Math.random().toString(36).substr(2, 9) : '');
       payload.created_at = new Date();
+      // include full job details if available
+      payload.jobDetails = formData.jobDetails || selectedJD || null;
 
       console.log('Finalize payload:', payload);
 
@@ -219,12 +252,20 @@ function GenerateAssessment() {
       )}
 
       {loading && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-xl flex items-center space-x-3">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-            <p className="text-gray-700 font-medium">
-              {currentStep === 1 ? 'Generating questions...' : 'Finalizing test...'}
-            </p>
+        <div className="fixed inset-0 z-50 pointer-events-auto flex items-center justify-center">
+          <div className="absolute inset-0 bg-white/30 backdrop-blur-sm" />
+
+          <div className="relative z-10 bg-white/80 dark:bg-gray-900/80 border border-gray-200 dark:border-gray-800 rounded-2xl shadow-2xl p-6 flex items-center gap-4 max-w-md mx-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-blue-200">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
+            </div>
+
+            <div>
+              <p className="text-lg font-semibold text-gray-800 dark:text-gray-100">
+                {currentStep === 1 ? 'Generating questions' : 'Finalizing test'}
+              </p>
+              <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">This may take a few moments — we&apos;re preparing the assessment.</p>
+            </div>
           </div>
         </div>
       )}

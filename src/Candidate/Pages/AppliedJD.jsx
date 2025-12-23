@@ -1,106 +1,74 @@
-import { useEffect, useState } from 'react';
-import { Trash2, Search, SlidersHorizontal, X } from 'lucide-react';
+import { useState } from 'react';
+import { Trash2, Search, SlidersHorizontal } from 'lucide-react';
 import Pagination from '../../components/LandingPage/Pagination';
-import axios from 'axios';
 
 function AppliedJD() {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [appliedJobs, setAppliedJobs] = useState([]);
-    const [selectedSkills, setSelectedSkills] = useState(null);
-    const [showSkillsPopup, setShowSkillsPopup] = useState(false);
     const itemsPerPage = 5;
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const response = await axios.get('http://localhost:4000/api/candidate/applied-jobs', {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem('candidateToken')}`,
-                    },
-                });
-                console.log('Applied JDs data:', response.data);
-                if (response.data.success) {
-                    setAppliedJobs(response.data.jobs);
-                }
-            } catch (error) {
-                console.error('Error fetching applied JDs:', error);
-            }
-        };
-        fetchData();
-    }, []);
+    const candidatesData = [
+        {
+            id: '#145798',
+            companyName: 'Aakash Singh',
+            jobTitle: 'QA Cypress + Java',
+            appliedOn: "1/09/2025",
+            skills: ['Wireframing', 'Prototyping', 'User Research'],
+        },
+        {
+            id: '#145799',
+            companyName: 'Rahul Kumar',
+            jobTitle: 'Full Stack Developer',
+            appliedOn: "1/09/2025",
+            skills: ['React', 'Node', 'SQL'],
+        },
+        {
+            id: '#145800',
+            companyName: 'Priya Sharma',
+            jobTitle: 'UI/UX Designer',
+            appliedOn: "1/09/2025",
+            skills: ['Wireframing', 'Visual Design'],
+        },
+        {
+            id: '#145801',
+            companyName: 'Vikram Patel',
+            jobTitle: 'Backend Developer',
+            appliedOn: "1/09/2025",
+            skills: ['Node', 'MongoDB', 'API'],
+        },
+        {
+            id: '#145802',
+            companyName: 'Neha Gupta',
+            jobTitle: 'DevOps Engineer',
+            appliedOn: "1/09/2025",
+            skills: ['AWS', 'Docker', 'CI/CD'],
+        },
+        {
+            id: '#145803',
+            companyName: 'Amit Verma',
+            jobTitle: 'Frontend Developer',
+            appliedOn: "1/09/2025",
+            skills: ['React', 'Tailwind'],
+        },
+        {
+            id: '#145804',
+            companyName: 'Sonia Kapoor',
+            jobTitle: 'Data Analyst',
+            appliedOn: "1/09/2025",
+            skills: ['SQL', 'Python'],
+        },
+    ];
 
-    const handleViewSkills = (requirements) => {
-        setSelectedSkills(requirements);
-        setShowSkillsPopup(true);
-    };
-
-    const closeSkillsPopup = () => {
-        setShowSkillsPopup(false);
-        setSelectedSkills(null);
-    };
-
-    const formatDate = (dateString) => {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-GB');
-    };
-
-    const filteredCandidates = appliedJobs.filter((job) =>
-        job.companyName.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredCandidates = candidatesData.filter((c) =>
+        c.companyName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const totalPages = Math.ceil(filteredCandidates.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const currentData = filteredCandidates.slice(startIndex, startIndex + itemsPerPage);
-
+    
     return (
         <>
-            {/* Skills Popup with Blur Background */}
-            {showSkillsPopup && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center">
-                    {/* Blur Backdrop */}
-                    <div 
-                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                        onClick={closeSkillsPopup}
-                    ></div>
-                    
-                    {/* Popup Content */}
-                    <div className="relative bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 max-h-[80vh] overflow-y-auto z-10">
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-semibold text-gray-800">Required Skills</h3>
-                            <button 
-                                onClick={closeSkillsPopup}
-                                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                            >
-                                <X size={20} className="text-gray-600" />
-                            </button>
-                        </div>
-                        
-                        <div className="space-y-2">
-                            {selectedSkills && selectedSkills.length > 0 ? (
-                                selectedSkills.map((skill, index) => (
-                                    <div 
-                                        key={index}
-                                        className="px-3 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm"
-                                    >
-                                        {skill}
-                                    </div>
-                                ))
-                            ) : (
-                                <p className="text-gray-500 text-sm">No skills listed</p>
-                            )}
-                        </div>
-                        
-                        <button
-                            onClick={closeSkillsPopup}
-                            className="mt-6 w-full py-2 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors"
-                        >
-                            Close
-                        </button>
-                    </div>
-                </div>
-            )}
-
             <div className="bg-white rounded-xl shadow-md border border-gray-300 p-4 md:p-6 mb-8">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <div className="relative w-full sm:w-64">
@@ -133,7 +101,7 @@ function AppliedJD() {
                             <tr className="border-b border-gray-300 bg-gray-50">
                                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">ID</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Company Name</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Department</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Job Title</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Applied On</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Skills</th>
                                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Action</th>
@@ -141,24 +109,17 @@ function AppliedJD() {
                         </thead>
                         <tbody>
                             {currentData.length > 0 ? (
-                                currentData.map((job, index) => (
+                                currentData.map((candidate, index) => (
                                     <tr
-                                        key={job._id || index}
+                                        key={index}
                                         className="border-b border-gray-200 hover:bg-gray-50 transition-colors"
                                     >
-                                        <td className="py-4 px-4 text-sm text-gray-800">
-                                            #{job._id?.slice(-6).toUpperCase() || index}
-                                        </td>
-                                        <td className="py-4 px-4 text-sm text-gray-600">{job.companyName}</td>
-                                        <td className="py-4 px-4 text-sm text-gray-600">{job.department}</td>
-                                        <td className="py-4 px-4 text-sm text-gray-600">
-                                            {formatDate(job.createdAt)}
-                                        </td>
+                                        <td className="py-4 px-4 text-sm text-gray-800">{candidate.id}</td>
+                                        <td className="py-4 px-4 text-sm text-gray-600">{candidate.companyName}</td>
+                                        <td className="py-4 px-4 text-sm text-gray-600">{candidate.jobTitle}</td>
+                                        <td className="py-4 px-4 text-sm text-gray-600">{candidate.appliedOn}</td>
                                         <td className="py-4 px-4">
-                                            <button 
-                                                onClick={() => handleViewSkills(job.requirements)}
-                                                className="px-4 py-1 bg-blue-100 text-blue-600 rounded-full text-sm font-medium hover:bg-blue-200"
-                                            >
+                                            <button className="px-4 py-1 bg-blue-100 text-blue-600 rounded-full text-sm font-medium hover:bg-blue-200">
                                                 View
                                             </button>
                                         </td>
