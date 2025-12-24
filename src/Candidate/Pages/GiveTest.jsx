@@ -656,10 +656,23 @@ const GiveTest = ({ jdId }) => {
           candidate_answer: answersSource[question.id] || '',
         }));
 
+        // prefer candidate id from sessionStorage (set in CandidateLogin), fallback to finalCandidateId
+        let cidFromSession = null;
+        try {
+          const raw = sessionStorage.getItem("candidateData");
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            cidFromSession = parsed?.id ?? null;
+          }
+        } catch (e) {
+          console.warn('Failed to read candidateData from sessionStorage', e);
+        }
+
         const submissionData = {
           question_set_id: questionSetId,
           section_name: section.name,
           candidate_id: finalCandidateId,
+          cid: cidFromSession || finalCandidateId,
           responses,
         };
 

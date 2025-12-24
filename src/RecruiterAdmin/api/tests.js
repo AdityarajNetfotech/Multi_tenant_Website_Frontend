@@ -47,4 +47,18 @@ export const testApi = {
       throw error;
     }
   },
+  createSession: async (payload = {}) => {
+    try {
+      const response = await fetch(`${BASE_URL}/test/create_session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error('Failed to create session');
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating session:', error);
+      throw error;
+    }
+  },
 };
