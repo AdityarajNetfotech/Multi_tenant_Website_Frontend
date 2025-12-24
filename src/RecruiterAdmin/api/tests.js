@@ -12,9 +12,12 @@ export const testApi = {
     }
   },
 
-  submitSection: async (submissionData) => {
+  submitSection: async (questionSetId, submissionData) => {
     try {
-      const response = await fetch(`${BASE_URL}/test/submit_section`, {
+      const url = questionSetId
+        ? `${BASE_URL}/test/submit_section/${encodeURIComponent(questionSetId)}`
+        : `${BASE_URL}/test/submit_section`;
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -41,6 +44,20 @@ export const testApi = {
       return await response.json();
     } catch (error) {
       console.error('Error saving violations:', error);
+      throw error;
+    }
+  },
+  createSession: async (payload = {}) => {
+    try {
+      const response = await fetch(`${BASE_URL}/test/create_session`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error('Failed to create session');
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating session:', error);
       throw error;
     }
   },

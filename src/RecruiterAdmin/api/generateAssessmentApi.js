@@ -4,14 +4,13 @@ const API_BASE_URL = 'http://localhost:5000/api/v1';
 
 class AssessmentAPI {
   /**
-   * Fetch finalized test for a candidate and JD
+   * Fetch all finalized tests for a candidate
    * @param {string} candidateId
-   * @param {string} jdId
-   * @returns {Promise<Object>} Finalized test response
+   * @returns {Promise<Object[]>} Array of finalized test responses
    */
-  static async getFinalizedTest(candidateId, jdId) {
+  static async getFinalizedTest(candidateId) {
     try {
-      const response = await fetch(`${API_BASE_URL}/finalise/finalized-test?candidateId=${candidateId}&jdId=${jdId}`);
+      const response = await fetch(`${API_BASE_URL}/finalise/finalized-test?candidateId=${candidateId}`);
       if (!response.ok) {
         // Try to parse error JSON, but fallback to status text or HTML
         let errorText = await response.text();
@@ -136,9 +135,17 @@ class AssessmentAPI {
    */
   static prepareFinalizePayload(formData, questions) {
     return {
-      test_title: `${formData.roleTitle} Assessment`,
-      test_description: `Assessment for ${formData.roleTitle} position requiring ${formData.experience} experience`,
-      job_id: formData.jobId || null,
+      test_title: `${formData.roleTitle || formData.title || ''} Assessment`,
+      test_description: `Assessment for ${formData.roleTitle || formData.title || ''} position requiring ${formData.experience || ''} experience`,
+      job_id: formData.jobId || formData.job_id || null,
+      role_title: formData.roleTitle || formData.title || null,
+      skills: formData.skills || (formData.skillLevels ? formData.skillLevels.map(s => s.skill) : []),
+      experience: formData.experience || null,
+      work_arrangement: formData.workArrangement || formData.work_arrangement || null,
+      location: formData.location || null,
+      annual_compensation: formData.annualCompensation || formData.annual_compensation || null,
+      work_type: formData.workType || formData.work_type || null,
+      company: formData.company || null,
       questions: questions.map(q => ({
         question_id: q.question_id,
         type: q.type,

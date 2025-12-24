@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Eye, Trash2 } from 'lucide-react';
 import Pagination from '../components/LandingPage/Pagination';
 import ViewResults from './ViewResults'; 
@@ -8,21 +8,84 @@ function Results() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showViewResults, setShowViewResults] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
+  const [attemptsLoading, setAttemptsLoading] = useState(false);
+  
   const rowsPerPage = 5;
 
-  const jobs = [
-    { id: 1, jobId: '#124578', jobTitle: 'Full Stack Developer', totalCandidates: 44, testDate: '25.04.2025' },
-    { id: 2, jobId: '#124578', jobTitle: 'Frontend Developer', totalCandidates: 35, testDate: '27.04.2025' },
-    { id: 3, jobId: '#124578', jobTitle: 'Backend Developer', totalCandidates: 28, testDate: '30.04.2025' },
-    { id: 4, jobId: '#124578', jobTitle: 'UI/UX Designer', totalCandidates: 18, testDate: null },
-    { id: 5, jobId: '#124578', jobTitle: 'React Developer', totalCandidates: 24, testDate: '25.04.2025' },
-    { id: 6, jobId: '#124578', jobTitle: 'Node.js Developer', totalCandidates: 31, testDate: null },
-    { id: 7, jobId: '#124578', jobTitle: 'QA Engineer', totalCandidates: 20, testDate: '02.05.2025' },
-    { id: 8, jobId: '#124578', jobTitle: 'DevOps Engineer', totalCandidates: 15, testDate: '05.05.2025' },
-    { id: 6, jobId: '#124578', jobTitle: 'Node.js Developer', totalCandidates: 31, testDate: null },
-    { id: 7, jobId: '#124578', jobTitle: 'QA Engineer', totalCandidates: 20, testDate: '02.05.2025' },
-    { id: 8, jobId: '#124578', jobTitle: 'DevOps Engineer', totalCandidates: 15, testDate: '05.05.2025' },
-  ];
+  const computeAttemptScore = (attempt) => {
+    try {
+      const rd = attempt && attempt.results_data;
+      if (Array.isArray(rd)) {
+        return rd.reduce((sum, it) => sum + (Number(it && it.score) || 0), 0);
+      } else if (rd && typeof rd === 'number') {
+        return Number(rd) || 0;
+      }
+    } catch (e) {
+      return 0;
+    }
+    return 0;
+  };
+
+  const formatDate = (val) => {
+    if (!val) return 'N/A';
+    try {
+      const dt = new Date(val);
+      if (!isNaN(dt.getTime())) return dt.toISOString().split('T')[0];
+    } catch (e) {
+      // fallthrough
+    }
+    try {
+      // remove GMT part if present
+      return String(val).split('GMT')[0].trim();
+    } catch (e) {
+      return String(val);
+    }
+  };
+
+  const [jobs, setJobs] = useState([]);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadFinalized() {
+      try {
+        const base = window.REACT_APP_BASE_URL || 'http://localhost:5000';
+        const res = await fetch(`${base}/api/v1/finalise/finalized-tests`);
+        if (!res.ok) return;
+        const data = await res.json();
+        // `data` is expected to be an array of tests from get_finalized_test
+        const rawArr = Array.isArray(data) ? data : [];
+        // Count occurrences per job_id (or question_set_id fallback)
+        const counts = rawArr.reduce((acc, t) => {
+          const key = t.job_id || t.question_set_id || '';
+          acc[key] = (acc[key] || 0) + 1;
+          return acc;
+        }, {});
+        const counters = {};
+
+        const mapped = rawArr.map((t, idx) => {
+          const key = t.job_id || t.question_set_id || '';
+          counters[key] = (counters[key] || 0) + 1;
+          const groupCount = counts[key] || 0;
+          const baseTitle = t.title || 'Untitled Test';
+          const numberedTitle = groupCount > 1 ? `${baseTitle} - Test ${counters[key]}` : baseTitle;
+
+          return {
+            id: idx + 1,
+            jobId: t.job_id ? `#${t.job_id}` : `#${(t.question_set_id || '').slice(0, 6)}`,
+            jobTitle: numberedTitle,
+            totalCandidates: t.candidate_id ? (String(t.candidate_id).split(',').filter(Boolean).length) : 0,
+            testDate: formatDate(t.exam_date || t.createdAt),
+            raw: t
+          };
+        });
+        if (mounted) setJobs(mapped);
+      } catch (e) {
+        console.error('Failed loading finalized tests', e);
+      }
+    }
+    loadFinalized();
+    return () => { mounted = false };
+  }, []);
 
   const filteredJobs = jobs.filter((job) =>
     job.jobTitle.toLowerCase().includes(searchQuery.toLowerCase())
@@ -40,8 +103,138 @@ function Results() {
   };
 
   const handleViewResults = (job) => {
-    setSelectedJob(job);
-    setShowViewResults(true);
+    // fetch attempts for this test and candidate details
+    (async () => {
+      if (!job || !job.raw || !job.raw.question_set_id) return;
+      setAttemptsLoading(true);
+      try {
+        const base = window.REACT_APP_BASE_URL || 'http://localhost:5000';
+        const qsid = encodeURIComponent(job.raw.question_set_id);
+        const res = await fetch(`${base}/api/v1/test/attempts/${qsid}`);
+        if (!res.ok) {
+          console.error('Failed to load attempts');
+          setAttemptsLoading(false);
+          return;
+        }
+        const attempts = await res.json();
+
+        // Normalize response: backend may return an array, an object {attempts: [...]},
+        // or a message when no data exists. Treat 'no data' as empty attempts.
+        let attemptsArr = [];
+        if (Array.isArray(attempts)) {
+          attemptsArr = attempts;
+        } else if (attempts && Array.isArray(attempts.attempts)) {
+          attemptsArr = attempts.attempts;
+        } else if (attempts && attempts.message) {
+          // No data for this test — show empty attempts modal
+          setSelectedJob({ ...job, attempts: [], rawAttempts: [] });
+          setShowViewResults(true);
+          setAttemptsLoading(false);
+          return;
+        }
+
+        // enrich each attempt with candidate info from public candidate API
+        const enriched = await Promise.all((attemptsArr || []).map(async (a) => {
+          let candidate = null;
+          if (a && a.candidate_id) {
+            try {
+              const r2 = await fetch(`http://localhost:4000/api/candidate/public/${encodeURIComponent(a.cid)}`);
+              if (r2.ok) {
+                const cdata = await r2.json();
+                // API may return { success: true, candidate: { ... } } or the candidate object directly
+                candidate = (cdata && cdata.candidate) ? cdata.candidate : cdata;
+              }
+            } catch (e) {
+              // ignore
+            }
+          }
+          return { ...a, candidate };
+        }));
+
+        // debug logs: show what we received and enriched
+        console.log('Results.jsx: raw attemptsArr=', attemptsArr);
+        console.log('Results.jsx: enriched attempts=', enriched);
+
+        // Aggregate by candidate_id: sum scores and cheating counts into a single row per candidate
+        const aggMap = {};
+        const computeAttemptScore = (attempt) => {
+          try {
+            const rd = attempt.results_data;
+            if (Array.isArray(rd)) {
+              return rd.reduce((sum, it) => sum + (Number(it && it.score) || 0), 0);
+            } else if (rd && typeof rd === 'number') {
+              return Number(rd) || 0;
+            }
+          } catch (e) {
+            return 0;
+          }
+          return 0;
+        };
+
+        for (const a of enriched) {
+          const cid = a.candidate_id || (a.candidate && (a.candidate.id || a.candidate.candidate_id)) || 'unknown';
+          const key = String(cid);
+          const score = computeAttemptScore(a);
+          const ts = a.created_at ? new Date(String(a.created_at)) : null;
+          if (!aggMap[key]) {
+            aggMap[key] = {
+              candidate_id: key,
+              candidate: a.candidate || null,
+              totalScore: score,
+              tab_switches: Number(a.tab_switches) || 0,
+              inactivities: Number(a.inactivities) || 0,
+              face_not_visible: Number(a.face_not_visible) || 0,
+              attempts_count: 1,
+              created_at: ts,
+            };
+          } else {
+            aggMap[key].totalScore += score;
+            aggMap[key].tab_switches += Number(a.tab_switches) || 0;
+            aggMap[key].inactivities += Number(a.inactivities) || 0;
+            aggMap[key].face_not_visible += Number(a.face_not_visible) || 0;
+            aggMap[key].attempts_count += 1;
+            // keep latest submitted time
+            if (ts && (!aggMap[key].created_at || ts > aggMap[key].created_at)) aggMap[key].created_at = ts;
+            // prefer populated candidate object
+            if (!aggMap[key].candidate && a.candidate) aggMap[key].candidate = a.candidate;
+          }
+        }
+
+        const aggregated = Object.values(aggMap).map((v) => ({
+          ...v,
+          // format created_at back to ISO/string for display code
+          created_at: v.created_at ? v.created_at.toISOString() : null,
+        }));
+
+        setSelectedJob({ ...job, attempts: aggregated, rawAttempts: enriched });
+        setShowViewResults(true);
+      } catch (e) {
+        console.error('Error loading attempts', e);
+      } finally {
+        setAttemptsLoading(false);
+      }
+    })();
+  };
+
+  const handleDelete = async (job) => {
+    if (!job || !job.raw || !job.raw.question_set_id) return;
+    const ok = window.confirm(`Delete test "${job.jobTitle}"? This cannot be undone.`);
+    if (!ok) return;
+    try {
+      const base = window.REACT_APP_BASE_URL || 'http://localhost:5000';
+      const qsid = encodeURIComponent(job.raw.question_set_id);
+      const res = await fetch(`${base}/api/v1/finalise/finalized-test/${qsid}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const txt = await res.text();
+        alert('Delete failed: ' + txt);
+        return;
+      }
+      // remove from UI
+      setJobs(prev => prev.filter(j => j.id !== job.id));
+    } catch (e) {
+      console.error('Delete failed', e);
+      alert('Delete failed');
+    }
   };
 
   const closeModal = () => {
@@ -132,6 +325,7 @@ function Results() {
                             <Eye size={16} />
                           </button>
                           <button
+                            onClick={() => handleDelete(job)}
                             className="p-2 text-red-500 border border-red-500 rounded hover:bg-red-50 transition-colors"
                             aria-label="Delete job"
                           >
@@ -162,11 +356,93 @@ function Results() {
       </div>
 
 
-      {showViewResults && (
-        <ViewResults 
-          jobData={selectedJob} 
-          onClose={closeModal}
-        />
+      {showViewResults && selectedJob && (
+        <div className="fixed inset-0 bg-black/40 flex items-start justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[80vh] overflow-auto">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">Test: {selectedJob.jobTitle}</h3>
+              <div>
+                <button onClick={closeModal} className="px-3 py-1 bg-gray-100 rounded">Close</button>
+              </div>
+            </div>
+
+            <div className="p-4">
+              {attemptsLoading ? (
+                <div>Loading attempts...</div>
+              ) : (
+                <div className="overflow-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="p-2 text-left">S.No</th>
+                        <th className="p-2 text-left">Candidate</th>
+                        <th className="p-2 text-left">Email</th>
+                        <th className="p-2 text-left">Score</th>
+                        <th className="p-2 text-left">Tab Switches</th>
+                        <th className="p-2 text-left">Inactivities</th>
+                        <th className="p-2 text-left">Face Not Visible</th>
+                        <th className="p-2 text-left">Submitted At</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(selectedJob.attempts || []).length === 0 ? (
+                        <tr><td colSpan="8" className="p-4 text-center text-gray-500">No attempts found.</td></tr>
+                      ) : (
+                        selectedJob.attempts.map((a, i) => {
+                          // Prefer aggregated totalScore (from aggregation step). Fallback to summing results_data if missing.
+                          let score = '';
+                          try {
+                            if (a && Number.isFinite(a.totalScore)) {
+                              score = a.totalScore.toFixed ? a.totalScore.toFixed(2) : String(a.totalScore);
+                            } else {
+                              const rd = a.results_data;
+                              if (Array.isArray(rd)) {
+                                const s = rd.reduce((sum, it) => sum + (Number(it && it.score) || 0), 0);
+                                score = Number.isFinite(s) ? s.toFixed(2) : '';
+                              } else if (rd && typeof rd === 'number') {
+                                score = rd.toFixed ? rd.toFixed(2) : String(rd);
+                              }
+                            }
+                          } catch (e) {
+                            score = '';
+                          }
+
+                          const cand = a.candidate || {};
+                          // debug per-row candidate object
+                          console.log('Results.jsx: rendering attempt', { attempt: a, candidate: cand });
+                          // prefer full name, then first+last, then email as fallback
+                          const name = cand.name || `${cand.firstName || ''} ${cand.lastName || ''}`.trim() || cand.fullName || cand.username || a.candidate_id || 'N/A';
+                          const email = cand.email || cand.emailAddress || cand.contact_email || cand.username || 'N/A';
+                          const cid = a.candidate_id || a.candidate?.id || a.candidate_id || 'unknown';
+                          let displayScore = score;
+
+                          return (
+                            <>
+                              <tr key={a.candidate_id || i} className="border-b">
+                                <td className="p-2">{i+1}.</td>
+                                <td className="p-2">{name}</td>
+                                <td className="p-2">{email}</td>
+                                <td className="p-2">{displayScore}</td>
+                                <td className="p-2">{a.tab_switches ?? 0}</td>
+                                <td className="p-2">{a.inactivities ?? 0}</td>
+                                <td className="p-2">{a.face_not_visible ?? 0}</td>
+                                <td className="p-2 flex items-center gap-2">
+                                  <span>{a.created_at ? String(a.created_at).split('T')[0] : 'N/A'}</span>
+                                  
+                                </td>
+                              </tr>
+                              
+                            </>
+                          )
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

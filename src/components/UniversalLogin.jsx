@@ -3,7 +3,7 @@ import { Eye, EyeOff } from "lucide-react";
 import img from "../assets/RecruiterLogin.png";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-
+ 
 const UniversalLogin = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -11,7 +11,7 @@ const UniversalLogin = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const navigate = useNavigate();
-
+ 
     const decodeToken = (token) => {
         try {
             const base64Url = token.split('.')[1];
@@ -22,7 +22,7 @@ const UniversalLogin = () => {
                     .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
                     .join('')
             );
-
+ 
             const decodedToken = JSON.parse(jsonPayload);
             return decodedToken;
         } catch (error) {
@@ -30,10 +30,10 @@ const UniversalLogin = () => {
             return null;
         }
     };
-
+ 
     const navigateBasedOnRole = (role) => {
         console.log("User Role:", role);
-
+ 
         switch (role?.toLowerCase()) {
             case 'admin':
                 navigate("/Admin-Dashboard");
@@ -50,18 +50,18 @@ const UniversalLogin = () => {
                 break;
         }
     };
-
+ 
     const handleLogin = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError("");
-
+ 
         if (!email || !password) {
             setError("Please provide email and password");
             setLoading(false);
             return;
         }
-
+ 
         try {
             const response = await axios.post(
                 'http://localhost:4000/api/auth/login',
@@ -69,43 +69,43 @@ const UniversalLogin = () => {
                 { withCredentials: true }
             );
             console.log(response.data);
-
+ 
             if (response.data.success) {
                 const token = response.data.token;
                 const user = response.data.user;
-
+ 
                 localStorage.setItem("token", token);
-                
+                console.log("Check paasword",user);
                 if (!user.ispasswordchanged) {
                     // console.log("Password not changed, redirecting to change password page");
-                    navigate("/ForgotPassword", { 
-                        state: { 
+                    navigate("/ForgotPassword", {
+                        state: {
                             email: user.email,
                             message: "Please change your password before continuing",
-                            isFirstLogin: true 
-                        } 
+                            isFirstLogin: true
+                        }
                     });
                 } else {
                     const decoded = decodeToken(token);
-
+ 
                     if (!decoded || !decoded.role) {
                         setError("Invalid token received");
                         setLoading(false);
                         return;
                     }
-
+ 
                     navigateBasedOnRole(decoded.role);
                 }
             }
-
+ 
         } catch (err) {
             console.error("Login Error:", err);
             setError(err.response?.data?.message || "Invalid email or password");
         }
-
+ 
         setLoading(false);
     };
-
+ 
     return (
         <div className="min-h-screen bg-[#FFFFFF05] flex items-center justify-center px-4">
             <div className="max-w-6xl w-full">
@@ -123,7 +123,7 @@ const UniversalLogin = () => {
                             className="h-[400px] w-full md:w-auto mx-auto"
                         />
                     </div>
-
+ 
                     <div className="flex-1 bg-white rounded-2xl shadow-md border border-gray-100 p-8 max-w-md mx-auto">
                         <form onSubmit={handleLogin}>
                             <div className="mb-4">
@@ -139,7 +139,7 @@ const UniversalLogin = () => {
                                     required
                                 />
                             </div>
-
+ 
                             <div className="mb-6 relative">
                                 <label className="block text-gray-800 font-medium mb-1">
                                     Password
@@ -160,19 +160,19 @@ const UniversalLogin = () => {
                                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
                             </div>
-
+ 
                             {error && (
                                 <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
                                     {error}
                                 </div>
                             )}
-
+ 
                             {/* <div className="mb-4">
                                 <span onClick={() => navigate("/ForgotPassword")} className="text-blue-600 cursor-pointer text-sm">
                                     Forgot Password?
                                 </span>
                             </div> */}
-
+ 
                             <div className="flex justify-center">
                                 <button
                                     type="submit"
@@ -192,7 +192,7 @@ const UniversalLogin = () => {
                                     )}
                                 </button>
                             </div>
-
+ 
                             {/* <p className="text-center text-sm text-gray-600 mt-4">
                                 Don't have an account?{" "}
                                 <a href="/signup" className="text-blue-600 hover:underline">
@@ -206,5 +206,5 @@ const UniversalLogin = () => {
         </div>
     );
 };
-
+ 
 export default UniversalLogin;

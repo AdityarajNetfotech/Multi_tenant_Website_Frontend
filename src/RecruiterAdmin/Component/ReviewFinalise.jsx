@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Info, Clock, CheckCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import axios from "axios";
+import AssessmentAPI from '../api/generateAssessmentApi';
 
 
 export default function ReviewFinalise({ formData, questions, onFinalize, onBack, loading }) {
@@ -9,6 +11,9 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
   const [error, setError] = useState(null);
 
   // Transform questions to display format
+  console.log("Seeyog",questions);
+  // Log job details passed through formData
+  console.log('ReviewFinalise received jobDetails:', formData?.jobDetails || null);
   const displayQuestions = questions.map((q, idx) => {
     const content = q.content || {};
     
@@ -25,7 +30,7 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
         time: q.time_limit || 60,
         difficulty: q.difficulty || 'medium',
         questionType: 'MCQ',
-        marks: q.positive_marking || 1,
+        marks: q.positive_marking || 5,
         negative_marking: q.negative_marking || 0,
         type: q.type,
         skill: q.skill
@@ -43,7 +48,7 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
         time: q.time_limit || 300,
         difficulty: q.difficulty || 'medium',
         questionType: 'Coding',
-        marks: q.positive_marking || 5,
+        marks: q.positive_marking || 2,
         type: q.type,
         skill: q.skill
       };
@@ -59,7 +64,7 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
         time: q.time_limit || content.suggested_time_seconds || 120,
         difficulty: q.difficulty || 'medium',
         questionType: 'Audio',
-        marks: 0,
+        marks: q.positive_marking || 5,
         type: q.type,
         skill: q.skill
       };
@@ -74,7 +79,7 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
         time: q.time_limit || content.suggested_time_seconds || 180,
         difficulty: q.difficulty || 'medium',
         questionType: 'Video',
-        marks: 0,
+        marks: q.positive_marking || 5,
         type: q.type,
         skill: q.skill
       };
@@ -104,20 +109,6 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
         difficulty: q.difficulty || 'medium',
         questionType: 'Rating',
         marks: q.positive_marking || 1,
-        type: q.type,
-        skill: q.skill
-      };
-      return {
-        id: idx + 1,
-        question_id: q.question_id,
-        text: content.prompt_text || content.question || '',
-        rubric: content.rubric || '',
-        tags: [q.skill],
-        skills: [q.skill],
-        time: q.time_limit || content.suggested_time_seconds || 180,
-        difficulty: q.difficulty || 'medium',
-        questionType: 'Video',
-        marks: 0,
         type: q.type,
         skill: q.skill
       };
@@ -160,50 +151,101 @@ export default function ReviewFinalise({ formData, questions, onFinalize, onBack
     setError(null);
 
     try {
-      // Prepare payload for backend
-      const payload = {
-        ...formData,
-        title: formData.title || formData.roleTitle || "Untitled Test",
-        questions,
+      // Prepare payload using AssessmentAPI utility
+      // Only include 'skills' and required fields in payload
+      // Get job_id from localStorage.selectedJD if available
+      let jobIdFromLocal = null;
+      const selectedJDRaw = localStorage.getItem('selectedJD');
+      if (selectedJDRaw) {
+        try {
+          const selectedJD = JSON.parse(selectedJDRaw);
+          jobIdFromLocal = selectedJD._id || selectedJD.job_id || null;
+        } catch {}
+      }
+
+      // Get filtered candidate IDs from localStorage
+      let candidateIds = [];
+      const filteredCandidateIdsRaw = localStorage.getItem('filteredCandidateIds');
+      if (filteredCandidateIdsRaw) {
+        try {
+          candidateIds = JSON.parse(filteredCandidateIdsRaw);
+        } catch {}
+      }
+
+      const minimalPayload = {
+        test_title: formData.test_title || `${formData.role_title || formData.title || formData.role_title || formData.roleTitle || ''} Assessment`,
+        test_description: formData.test_description || `Assessment for ${formData.role_title || formData.title || ''} position requiring ${formData.experience || ''} experience`,
+        job_id: jobIdFromLocal || formData.job_id || formData.jobId || null,
+        role_title: formData.role_title || formData.title || null,
+        skills: (formData.skills || (formData.skillLevels ? formData.skillLevels.map(s => s.skill) : [])).join(','),
+        candidate_ids: candidateIds.join(','),
+        company: formData.company || null,
+        startDate: formData.startDate,
+        startTime: formData.startTime,
+        endDate: formData.endDate,
+        endTime: formData.endTime,
+        questions: questions.map(q => ({
+          question_id: q.question_id,
+          type: q.type,
+          skill: q.skill,
+          difficulty: q.difficulty,
+          content: q.content,
+          time_limit: q.time_limit || 60,
+          positive_marking: (q.positive_marking ?? (q.type === 'coding' ? 2 : (['mcq', 'audio', 'video'].includes(q.type) ? 5 : 1))),
+          negative_marking: q.negative_marking || 0,
+        })),
       };
 
-      console.log('Finalizing test with payload:', payload);
+      console.log("aneesh", formData);
+      console.log('Payload sent to finalize API:', JSON.stringify(minimalPayload, null, 2));
+      let candidateIdsArray = [];
+
+          // If candidateIds is a string → convert to array
+          if (typeof candidateIds === "string") {
+            candidateIdsArray = candidateIds
+              .split(",")
+              .map(id => id.trim())
+              .filter(Boolean);
+          }
+
+          // If already array → use as-is
+          if (Array.isArray(candidateIds)) {
+            candidateIdsArray = candidateIds;
+          }
+         const token = localStorage.getItem("token");
+         await axios.post(
+          `http://localhost:4000/api/candidate/send-email/${jobIdFromLocal}`,
+          { candidateIds: candidateIdsArray, },
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json"
+            }
+          }
+        );
 
       // Call backend API directly
-      const response = await fetch('http://localhost:4000/api/finalise/finalize-test', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
-      const result = await response.json();
-
-      if (result && result.success) {
+      // Finalize test using AssessmentAPI
+      const result = await AssessmentAPI.finalizeTest(minimalPayload);
+      console.log("-------------: ",result.status)
+      if (result.status == 'success') {
         // Save to localStorage
-        const existingTests = JSON.parse(localStorage.getItem("jobDataList")) || [];
-        const newTest = {
-          id: `#${result.data.questionSetId || result.data._id || 'unknown'}`,
-          company: payload.company || formData.selectedJD?.companyName || formData.selectedJD?.offerId?.company || "Unknown Company",
-          jobTitle: payload.title || payload.roleTitle,
-          createdOn: new Date().toLocaleDateString(),
-          skills: [...new Set(questions.map(q => q.skill))],
-          totalQuestions: totalQuestions,
-          totalMarks: totalMarks,
-          expiryTime: result.data.expiry_time || '',
-        };
-        localStorage.setItem("jobDataList", JSON.stringify([...existingTests, newTest]));
+        // const existingTests = JSON.parse(localStorage.getItem("jobDataList")) || [];
+        // const newTest = {
+        //   id: `#${result.data.questionSetId || result.data._id || 'unknown'}`,
+        //   company: minimalPayload.company || formData.selectedJD?.companyName || formData.selectedJD?.offerId?.company || "Unknown Company",
+        //   jobTitle: minimalPayload.test_title || minimalPayload.role_title,
+        //   createdOn: new Date().toLocaleDateString(),
+        //   skills: [...new Set(questions.map(q => q.skill))],
+        //   totalQuestions: totalQuestions,
+        //   totalMarks: totalMarks,
+        //   expiryTime: result.data.expiry_time || '',
+        // };
+        // localStorage.setItem("jobDataList", JSON.stringify([...existingTests, newTest]));
 
-        // Navigate to success page
-        navigate('/RecruiterAdmin-Dashboard/JDDetails/GenerateAssessment/Created', {
-          state: {
-            testTitle: newTest.jobTitle,
-            questionSetId: newTest.id,
-            totalQuestions: totalQuestions,
-            totalMarks: totalMarks,
-            expiryTime: newTest.expiryTime,
-          }
-        });
+        // Debug: log before navigation
+        console.log('Navigating to /RecruiterAdmin-Dashboard/JDDetails/GenerateAssessment/Created');
+        navigate('/RecruiterAdmin-Dashboard/JDDetails/GenerateAssessment/Created');
       } else {
         setError(result?.message || 'Failed to finalize test');
       }
