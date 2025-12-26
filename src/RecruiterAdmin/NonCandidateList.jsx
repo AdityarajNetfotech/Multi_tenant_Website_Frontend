@@ -106,7 +106,7 @@ export default function NonCandidateList() {
             setSendingInvites(true);
             const candidateIds = Array.from(selectedIds);
             const res = await axios.post(
-                `http://localhost:4000/api/candidate/bulk-invite/${jdId}`,
+                `http://localhost:4000/api/candidate/send-email/${jdId}`,
                 { candidateIds },
                 {
                     headers: {
