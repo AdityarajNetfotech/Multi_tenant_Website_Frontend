@@ -15,23 +15,13 @@ export default function RecruiterDashboard() {
     const [currentPage, setCurrentPage] = useState(1);
     const [offersPage, setOffersPage] = useState(1);
     const offersPerPage = 5;
-    const totalPages = 9;
     const itemsPerPage = 5;
 
-    const [totalOffers, setTotalOffers] = useState(0);
-    const [offersMonthWise, setOffersMonthWise] = useState([]);
-    const [ticketsMonthWise, setTicketsMonthWise] = useState([]);
-    const [currentOffers, setCurrentOffers] = useState([]);
+    const [totalCandidates, setTotalCandidates] = useState(0);
+    const [totalJd, setTotalJd] = useState(0);
+    const [jdByRecruiter, setJdByRecruiter] = useState(0);
+    const [allJdData, setAllJdData] = useState([]);
     const [recentJobs, setRecentJobs] = useState([]);
-    const [totalJobs, setTotalJobs] = useState(0);
-    const [jdStatusPercentage, setJdStatusPercentage] = useState({
-        closed: 0,
-        inProgress: 0,
-        jdCreated: 0,
-        jdPending: 0,
-        open: 0
-    });
-    const [recruitersData, setRecruitersData] = useState([]);
 
     useEffect(() => {
         const fetchAllData = async () => {
@@ -39,64 +29,41 @@ export default function RecruiterDashboard() {
                 const token = localStorage.getItem("token");
 
                 const [
-                    offersRes,
-                    jobsRecRes,
-                    hrTicketsRes,
-                    currentOffersRes,
-                    recentJobsRes,
-                    jdStatusPercentageRes,
-                    recruitersClosedRes
+                    candidatesRes,
+                    allJdRes,
+                    jdByRecruiterRes
                 ] = await Promise.all([
-                    axios.get('http://localhost:4000/api/dashboard/total-offers', {
+                    axios.get('http://localhost:4000/api/jd/all-candidates', {
                         headers: { Authorization: `Bearer ${token}` }
                     }),
-                    axios.get('http://localhost:4000/api/dashboard/jobs-recruiters-month-wise', {
+                    axios.get('http://localhost:4000/api/jd/all-jd-hr', {
                         headers: { Authorization: `Bearer ${token}` }
                     }),
-                    axios.get('http://localhost:4000/api/dashboard/count-hr-tickets-month-wise', {
-                        headers: { Authorization: `Bearer ${token}` }
-                    }),
-                    axios.get('http://localhost:4000/api/dashboard/current-offers', {
-                        headers: { Authorization: `Bearer ${token}` }
-                    }),
-                    axios.get('http://localhost:4000/api/dashboard/recent-jobs', {
-                        headers: { Authorization: `Bearer ${token}` }
-                    }),
-                    axios.get('http://localhost:4000/api/dashboard/jd-status-percentage', {
-                        headers: { Authorization: `Bearer ${token}` }
-                    }),
-                    axios.get('http://localhost:4000/api/dashboard/getAll-recruiters-closed', {
+                    axios.get('http://localhost:4000/api/jd/created-by/hr', {
                         headers: { Authorization: `Bearer ${token}` }
                     }),
                 ]);
 
-                if (offersRes.data.success) {
-                    setTotalOffers(offersRes.data.totalOffers);
+                console.log("candidatesRes:", candidatesRes.data);
+                console.log("allJdRes:", allJdRes.data);
+                console.log("jdByRecruiterRes:", jdByRecruiterRes.data);
+
+                if (candidatesRes.data.success) {
+                    setTotalCandidates(candidatesRes.data.count || candidatesRes.data.data?.length || 0);
                 }
 
-                if (jobsRecRes.data.success) {
-                    setOffersMonthWise(jobsRecRes.data.offersMonthWise);
+                if (allJdRes.data.success) {
+                    setTotalJd(allJdRes.data.count || allJdRes.data.data?.length || 0);
+                    setAllJdData(allJdRes.data.data || []);
+                    
+                    const sortedJobs = [...(allJdRes.data.data || [])].sort(
+                        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+                    );
+                    setRecentJobs(sortedJobs.slice(0, 4));
                 }
 
-                if (hrTicketsRes.data.success) {
-                    setTicketsMonthWise(hrTicketsRes.data.totalTicketsMonthWise);
-                }
-
-                if (currentOffersRes.data.success) {
-                    setCurrentOffers(currentOffersRes.data.offers);
-                }
-
-                if (recentJobsRes.data.success) {
-                    setRecentJobs(recentJobsRes.data.recentJobs);
-                    setTotalJobs(recentJobsRes.data.totalJobs);
-                }
-
-                if (jdStatusPercentageRes.data.success) {
-                    setJdStatusPercentage(jdStatusPercentageRes.data.jdStatusPercentage);
-                }
-
-                if (recruitersClosedRes.data.success) {
-                    setRecruitersData(recruitersClosedRes.data.recruiterData);
+                if (jdByRecruiterRes.data.success) {
+                    setJdByRecruiter(jdByRecruiterRes.data.count || jdByRecruiterRes.data.data?.length || 0);
                 }
 
             } catch (error) {
@@ -107,26 +74,13 @@ export default function RecruiterDashboard() {
         fetchAllData();
     }, []);
 
-    const getMonthName = (monthNumber) => {
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        return months[monthNumber - 1] || 'Unknown';
-    };
-
-    const totalTickets = ticketsMonthWise.reduce((sum, item) => sum + item.count, 0);
-
-   
-
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
+    const recruiterJdPercentage = totalJd > 0 ? Math.round((jdByRecruiter / totalJd) * 100) : 0;
+    const otherJdPercentage = 100 - recruiterJdPercentage;
 
     const offersStartIndex = (offersPage - 1) * offersPerPage;
     const offersEndIndex = offersStartIndex + offersPerPage;
-    const paginatedOffers = currentOffers.slice(offersStartIndex, offersEndIndex);
-    const totalOffersPages = Math.ceil(currentOffers.length / offersPerPage);
-
-    const handlePageChange = (page) => {
-        setCurrentPage(page);
-    };
+    const paginatedOffers = allJdData.slice(offersStartIndex, offersEndIndex);
+    const totalOffersPages = Math.ceil(allJdData.length / offersPerPage);
 
     const handleOffersPageChange = (page) => {
         setOffersPage(page);
@@ -147,31 +101,31 @@ export default function RecruiterDashboard() {
                     </div>
 
                     <div className="grid sm:grid-cols-3 gap-5">
-                        <div className="bg-pink-100 p-5 rounded-xl">
-                            <div className="bg-pink-500/20 py-3 rounded-lg w-[50px]">
-                                <Users className="mx-auto text-pink-600" />
-                            </div>
-                            <div className="flex items-center gap-3">
-                                <div>
-                                    <p className="text-2xl font-bold text-gray-900">{totalOffers}</p>
-                                    <p className="text-gray-600 text-sm">Total Offers</p>
-                                    <p className="text-pink-500 text-xs mt-1">
-                                        Current offers
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
                         <div className="bg-blue-100 p-5 rounded-xl">
                             <div className="bg-blue-500/20 p-3 rounded-lg w-[50px]">
                                 <FileText className="text-blue-600" />
                             </div>
                             <div className="flex items-center gap-3">
                                 <div>
-                                    <p className="text-2xl font-bold text-gray-900">{totalJobs}</p>
-                                    <p className="text-gray-600 text-sm">Total Jobs</p>
+                                    <p className="text-2xl font-bold text-gray-900">{totalJd}</p>
+                                    <p className="text-gray-600 text-sm">Total JD</p>
                                     <p className="text-blue-500 text-xs mt-1">
-                                        All job postings
+                                        All job descriptions
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="bg-pink-100 p-5 rounded-xl">
+                            <div className="bg-pink-500/20 py-3 rounded-lg w-[50px]">
+                                <Filter className="mx-auto text-pink-600" />
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div>
+                                    <p className="text-2xl font-bold text-gray-900">{jdByRecruiter}</p>
+                                    <p className="text-gray-600 text-sm">JD by Recruiter</p>
+                                    <p className="text-pink-500 text-xs mt-1">
+                                        Created by you
                                     </p>
                                 </div>
                             </div>
@@ -179,14 +133,14 @@ export default function RecruiterDashboard() {
 
                         <div className="bg-lime-100 p-5 rounded-xl">
                             <div className="bg-lime-500/20 p-3 rounded-lg w-[50px]">
-                                <Filter className="text-lime-600" />
+                                <Users className="text-lime-600" />
                             </div>
                             <div className="flex items-center gap-3">
                                 <div>
-                                    <p className="text-2xl font-bold text-gray-900">{totalTickets}</p>
-                                    <p className="text-gray-600 text-sm">Total Tickets</p>
+                                    <p className="text-2xl font-bold text-gray-900">{totalCandidates}</p>
+                                    <p className="text-gray-600 text-sm">Total Candidates</p>
                                     <p className="text-lime-600 text-xs mt-1">
-                                        All tickets
+                                        All candidates
                                     </p>
                                 </div>
                             </div>
@@ -195,51 +149,51 @@ export default function RecruiterDashboard() {
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] p-6 flex flex-col items-center justify-center">
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4">JD Distribution</h3>
                     <div className="relative w-52 h-52">
-                        <svg viewBox="0 0 36 36" className="w-full h-full">
-                            <path
-                                d="M18 2.0845
-                   a 15.9155 15.9155 0 0 1 0 31.831
-                   a 15.9155 15.9155 0 0 1 0 -31.831"
+                        <svg viewBox="0 0 36 36" className="w-full h-full transform -rotate-90">
+                            <circle
+                                cx="18"
+                                cy="18"
+                                r="15.9155"
                                 fill="none"
-                                stroke="#ef4444"
+                                stroke="#e5e7eb"
                                 strokeWidth="3.5"
-                                strokeDasharray={`${jdStatusPercentage.closed}, ${100 - jdStatusPercentage.closed}`}
                             />
-                            <path
-                                d="M18 2.0845
-                   a 15.9155 15.9155 0 0 1 0 31.831"
+                            <circle
+                                cx="18"
+                                cy="18"
+                                r="15.9155"
+                                fill="none"
+                                stroke="#ec4899"
+                                strokeWidth="3.5"
+                                strokeDasharray={`${recruiterJdPercentage} ${100 - recruiterJdPercentage}`}
+                                strokeDashoffset="0"
+                            />
+                            <circle
+                                cx="18"
+                                cy="18"
+                                r="15.9155"
                                 fill="none"
                                 stroke="#3b82f6"
                                 strokeWidth="3.5"
-                                strokeDasharray={`${jdStatusPercentage.inProgress}, ${100 - jdStatusPercentage.inProgress}`}
-                            />
-                            <path
-                                d="M18 2.0845
-                   a 15.9155 15.9155 0 0 1 0 31.831"
-                                fill="none"
-                                stroke="#84cc16"
-                                strokeWidth="3.5"
-                                strokeDasharray={`${jdStatusPercentage.jdCreated}, ${100 - jdStatusPercentage.jdCreated}`}
+                                strokeDasharray={`${otherJdPercentage} ${100 - otherJdPercentage}`}
+                                strokeDashoffset={`-${recruiterJdPercentage}`}
                             />
                         </svg>
                         <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <p className="text-gray-500 text-sm">Total Count</p>
-                            <p className="text-3xl font-bold text-gray-900">{totalOffers}</p>
+                            <p className="text-gray-500 text-sm">Total JD</p>
+                            <p className="text-3xl font-bold text-gray-900">{totalJd}</p>
                         </div>
                     </div>
                     <div className="flex gap-4 mt-4 text-xs">
                         <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                            <span>Closed ({jdStatusPercentage.closed}%)</span>
+                            <div className="w-3 h-3 bg-pink-500 rounded-full"></div>
+                            <span>By Recruiter ({recruiterJdPercentage}%)</span>
                         </div>
                         <div className="flex items-center gap-1">
                             <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                            <span>In Progress ({jdStatusPercentage.inProgress}%)</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 bg-lime-500 rounded-full"></div>
-                            <span>Created ({jdStatusPercentage.jdCreated}%)</span>
+                            <span>Others ({otherJdPercentage}%)</span>
                         </div>
                     </div>
                 </div>
@@ -248,35 +202,36 @@ export default function RecruiterDashboard() {
             <div className="grid md:grid-cols-2 gap-6 mt-6">
                 <div className="bg-white rounded-2xl shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] p-6">
                     <h2 className="text-lg font-semibold text-gray-800 mb-4">
-                        Job Descriptions
+                        JD Comparison Chart
                     </h2>
-                    <div className="h-40 bg-gradient-to-t from-blue-50 to-green-50 rounded-lg relative">
-                        <svg
-                            viewBox="0 0 100 40"
-                            preserveAspectRatio="none"
-                            className="absolute inset-0 w-full h-full"
-                        >
-                            <path
-                                d="M0,25 C20,35 40,20 60,30 80,40 100,20 100,20"
-                                fill="none"
-                                stroke="#10b981"
-                                strokeWidth="2"
-                            />
-                            <path
-                                d="M0,30 C20,20 40,35 60,25 80,30 100,35 100,35"
-                                fill="none"
-                                stroke="#3b82f6"
-                                strokeWidth="2"
-                            />
-                        </svg>
-                    </div>
-                    <div className="flex justify-between text-sm mt-3">
-                        <p className="text-blue-600">
-                            Total Jobs <span className="text-gray-600 block">{totalJobs}</span>
-                        </p>
-                        <p className="text-green-600">
-                            Total Offers <span className="text-gray-600 block">{totalOffers}</span>
-                        </p>
+                    <div className="h-48 flex items-end justify-center gap-12 bg-gradient-to-t from-gray-50 to-white rounded-lg p-4">
+                        {/* Total JD Bar */}
+                        <div className="flex flex-col items-center">
+                            <div 
+                                className="w-16 bg-blue-500 rounded-t-lg transition-all duration-500"
+                                style={{ height: `${Math.min((totalJd / Math.max(totalJd, 1)) * 150, 150)}px` }}
+                            ></div>
+                            <p className="mt-2 text-sm font-medium text-gray-700">Total JD</p>
+                            <p className="text-lg font-bold text-blue-600">{totalJd}</p>
+                        </div>
+                        
+                        <div className="flex flex-col items-center">
+                            <div 
+                                className="w-16 bg-pink-500 rounded-t-lg transition-all duration-500"
+                                style={{ height: `${totalJd > 0 ? Math.min((jdByRecruiter / totalJd) * 150, 150) : 0}px` }}
+                            ></div>
+                            <p className="mt-2 text-sm font-medium text-gray-700">By Recruiter</p>
+                            <p className="text-lg font-bold text-pink-600">{jdByRecruiter}</p>
+                        </div>
+
+                        <div className="flex flex-col items-center">
+                            <div 
+                                className="w-16 bg-lime-500 rounded-t-lg transition-all duration-500"
+                                style={{ height: `${totalJd > 0 ? Math.min((totalCandidates / Math.max(totalJd, totalCandidates)) * 150, 150) : 0}px` }}
+                            ></div>
+                            <p className="mt-2 text-sm font-medium text-gray-700">Candidates</p>
+                            <p className="text-lg font-bold text-lime-600">{totalCandidates}</p>
+                        </div>
                     </div>
                 </div>
 
@@ -285,11 +240,13 @@ export default function RecruiterDashboard() {
                         <h2 className="text-lg font-semibold text-gray-800">Statistics</h2>
                         <div className="text-sm text-gray-600">
                             <p>
-                                Weekly
+                                Summary
                                 <br />
-                                <span className="text-green-500 font-medium">+{jdStatusPercentage.jdCreated}%</span> JD Created
+                                <span className="text-blue-500 font-medium">{totalJd}</span> Total JD
                                 <br />
-                                <span className="text-red-500 font-medium">-{jdStatusPercentage.closed}%</span> Closed
+                                <span className="text-pink-500 font-medium">{jdByRecruiter}</span> By Recruiter
+                                <br />
+                                <span className="text-lime-500 font-medium">{totalCandidates}</span> Candidates
                             </p>
                         </div>
                     </div>
@@ -302,20 +259,27 @@ export default function RecruiterDashboard() {
                             <path
                                 d="M0,30 C10,25 30,35 50,20 70,25 90,15 100,30"
                                 fill="none"
-                                stroke="#ef4444"
+                                stroke="#3b82f6"
+                                strokeWidth="2"
+                            />
+                            <path
+                                d="M0,35 C20,30 40,25 60,35 80,30 100,25 100,35"
+                                fill="none"
+                                stroke="#ec4899"
                                 strokeWidth="2"
                             />
                         </svg>
                     </div>
                     <div className="mt-4">
                         <div className="flex justify-between text-sm">
-                            <p className="text-gray-500">Status Overview</p>
-                            <p className="text-gray-700 font-medium">{totalOffers} Offers</p>
+                            <p className="text-gray-500">Recruiter Contribution</p>
+                            <p className="text-gray-700 font-medium">{recruiterJdPercentage}%</p>
                         </div>
-                        <div className="flex gap-1 mt-2">
-                            <div className="w-4 h-12 bg-pink-400 rounded-md" style={{ height: `${jdStatusPercentage.closed * 1.5}px` }}></div>
-                            <div className="w-4 h-8 bg-blue-400 rounded-md" style={{ height: `${jdStatusPercentage.inProgress * 1.5}px` }}></div>
-                            <div className="w-4 h-10 bg-lime-400 rounded-md" style={{ height: `${jdStatusPercentage.jdCreated * 1.5}px` }}></div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                            <div 
+                                className="bg-pink-500 h-2 rounded-full transition-all duration-500"
+                                style={{ width: `${recruiterJdPercentage}%` }}
+                            ></div>
                         </div>
                     </div>
                 </div>
@@ -409,53 +373,68 @@ export default function RecruiterDashboard() {
 
                     <div className="bg-white p-6 rounded-2xl shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] flex flex-col">
                         <h2 className="text-lg font-semibold mb-4">Recent Jobs</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 flex-1">
+                        <div className="grid grid-cols-2 gap-3 flex-1">
                             {recentJobs.length > 0 ? recentJobs.slice(0, 4).map((job, i) => {
                                 const colors = [
-                                    { color: "bg-yellow-50", text: "text-yellow-600" },
-                                    { color: "bg-blue-50", text: "text-blue-600" },
-                                    { color: "bg-green-50", text: "text-green-600" },
-                                    { color: "bg-pink-50", text: "text-pink-600" },
+                                    { color: "bg-yellow-50", text: "text-yellow-600", border: "border-yellow-200" },
+                                    { color: "bg-blue-50", text: "text-blue-600", border: "border-blue-200" },
+                                    { color: "bg-green-50", text: "text-green-600", border: "border-green-200" },
+                                    { color: "bg-pink-50", text: "text-pink-600", border: "border-pink-200" },
                                 ];
                                 const colorSet = colors[i % 4];
+                                
+                                const jobTitle = job.offerId?.jobTitle || job.title || 'Untitled Job';
+                                const companyName = job.companyName || job.offerId?.companyName || 'N/A';
+                                const city = job.offerId?.city || job.location || 'N/A';
+                                
                                 return (
                                     <div
-                                        key={i}
-                                        className={`${colorSet.color} rounded-xl p-4 flex flex-col justify-between`}
+                                        key={job._id || i}
+                                        className={`${colorSet.color} ${colorSet.border} border rounded-xl p-3 flex flex-col justify-between`}
                                     >
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <h4 className={`font-semibold ${colorSet.text}`}>{job.jobTitle}</h4>
+                                        <div>
+                                            <h4 className={`font-semibold ${colorSet.text} text-sm truncate`}>{jobTitle}</h4>
+                                            <p className="text-gray-600 text-xs mt-1 truncate">{companyName}</p>
                                         </div>
-                                        <p className="text-gray-500 text-sm">{job.positionAvailable} positions</p>
-                                        <button className="text-blue-600 text-sm mt-2">View More →</button>
+                                        <div className="mt-2">
+                                            <p className="text-gray-500 text-xs truncate">{city}</p>
+                                            <button className="text-blue-600 text-xs mt-1">View →</button>
+                                        </div>
                                     </div>
                                 );
                             }) : (
-                                [
-                                    { title: "UI/UX Designer", color: "bg-yellow-50", text: "text-yellow-600" },
-                                    { title: "Full Stack Developer", color: "bg-blue-50", text: "text-blue-600" },
-                                    { title: "Data Analyst", color: "bg-green-50", text: "text-green-600" },
-                                    { title: "Graphic Design", color: "bg-pink-50", text: "text-pink-600" },
-                                ].map((item, i) => (
-                                    <div
-                                        key={i}
-                                        className={`${item.color} rounded-xl p-4 flex flex-col justify-between`}
-                                    >
-                                        <div className="flex items-center gap-2 mb-2">
-                                            <h4 className={`font-semibold ${item.text}`}>{item.title}</h4>
+                                <>
+                                    {[
+                                        { title: "UI/UX Designer", color: "bg-yellow-50", text: "text-yellow-600" },
+                                        { title: "Full Stack Dev", color: "bg-blue-50", text: "text-blue-600" },
+                                        { title: "Data Analyst", color: "bg-green-50", text: "text-green-600" },
+                                        { title: "Graphic Design", color: "bg-pink-50", text: "text-pink-600" },
+                                    ].map((item, i) => (
+                                        <div
+                                            key={i}
+                                            className={`${item.color} rounded-xl p-3 flex flex-col justify-between`}
+                                        >
+                                            <div>
+                                                <h4 className={`font-semibold ${item.text} text-sm`}>{item.title}</h4>
+                                                <p className="text-gray-500 text-xs mt-1">Sample Company</p>
+                                            </div>
+                                            <button className="text-blue-600 text-xs mt-2">View →</button>
                                         </div>
-                                        <p className="text-gray-500 text-sm">20 • +12% New Candidate</p>
-                                        <button className="text-blue-600 text-sm mt-2">View More →</button>
-                                    </div>
-                                ))
+                                    ))}
+                                </>
                             )}
                         </div>
+                        {recentJobs.length > 0 && (
+                            <button className="text-blue-600 text-sm mt-4 font-medium text-center">
+                                View All Jobs →
+                            </button>
+                        )}
                     </div>
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] mt-6 p-6">
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-lg font-semibold">Current Offers Details</h2>
+                        <h2 className="text-lg font-semibold">All Job Descriptions</h2>
                         <button className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-1.5 text-sm hover:bg-gray-100">
                             <Download size={16} />
                             Export
@@ -469,50 +448,44 @@ export default function RecruiterDashboard() {
                                     <th className="px-3 py-2">S.No</th>
                                     <th className="px-3 py-2">Job Title</th>
                                     <th className="px-3 py-2">Company</th>
-                                    <th className="px-3 py-2">Location</th>
+                                    <th className="px-3 py-2">City</th>
                                     <th className="px-3 py-2">Employment Type</th>
-                                    <th className="px-3 py-2">Positions</th>
                                     <th className="px-3 py-2">Experience</th>
-                                    <th className="px-3 py-2">Status</th>
-                                    <th className="px-3 py-2">Priority</th>
+                                    <th className="px-3 py-2">Salary</th>
+                                    <th className="px-3 py-2">Created By</th>
                                     <th className="px-3 py-2">Created Date</th>
                                     <th className="px-3 py-2">Action</th>
                                 </tr>
                             </thead>
 
                             <tbody>
-                                {paginatedOffers.length > 0 ? paginatedOffers.map((offer, i) => (
+                                {paginatedOffers.length > 0 ? paginatedOffers.map((jd, i) => (
                                     <tr
-                                        key={i}
+                                        key={jd._id || i}
                                         className="hover:bg-gray-50 border-b border-gray-300 last:border-0"
                                     >
                                         <td className="px-3 py-3">{offersStartIndex + i + 1}</td>
-                                        <td className="px-3 py-3 whitespace-nowrap font-medium">{offer.jobTitle || 'N/A'}</td>
-                                        <td className="px-3 py-3 whitespace-nowrap">{offer.companyName || 'N/A'}</td>
-                                        <td className="px-3 py-3 whitespace-nowrap">{offer.city}, {offer.state}</td>
-                                        <td className="px-3 py-3 whitespace-nowrap">{offer.employmentType || 'N/A'}</td>
-                                        <td className="px-3 py-3">{offer.positionAvailable || 0}</td>
-                                        <td className="px-3 py-3">{offer.experience || 'N/A'}</td>
-                                        <td className="px-3 py-3">
-                                            <span className={`px-2 py-1 rounded-full text-xs ${offer.status === 'JD created' ? 'bg-green-100 text-green-600' :
-                                                    offer.status === 'Open' ? 'bg-blue-100 text-blue-600' :
-                                                        offer.status === 'In Progress' ? 'bg-yellow-100 text-yellow-600' :
-                                                            offer.status === 'Closed' ? 'bg-red-100 text-red-600' :
-                                                                'bg-gray-100 text-gray-600'
-                                                }`}>
-                                                {offer.status || 'N/A'}
-                                            </span>
-                                        </td>
-                                        <td className="px-3 py-3">
-                                            <span className={`px-2 py-1 rounded-full text-xs ${offer.priority === 'High' ? 'bg-red-100 text-red-600' :
-                                                    offer.priority === 'Medium' ? 'bg-yellow-100 text-yellow-600' :
-                                                        'bg-green-100 text-green-600'
-                                                }`}>
-                                                {offer.priority || 'Low'}
-                                            </span>
+                                        <td className="px-3 py-3 whitespace-nowrap font-medium">
+                                            {jd.offerId?.jobTitle || jd.title || 'N/A'}
                                         </td>
                                         <td className="px-3 py-3 whitespace-nowrap">
-                                            {offer.createdAt ? new Date(offer.createdAt).toLocaleDateString() : 'N/A'}
+                                            {jd.companyName || jd.offerId?.companyName || 'N/A'}
+                                        </td>
+                                        <td className="px-3 py-3 whitespace-nowrap">
+                                            {jd.offerId?.city || jd.location || 'N/A'}
+                                        </td>
+                                        <td className="px-3 py-3 whitespace-nowrap">
+                                            {jd.offerId?.employmentType || jd.employmentType || 'N/A'}
+                                        </td>
+                                        <td className="px-3 py-3">
+                                            {jd.offerId?.experience || jd.experience || 'N/A'} {(jd.offerId?.experience || jd.experience) ? 'years' : ''}
+                                        </td>
+                                        <td className="px-3 py-3">{jd.salaryRange || 'N/A'}</td>
+                                        <td className="px-3 py-3 whitespace-nowrap">
+                                            {jd.createdBy?.name || 'N/A'}
+                                        </td>
+                                        <td className="px-3 py-3 whitespace-nowrap">
+                                            {jd.createdAt ? new Date(jd.createdAt).toLocaleDateString() : 'N/A'}
                                         </td>
                                         <td className="px-3 py-3">
                                             <div className="flex gap-2">
@@ -527,8 +500,8 @@ export default function RecruiterDashboard() {
                                     </tr>
                                 )) : (
                                     <tr>
-                                        <td colSpan="11" className="px-3 py-6 text-center text-gray-500">
-                                            No current offers available
+                                        <td colSpan="10" className="px-3 py-6 text-center text-gray-500">
+                                            No job descriptions available
                                         </td>
                                     </tr>
                                 )}
@@ -536,7 +509,7 @@ export default function RecruiterDashboard() {
                         </table>
                     </div>
 
-                    {currentOffers.length > offersPerPage && (
+                    {allJdData.length > offersPerPage && (
                         <Pagination
                             currentPage={offersPage}
                             totalPages={totalOffersPages}
@@ -545,48 +518,35 @@ export default function RecruiterDashboard() {
                     )}
                 </div>
 
-
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
                     <div className="bg-white rounded-2xl shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] p-6 flex flex-col justify-center items-center">
-                        <h3 className="text-sm text-gray-500 mb-1">RIGHT NOW</h3>
-                        <h1 className="text-3xl font-bold text-orange-600">{totalOffers}</h1>
-                        <p className="text-sm text-gray-500">Total Offers</p>
+                        <h3 className="text-sm text-gray-500 mb-1">TOTAL</h3>
+                        <h1 className="text-3xl font-bold text-blue-600">{totalJd}</h1>
+                        <p className="text-sm text-gray-500">Job Descriptions</p>
                     </div>
 
-                    <div className="bg-white rounded-2xl shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] p-6 flex flex-col justify-center text-center">
-                        <h3 className="text-lg font-semibold text-gray-700 mb-2">Check out about our Company</h3>
-                        <button className="bg-orange-500 text-white rounded-lg px-4 py-2 mt-2 hover:bg-orange-600">
-                            Check This Out
-                        </button>
+                    <div className="bg-white rounded-2xl shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] p-6 flex flex-col justify-center items-center">
+                        <h3 className="text-sm text-gray-500 mb-1">BY RECRUITER</h3>
+                        <h1 className="text-3xl font-bold text-pink-600">{jdByRecruiter}</h1>
+                        <p className="text-sm text-gray-500">Created by You</p>
                     </div>
 
                     <div className="bg-white rounded-2xl shadow-[0px_0px_6px_0px_rgba(0,_0,_0,_0.35)] p-6 flex flex-col items-center justify-center">
-                        <div className="relative w-24 h-24 mb-4">
-                            <div className="absolute inset-0 rounded-full border-8 border-orange-500 border-t-gray-200"></div>
-                            <div className="absolute inset-0 flex items-center justify-center font-semibold text-xl">
-                                {jdStatusPercentage.jdCreated}%
+                        <h3 className="text-sm text-gray-500 mb-1">CANDIDATES</h3>
+                        <h1 className="text-3xl font-bold text-lime-600">{totalCandidates}</h1>
+                        <p className="text-sm text-gray-500">Total Registered</p>
+                        <div className="w-full mt-4">
+                            <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>Recruiter Contribution</span>
+                                <span>{recruiterJdPercentage}%</span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div 
+                                    className="bg-pink-500 h-2 rounded-full transition-all duration-500"
+                                    style={{ width: `${recruiterJdPercentage}%` }}
+                                ></div>
                             </div>
                         </div>
-                        <p className="text-gray-500 text-sm mb-2">Monthly</p>
-                        <div className="w-full h-16 bg-gray-50 flex items-end gap-1 px-2">
-                            {offersMonthWise.length > 0 ? offersMonthWise.map((item, i) => (
-                                <div
-                                    key={i}
-                                    className={`w-1 flex-shrink-0 rounded-t-full ${i === offersMonthWise.length - 1 ? "bg-orange-500 h-12" : "bg-gray-300 h-6"
-                                        }`}
-                                    style={{ height: `${Math.min(item.count * 10, 48)}px` }}
-                                ></div>
-                            )) : Array(15).fill(0).map((_, i) => (
-                                <div
-                                    key={i}
-                                    className={`w-1 flex-shrink-0 rounded-t-full ${i === 7 ? "bg-orange-500 h-12" : "bg-gray-300 h-6"
-                                        }`}
-                                ></div>
-                            ))}
-                        </div>
-                        <p className="text-sm text-gray-500 mt-1">
-                            {offersMonthWise.length > 0 ? getMonthName(offersMonthWise[offersMonthWise.length - 1]?.month) : 'August'}
-                        </p>
                     </div>
                 </div>
             </div>
