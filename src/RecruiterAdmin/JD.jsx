@@ -126,27 +126,16 @@ function JD() {
     console.log('Delete JD:', jdId);
   };
 
-  const parseRawAIResponse = (rawResponse) => {
-    if (!rawResponse) return null;
-    try {
-      let cleanedResponse = rawResponse;
-      if (rawResponse.includes('```json')) {
-        cleanedResponse = rawResponse.replace(/```json\n?/g, '').replace(/```\n?/g, '');
-      }
-      return JSON.parse(cleanedResponse);
-    } catch (error) {
-      console.error('Error parsing rawAIResponse:', error);
-      return null;
-    }
-  };
-
+  // Updated function - now uses direct JD fields instead of rawAIResponse
   const handleShowSummary = (jd) => {
-    const parsedData = parseRawAIResponse(jd.aiGenerationDetails?.rawAIResponse);
     setSelectedJDSummary({
       jobTitle: jd.offerId?.jobTitle || 'N/A',
       companyName: jd.companyName || jd.offerId?.company || 'N/A',
-      parsedData: parsedData,
-      jobSummary: jd.jobSummary
+      jobSummary: jd.jobSummary || null,
+      requirements: jd.requirements || [],
+      responsibilities: jd.responsibilities || [],
+      benefits: jd.benefits || [],
+      additionalInfo: jd.additionalInfo || null
     });
     setShowSummaryPopup(true);
   };
@@ -188,99 +177,106 @@ function JD() {
             </div>
 
             <div className="p-6 overflow-y-auto max-h-[calc(85vh-80px)]">
-              {selectedJDSummary.parsedData ? (
-                <div className="space-y-6">
-                  {selectedJDSummary.parsedData.jobSummary && (
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-blue-500" />
-                        Job Summary
-                      </h3>
-                      <p className="text-gray-700 leading-relaxed bg-blue-50 p-4 rounded-lg">
-                        {selectedJDSummary.parsedData.jobSummary}
-                      </p>
-                    </div>
-                  )}
+              <div className="space-y-6">
+                {/* Job Summary */}
+                {selectedJDSummary.jobSummary && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-blue-500" />
+                      Job Summary
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed bg-blue-50 p-4 rounded-lg">
+                      {selectedJDSummary.jobSummary}
+                    </p>
+                  </div>
+                )}
 
-                  {selectedJDSummary.parsedData.responsibilities?.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                        <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                        </svg>
-                        Responsibilities
-                      </h3>
-                      <ul className="space-y-2">
-                        {selectedJDSummary.parsedData.responsibilities.map((item, index) => (
-                          <li key={index} className="flex items-start gap-2 text-gray-700">
-                            <span className="text-green-500 mt-1">•</span>
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                {/* Requirements */}
+                {selectedJDSummary.requirements?.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                      </svg>
+                      Requirements
+                    </h3>
+                    <ul className="space-y-2">
+                      {selectedJDSummary.requirements.map((item, index) => (
+                        <li key={index} className="flex items-start gap-2 text-gray-700">
+                          <span className="text-purple-500 mt-1">•</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-                  {selectedJDSummary.parsedData.requirements?.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                        <svg className="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                        </svg>
-                        Requirements
-                      </h3>
-                      <ul className="space-y-2">
-                        {selectedJDSummary.parsedData.requirements.map((item, index) => (
-                          <li key={index} className="flex items-start gap-2 text-gray-700">
-                            <span className="text-purple-500 mt-1">•</span>
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                {/* Responsibilities */}
+                {selectedJDSummary.responsibilities?.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                      </svg>
+                      Responsibilities
+                    </h3>
+                    <ul className="space-y-2">
+                      {selectedJDSummary.responsibilities.map((item, index) => (
+                        <li key={index} className="flex items-start gap-2 text-gray-700">
+                          <span className="text-green-500 mt-1">•</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-                  {selectedJDSummary.parsedData.benefits?.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                        <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Benefits
-                      </h3>
-                      <ul className="space-y-2">
-                        {selectedJDSummary.parsedData.benefits.map((item, index) => (
-                          <li key={index} className="flex items-start gap-2 text-gray-700">
-                            <span className="text-amber-500 mt-1">•</span>
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                {/* Benefits */}
+                {selectedJDSummary.benefits?.length > 0 && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Benefits
+                    </h3>
+                    <ul className="space-y-2">
+                      {selectedJDSummary.benefits.map((item, index) => (
+                        <li key={index} className="flex items-start gap-2 text-gray-700">
+                          <span className="text-amber-500 mt-1">•</span>
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
 
-                  {selectedJDSummary.parsedData.additionalInfo && (
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                        <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Additional Information
-                      </h3>
-                      <p className="text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-lg">
-                        {selectedJDSummary.parsedData.additionalInfo}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Job Summary</h3>
-                  <p className="text-gray-700 leading-relaxed">
-                    {selectedJDSummary.jobSummary || 'No summary available'}
-                  </p>
-                </div>
-              )}
+                {/* Additional Information */}
+                {selectedJDSummary.additionalInfo && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <svg className="w-5 h-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Additional Information
+                    </h3>
+                    <p className="text-gray-700 leading-relaxed bg-gray-50 p-4 rounded-lg">
+                      {selectedJDSummary.additionalInfo}
+                    </p>
+                  </div>
+                )}
+
+                {/* Show message if no data available */}
+                {!selectedJDSummary.jobSummary && 
+                 selectedJDSummary.requirements?.length === 0 && 
+                 selectedJDSummary.responsibilities?.length === 0 && 
+                 selectedJDSummary.benefits?.length === 0 && 
+                 !selectedJDSummary.additionalInfo && (
+                  <div className="text-center py-8 text-gray-500">
+                    No JD details available
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
