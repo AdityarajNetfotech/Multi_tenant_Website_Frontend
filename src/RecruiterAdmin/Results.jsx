@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Search, Eye, Trash2 } from 'lucide-react';
 import Pagination from '../components/LandingPage/Pagination';
 import ViewResults from './ViewResults'; 
+import SpinLoader from '../components/SpinLoader';
 
 function Results() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -9,6 +10,10 @@ function Results() {
   const [showViewResults, setShowViewResults] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [attemptsLoading, setAttemptsLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [attemptsError, setAttemptsError] = useState(null);
+  const mountedRef = useRef(true);
   
   const rowsPerPage = 5;
 
@@ -44,14 +49,17 @@ function Results() {
 
   const [jobs, setJobs] = useState([]);
 
-  useEffect(() => {
-    let mounted = true;
-    async function loadFinalized() {
-      try {
-        const base = window.REACT_APP_BASE_URL || 'http://localhost:5000';
-        const res = await fetch(`${base}/api/v1/finalise/finalized-tests`);
-        if (!res.ok) return;
-        const data = await res.json();
+  const loadFinalized = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const base = window.REACT_APP_BASE_URL || 'http://localhost:5000';
+      const res = await fetch(`${base}/api/v1/finalise/finalized-tests`);
+      if (!res.ok) {
+        const txt = await res.text().catch(() => 'Failed');
+        throw new Error(txt || 'Failed loading finalized tests');
+      }
+      const data = await res.json();
         // `data` is expected to be an array of tests from get_finalized_test
         const rawArr = Array.isArray(data) ? data : [];
         // Count occurrences per job_id (or question_set_id fallback)
@@ -78,14 +86,25 @@ function Results() {
             raw: t
           };
         });
-        if (mounted) setJobs(mapped);
+        if (mountedRef.current) setJobs(mapped);
       } catch (e) {
         console.error('Failed loading finalized tests', e);
+        setError((e && e.message) ? String(e.message) : 'Failed loading finalized tests');
+      } finally {
+        setLoading(false);
       }
-    }
+  };
+
+  useEffect(() => {
+    mountedRef.current = true;
     loadFinalized();
-    return () => { mounted = false };
+    return () => { mountedRef.current = false };
   }, []);
+
+  const retryLoad = () => {
+    setError(null);
+    loadFinalized();
+  };
 
   const filteredJobs = jobs.filter((job) =>
     job.jobTitle.toLowerCase().includes(searchQuery.toLowerCase())
@@ -107,12 +126,15 @@ function Results() {
     (async () => {
       if (!job || !job.raw || !job.raw.question_set_id) return;
       setAttemptsLoading(true);
+      setAttemptsError(null);
       try {
         const base = window.REACT_APP_BASE_URL || 'http://localhost:5000';
         const qsid = encodeURIComponent(job.raw.question_set_id);
         const res = await fetch(`${base}/api/v1/test/attempts/${qsid}`);
         if (!res.ok) {
-          console.error('Failed to load attempts');
+          const txt = await res.text().catch(() => 'Failed');
+          console.error('Failed to load attempts', txt);
+          setAttemptsError(txt || 'Failed to load attempts');
           setAttemptsLoading(false);
           return;
         }
@@ -210,6 +232,7 @@ function Results() {
         setShowViewResults(true);
       } catch (e) {
         console.error('Error loading attempts', e);
+        setAttemptsError((e && e.message) ? String(e.message) : 'Error loading attempts');
       } finally {
         setAttemptsLoading(false);
       }
@@ -244,7 +267,7 @@ function Results() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
-      <div className="max-w-7xl mx-auto">
+      <div className={`${(loading || attemptsLoading) ? 'filter blur-sm pointer-events-none' : ''} max-w-7xl mx-auto`}>
         
         <div className="flex flex-col sm:flex-row justify-between items-stretch gap-6 mb-8">
 
@@ -354,6 +377,29 @@ function Results() {
           />
         </div>
       </div>
+      {/* Loading overlay for initial load */}
+      {loading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white/90 rounded-lg p-6 flex flex-col items-center gap-3">
+            <SpinLoader />
+            <div className="text-sm text-gray-700">Loading tests...</div>
+          </div>
+        </div>
+      )}
+
+      {/* Error fallback for initial load */}
+      {error && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/90 p-4">
+          <div className="max-w-lg w-full bg-white rounded-lg p-6 shadow">
+            <h3 className="text-lg font-semibold mb-2">Failed to load tests</h3>
+            <p className="text-sm text-gray-600 mb-4">{String(error)}</p>
+            <div className="flex gap-2">
+              <button onClick={retryLoad} className="px-3 py-2 bg-blue-600 text-white rounded">Retry</button>
+              <button onClick={() => setError(null)} className="px-3 py-2 bg-gray-100 rounded">Dismiss</button>
+            </div>
+          </div>
+        </div>
+      )}
 
 
       {showViewResults && selectedJob && (
@@ -368,7 +414,15 @@ function Results() {
 
             <div className="p-4">
               {attemptsLoading ? (
-                <div>Loading attempts...</div>
+                <div className="flex items-center gap-3"><SpinLoader /> <span>Loading attempts...</span></div>
+              ) : attemptsError ? (
+                <div className="p-4 text-center text-sm text-red-600">
+                  <div className="mb-3">{String(attemptsError)}</div>
+                  <div className="flex items-center justify-center gap-2">
+                    <button onClick={() => handleViewResults(selectedJob)} className="px-3 py-2 bg-blue-600 text-white rounded">Retry</button>
+                    <button onClick={() => setAttemptsError(null)} className="px-3 py-2 bg-gray-100 rounded">Dismiss</button>
+                  </div>
+                </div>
               ) : (
                 <div className="overflow-auto">
                   <table className="w-full text-sm">

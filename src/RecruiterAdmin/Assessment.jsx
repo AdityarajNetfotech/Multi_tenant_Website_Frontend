@@ -1,16 +1,41 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Pagination from "../components/LandingPage/Pagination";
 import { useNavigate } from "react-router-dom";
+import AssessmentAPI from "./api/generateAssessmentApi";
+import SpinLoader from "../components/SpinLoader";
 
 function Assessment() {
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 5;
   const navigate = useNavigate();
 
-  // Load assessments from localStorage
-  const [data, setData] = useState(() => {
-    return JSON.parse(localStorage.getItem("jobDataList")) || [];
-  });
+  // Load assessments from backend
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    const fetchAssessments = async () => {
+      try {
+        const json = await AssessmentAPI.getAllFinalizedTests();
+        if (!mounted) return;
+        if (!json) {
+          setError("Failed to fetch assessments");
+          setData([]);
+        } else {
+          setData(Array.isArray(json) ? json : []);
+        }
+      } catch (err) {
+        if (mounted) setError(err.message || "Failed to load");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    fetchAssessments();
+    return () => { mounted = false; };
+  }, []);
 
   const totalPages = Math.ceil(data.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
@@ -37,12 +62,25 @@ function Assessment() {
           </thead>
 
           <tbody>
-            {currentData.map((row) => (
-              <tr key={row.id} className="border-b border-gray-200 hover:bg-gray-50 transition">
-                <td className="py-3 px-6 text-gray-700">{row.id}</td>
-                <td className="py-3 px-6 text-blue-600 cursor-pointer">{row.company}</td>
-                <td className="py-3 px-6 text-gray-700">{row.jobTitle}</td>
-                <td className="py-3 px-6 text-gray-700">{row.createdOn}</td>
+            {loading ? (
+              <tr>
+                <td colSpan={6} className="py-6 px-6">
+                  <div className="flex justify-center">
+                    <SpinLoader />
+                  </div>
+                </td>
+              </tr>
+            ) : error ? (
+              <tr><td colSpan={6} className="py-4 px-6 text-center text-red-500">{error}</td></tr>
+            ) : currentData.length === 0 ? (
+              <tr><td colSpan={6} className="py-4 px-6 text-center text-gray-500">No assessments found</td></tr>
+            ) : (
+              currentData.map((row, idx) => (
+                <tr key={row.question_set_id || row.job_id || idx} className="border-b border-gray-200 hover:bg-gray-50 transition">
+                  <td className="py-3 px-6 text-gray-700">{row.question_set_id || row.job_id || idx}</td>
+                  <td className="py-3 px-6 text-blue-600 cursor-pointer">{row.company}</td>
+                  <td className="py-3 px-6 text-gray-700">{row.title}</td>
+                  <td className="py-3 px-6 text-gray-700">{row.createdAt}</td>
 
                 {/* Render skills dynamically with unique keys */}
                 <td className="py-3 px-6 text-gray-700">
@@ -66,7 +104,7 @@ function Assessment() {
                   <button
                     onClick={() =>
                       navigate(
-                        `/RecruiterAdmin-Dashboard/Assessment/QuestionsList/${row.id.replace("#", "")}`
+                        `/RecruiterAdmin-Dashboard/Assessment/QuestionsList/${(row.question_set_id || row.job_id || "").toString().replace("#", "")}`
                       )
                     }
                     className="px-6 py-1.5 bg-blue-100 text-blue-600 rounded-full text-sm font-medium hover:bg-blue-200"
@@ -74,8 +112,9 @@ function Assessment() {
                     View
                   </button>
                 </td>
-              </tr>
-            ))}
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
 

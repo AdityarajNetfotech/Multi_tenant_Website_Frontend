@@ -18,7 +18,7 @@ const RecruiterAdminSidebar = ({ isOpen, onToggle }) => {
     const path = location.pathname;
 
     if (path.includes("/JD")) setActiveNav("JobDescription");
-    // else if (path.includes("/Assessment")) setActiveNav("Assessment");
+    else if (path.includes("/Assessment")) setActiveNav("Assessment");
     else if (path.includes("/Results")) setActiveNav("Results");
     else if (path.includes("/NonCandidateList")) setActiveNav("NonCandidateList");
     else setActiveNav("Dashboard");
@@ -86,7 +86,7 @@ const RecruiterAdminSidebar = ({ isOpen, onToggle }) => {
               </button>
             </li>
 
-            {/* <li>
+            <li>
               <button
                 onClick={() => handleNavClick('Assessment', '/RecruiterAdmin-Dashboard/Assessment')}
                 className={`flex w-full items-center space-x-3 py-2 px-7 rounded transition-colors 
@@ -95,7 +95,7 @@ const RecruiterAdminSidebar = ({ isOpen, onToggle }) => {
                 <Building2 size={20} />
                 <span>Assessment</span>
               </button>
-            </li> */}
+            </li>
 
             <li>
               <button

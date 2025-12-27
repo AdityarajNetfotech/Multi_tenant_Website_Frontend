@@ -4,6 +4,7 @@ import { emitViolation } from "../../RecruiterAdmin/api/socket.js";
 const ActivityMonitor = ({
   questionSetId,
   candidateId,
+  cid,
   candidateName,
   email,
   faceEventRef,
@@ -29,6 +30,7 @@ const ActivityMonitor = ({
       emitViolation({
         question_set_id: questionSetId,
         candidate_id: candidateId,
+        cid: cid,
         candidate_name: candidateName,
         candidate_email: email,
         ...payload,

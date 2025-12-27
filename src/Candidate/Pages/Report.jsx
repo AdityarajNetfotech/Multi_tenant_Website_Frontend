@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Trash2, Search, SlidersHorizontal, Eye } from 'lucide-react';
 import Pagination from '../../components/LandingPage/Pagination';
+import SpinLoader from '../../components/SpinLoader';
 
 function Report() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -8,6 +9,9 @@ function Report() {
   const [openModal, setOpenModal] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [candidates, setCandidates] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const mountedRef = useRef(true);
   const itemsPerPage = 5;
   const CAND_API_BASE = window.REACT_APP_BASE_URL || 'http://localhost:4000';
 
@@ -31,15 +35,18 @@ function Report() {
   };
 
   // Fetch attempts from backend and map to UI shape
-  useEffect(() => {
-    let mounted = true;
-    async function loadAttempts() {
-      try {
-        const res = await fetch('http://localhost:5000/api/v1/test/attempts');
-        if (!res.ok) return;
-        const data = await res.json();
-        console.log("DATA:",data)
-          const mapped = (data.attempts || []).map(a => ({
+  const loadAttempts = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await fetch('http://localhost:5000/api/v1/test/attempts');
+      if (!res.ok) {
+        const txt = await res.text().catch(() => 'Failed');
+        throw new Error(txt || 'Failed loading attempts');
+      }
+      const data = await res.json();
+      console.log("DATA:",data)
+      const mapped = (data.attempts || []).map(a => ({
           id: a.id || a.candidate_id || '—',
           // store candidate id so we can lookup canonical name from backend
           candidateId: a.candidate_id || a.details?.candidate_id || null,
@@ -91,7 +98,7 @@ function Report() {
           incorrect: '-',
           raw: a,
         }));
-        if (mounted) setCandidates(mapped);
+      if (mountedRef.current) setCandidates(mapped);
 
         // Try to resolve candidate names by calling candidate API route for each candidate_id
         try {
@@ -155,18 +162,29 @@ function Report() {
             return m;
           });
 
-          const resolved = await Promise.all(promises);
-          if (mounted) setCandidates(resolved);
-        } catch (e) {
-          console.warn('Candidate name resolution failed', e);
-        }
-      } catch (err) {
-        console.error('Failed loading attempts', err);
-      }
+      const resolved = await Promise.all(promises);
+      if (mountedRef.current) setCandidates(resolved);
+    } catch (e) {
+      console.warn('Candidate name resolution failed', e);
     }
+    } catch (err) {
+      console.error('Failed loading attempts', err);
+      setError((err && err.message) ? String(err.message) : 'Failed loading attempts');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    mountedRef.current = true;
     loadAttempts();
-    return () => { mounted = false };
+    return () => { mountedRef.current = false };
   }, []);
+
+  const retryLoad = () => {
+    setError(null);
+    loadAttempts();
+  };
 
   const filteredCandidates = candidates.filter((c) =>
     (c.name || '').toString().toLowerCase().includes(searchTerm.toLowerCase())
@@ -189,8 +207,9 @@ function Report() {
   }, [openModal]);
 
   return (
-    <div>
-      <div className="flex flex-wrap gap-4 mb-10">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+      <div className={`${loading ? 'filter blur-sm pointer-events-none' : ''} max-w-7xl mx-auto` }>
+      <div className="flex flex-col sm:flex-row justify-between items-stretch gap-6 mb-8">
         <div className="flex flex-col gap-3 p-3 rounded-lg w-[290px] border border-gray-300 shadow-md">
           <span className="font-medium text-3xl">Selected Candidate</span>
           <span className="text-4xl">1234</span>
@@ -531,7 +550,32 @@ function Report() {
           </div>
         </div>
       )}
+
+      {/* Loading overlay (match Results.jsx) */}
+      {loading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white/90 rounded-lg p-6 flex flex-col items-center gap-3">
+            <SpinLoader />
+            <div className="text-sm text-gray-700">Loading tests...</div>
+          </div>
+        </div>
+      )}
+
+      {/* Error fallback */}
+      {error && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/90 p-4">
+          <div className="max-w-lg w-full bg-white rounded-lg p-6 shadow">
+            <h3 className="text-lg font-semibold mb-2">Failed to load data</h3>
+            <p className="text-sm text-gray-600 mb-4">{String(error)}</p>
+            <div className="flex gap-2">
+              <button onClick={retryLoad} className="px-3 py-2 bg-blue-600 text-white rounded">Retry</button>
+              <button onClick={() => setError(null)} className="px-3 py-2 bg-gray-100 rounded">Dismiss</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
+  </div>
   );
 }
 

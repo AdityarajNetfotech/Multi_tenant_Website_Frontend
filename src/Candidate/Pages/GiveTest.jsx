@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation } from 'react-router-dom';
 import Webcam from 'react-webcam';
 import { useParams } from 'react-router-dom';
 import { testApi } from '../../RecruiterAdmin/api/tests.js';
@@ -19,6 +20,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 const GiveTest = ({ jdId }) => {
   const { questionSetId } = useParams();
+  const location = useLocation();
 
   // Loading / data / error
   const [loading, setLoading] = useState(true);
@@ -52,6 +54,7 @@ const GiveTest = ({ jdId }) => {
   const [tabSwitches, setTabSwitches] = useState(0);
   const faceEventRef = useRef(null);
   const webcamInterviewRef = useRef(null);
+  const saveViolationsSentRef = useRef(false);
   const [showWebcamInterview, setShowWebcamInterview] = useState(false);
   const [showAudioInterview, setShowAudioInterview] = useState(false);
   const [audioInterviewResults, setAudioInterviewResults] = useState([]);
@@ -469,8 +472,12 @@ const GiveTest = ({ jdId }) => {
           try { handleViolation('tab_switches', 1); } catch (e) {}
           if (next > 3) {
             toast.error('Too many tab switches — submitting the test.');
-            // submit immediately
-            try { handleSubmitAllSections(); } catch (e) { console.warn('submit failed', e); }
+            // disable monitoring/UI immediately and force-finalize the test
+            try {
+              setTestStarted(false);
+              // call forced submit which will include mark_complete so backend records candidate_test_taken
+              handleSubmitAllSections(undefined, { markComplete: true }).catch(e => console.warn('forced submit failed', e));
+            } catch (e) { console.warn('submit failed', e); }
           }
           return next;
         });
@@ -633,12 +640,96 @@ const GiveTest = ({ jdId }) => {
   };
 
   // Submit all sections
-  const handleSubmitAllSections = async (answersOverride) => {
+  // options: { markComplete: boolean }
+  const handleSubmitAllSections = async (answersOverride, options = {}) => {
     setSubmitting(true);
     try {
       const results = [];
+      // read cid once from sessionStorage so it's available after the loop
+      let cidFromSession = null;
+      let jobIdFromSession = null;
+      try {
+        const raw = sessionStorage.getItem("candidateData");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          cidFromSession = parsed?.id ?? null;
+          // accept multiple possible keys used by different flows
+          jobIdFromSession = parsed?.job_id || parsed?.jobId || parsed?.job || parsed?.jdId || parsed?.jd_id || null;
+          console.log('GiveTest: candidateData keys from sessionStorage', Object.keys(parsed || {}));
+        }
+      } catch (e) {
+        console.warn('Failed to read candidateData from sessionStorage', e);
+      }
+
+      // helper: read job id from URL query params as another fallback
+      const getQueryParam = (name) => {
+        try { return new URLSearchParams(window.location.search).get(name); } catch (e) { return null; }
+      };
+
+      // try multiple fallbacks: prop, sessionStorage, URL query, location state, localStorage cached jobData
+      let resolvedJobId = jdId || jobIdFromSession || getQueryParam('job_id') || getQueryParam('jobId') || getQueryParam('jdId') || getQueryParam('jd') || null;
+      if (!resolvedJobId) {
+        // check react-router location state
+        try {
+          const s = location && location.state;
+          if (s && (s.job_id || s.jobId || s.jdId || s.job)) resolvedJobId = s.job_id || s.jobId || s.jdId || s.job || null;
+        } catch (e) {}
+      }
+
+      if (!resolvedJobId) {
+        // prefer sessionStorage (set by Examination/TestDetails) then fall back to localStorage
+        try {
+          const maybeSession = sessionStorage.getItem('jobData');
+          if (maybeSession) {
+            const jd = JSON.parse(maybeSession);
+            if (jd && (jd.job_id || jd.jobId || jd._id || jd.id) && (jd.questionSetId === questionSetId || jd.question_set_id === questionSetId || !questionSetId)) {
+              resolvedJobId = jd.job_id || jd.jobId || jd._id || jd.id;
+            }
+          }
+        } catch (e) {}
+
+        if (!resolvedJobId) {
+          try {
+            const maybe = localStorage.getItem('jobData');
+            if (maybe) {
+              const jd = JSON.parse(maybe);
+              if (jd && (jd.job_id || jd.jobId || jd._id || jd.id) && (jd.questionSetId === questionSetId || jd.question_set_id === questionSetId || !questionSetId)) {
+                resolvedJobId = jd.job_id || jd.jobId || jd._id || jd.id;
+              }
+            }
+          } catch (e) {}
+        }
+      }
+
+      if (!resolvedJobId) {
+        try {
+          const listRawSession = sessionStorage.getItem('jobDataList');
+          if (listRawSession) {
+            const arr = JSON.parse(listRawSession) || [];
+            const found = arr.find(it => (it.questionSetId === questionSetId) || (it.question_set_id === questionSetId));
+            if (found) resolvedJobId = found.job_id || found.jobId || found._id || found.id || null;
+          }
+        } catch (e) {}
+
+        if (!resolvedJobId) {
+          try {
+            const listRaw = localStorage.getItem('jobDataList');
+            if (listRaw) {
+              const arr = JSON.parse(listRaw) || [];
+              const found = arr.find(it => (it.questionSetId === questionSetId) || (it.question_set_id === questionSetId));
+              if (found) resolvedJobId = found.job_id || found.jobId || found._id || found.id || null;
+            }
+          } catch (e) {}
+        }
+      }
+
+      console.log('GiveTest: resolvedJobId ->', resolvedJobId);
+      // expose for quick debugging in console
+      try { window.__resolvedJobId = resolvedJobId; } catch (e) {}
+
       for (const section of sections) {
         const answersSource = answersOverride || allAnswers;
+
         const responses = section.questions.map((question) => ({
           question_id: question.id,
           question_type: question.type,
@@ -653,28 +744,23 @@ const GiveTest = ({ jdId }) => {
             question.content?.correct_answer ||
             "N/A",
 
-          candidate_answer: answersSource[question.id] || '',
+          candidate_answer: answersSource[question.id] || ''
         }));
 
-        // prefer candidate id from sessionStorage (set in CandidateLogin), fallback to finalCandidateId
-        let cidFromSession = null;
-        try {
-          const raw = sessionStorage.getItem("candidateData");
-          if (raw) {
-            const parsed = JSON.parse(raw);
-            cidFromSession = parsed?.id ?? null;
-          }
-        } catch (e) {
-          console.warn('Failed to read candidateData from sessionStorage', e);
-        }
+        
 
         const submissionData = {
           question_set_id: questionSetId,
           section_name: section.name,
           candidate_id: finalCandidateId,
           cid: cidFromSession || finalCandidateId,
+          job_id: resolvedJobId,
           responses,
         };
+
+        if (options && options.markComplete) {
+          submissionData.mark_complete = true;
+        }
 
         // Debug logs (helpful during integration)
         console.log('Submitting section', section.name, 'with questionSetId=', questionSetId);
@@ -703,14 +789,24 @@ const GiveTest = ({ jdId }) => {
 
       // 1) save violations (best-effort)
       try {
-        await testApi.saveViolations({
-          question_set_id: questionSetId,
-          candidate_id: finalCandidateId,
-          tab_switches: violationsRef.current.tab_switches || 0,
-          inactivities: violationsRef.current.inactivities || 0,
-          face_not_visible: violationsRef.current.face_not_visible || 0,
-        });
-        console.log('Violations saved');
+        if (!saveViolationsSentRef.current) {
+          saveViolationsSentRef.current = true;
+          console.log("HEYYYYYYYYYYYYYYYYYYYYY:")
+            const violationsPayload = {
+              question_set_id: questionSetId,
+              candidate_id: finalCandidateId,
+              tab_switches: violationsRef.current.tab_switches || 0,
+              inactivities: violationsRef.current.inactivities || 0,
+              face_not_visible: violationsRef.current.face_not_visible || 0,
+              cid: cidFromSession || finalCandidateId,
+              job_id: resolvedJobId,
+            };
+            console.log('GiveTest: sending saveViolations payload ->', violationsPayload);
+            await testApi.saveViolations(violationsPayload);
+          console.log('Violations saved');
+        } else {
+          console.log('saveViolations skipped (already sent)');
+        }
       } catch (err) {
         console.warn('Failed to save violations', err);
       }

@@ -17,7 +17,9 @@ const CameraCheck = ({ onBack }) => {
       return;
     }
 
-    navigate(`/Candidate-Dashboard/give-test/${questionSetId}`);
+    // preserve query params (e.g., job_id) when navigating to the actual test
+    const search = window.location.search || '';
+    navigate(`/Candidate-Dashboard/give-test/${questionSetId}${search}`);
   };
 
   const handleCheckbox = () => setIsChecked(!isChecked);

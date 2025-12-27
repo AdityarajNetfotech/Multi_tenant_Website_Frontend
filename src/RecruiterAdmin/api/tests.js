@@ -33,6 +33,7 @@ export const testApi = {
   },
   saveViolations: async (payload) => {
     try {
+      console.log("Payload in test.js",payload)
       const response = await fetch(`${BASE_URL}/test/save_violations`, {
         method: 'POST',
         headers: {

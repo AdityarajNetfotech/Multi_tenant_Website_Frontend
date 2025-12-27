@@ -65,7 +65,41 @@ export default function Examination() {
 
             const now = new Date();
 
-            setJobs(finalisedTestResults.map(test => {
+            // fetch taken tests for this candidate and exclude them from view
+            let takenList = [];
+            try {
+              const taken = await AssessmentAPI.getTakenTests(candidateId);
+              takenList = Array.isArray(taken) ? taken : [];
+              console.log('Examination: takenList ->', takenList);
+            } catch (e) {
+              console.warn('Failed to fetch taken tests', e);
+            }
+
+            // normalize helpers to robustly extract question set ids from different API shapes
+            const normalizeQuestionSetId = (t) => {
+              if (!t) return null;
+              if (typeof t === 'string') return t;
+              return t.questionSetId || t.question_set_id || t.question_set || (t.questionSet && (t.questionSet.id || t.questionSet._id)) || null;
+            };
+
+            // build set of taken question_set_ids (normalize keys)
+            const takenQuestionSetIds = new Set(
+              takenList
+                .map(t => t.question_set_id || t.questionSetId || (t.question && (t.question.question_set_id || t.question.questionSetId)) || null)
+                .filter(Boolean)
+            );
+
+            // filter out tests where the finalized test's question_set_id matches any taken question_set_id
+            const availableTests = finalisedTestResults.filter(test => {
+              const qid = normalizeQuestionSetId(test);
+              if (qid && takenQuestionSetIds.has(qid)) {
+                console.log('Examination: filtering out taken test by question_set_id', { qid });
+                return false;
+              }
+              return true;
+            });
+
+            setJobs(availableTests.map(test => {
               const rawStart = test.exam_date ? test.exam_date.replace(regex, '') : test.startDate || '';
               const rawEnd = test.end_date ? test.end_date.replace(regex, '') : test.endDate || '';
               let startDT = parseDateTime(rawStart, test.test_start || test.startTime);
@@ -108,6 +142,8 @@ export default function Examination() {
               return {
                 title: test.title || "Assessment",
                 company: test.company,
+                // include job id from the API response so downstream pages can access it
+                jobId: test.jobId || test.job_id || test._id || test.id || null,
                 location: test.location || "API Response Check",
                 workType: test.workType || "API Response Check",
                 skills: Array.isArray(test.skills) ? test.skills : [],
@@ -161,6 +197,23 @@ export default function Examination() {
     };
     fetchAssessment();
   }, []);
+
+  const handleGiveTest = (job) => {
+    // normalize job id from possible keys
+    const id = job.jobId || job.job_id || job.id || null;
+    const qid = job.questionSetId || job.question_set_id || job.questionSetId || null;
+    try {
+      sessionStorage.setItem('jobData', JSON.stringify({ job_id: id, questionSetId: qid }));
+      console.log('Examination: stored jobData ->', { job_id: id, questionSetId: qid });
+    } catch (e) {}
+    try {
+      // also pass via router state for immediate availability
+      navigate(`/Candidate-Dashboard/Examination/TestDetails/${job.questionSetId}?job_id=${encodeURIComponent(id || '')}`, { state: { job_id: id } });
+    } catch (e) {
+      // fallback to simple navigate
+      navigate(`/Candidate-Dashboard/Examination/TestDetails/${job.questionSetId}?job_id=${encodeURIComponent(id || '')}`);
+    }
+  };
 
   return (
     <div className="min-h-screen px-4 md:px-8 py-6">
@@ -224,9 +277,7 @@ export default function Examination() {
 
             <div className="flex justify-end">
               <button
-                onClick={() =>
-                  navigate(`/Candidate-Dashboard/Examination/TestDetails/${job.questionSetId}`)
-                }
+                onClick={() => handleGiveTest(job)}
                 disabled={!job.isActive || !job.isAvailable}
                 className={`mt-2 w-[100px] py-2 rounded-2xl font-medium text-sm sm:text-base transition-all duration-300 ${
                   job.isActive && job.isAvailable

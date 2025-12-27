@@ -24,6 +24,46 @@ class AssessmentAPI {
       return null;
     }
   }
+
+  /**
+   * Fetch all finalized tests (no candidate filter)
+   * @returns {Promise<Object[]>}
+   */
+  static async getAllFinalizedTests() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/finalise/finalized-tests`);
+      if (!response.ok) {
+        let errorText = await response.text();
+        console.error(`Finalized tests API returned status ${response.status}:`, errorText);
+        return null;
+      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error fetching finalized tests:', error);
+      return null;
+    }
+  }
+  
+  /**
+   * Get list of tests taken by a candidate (job_id / question_set_id)
+   * @param {string} candidateId
+   */
+  static async getTakenTests(candidateId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/test/taken?candidate_id=${encodeURIComponent(candidateId)}`);
+      if (!response.ok) {
+        let txt = await response.text();
+        console.error('getTakenTests failed', response.status, txt);
+        return [];
+      }
+      const data = await response.json();
+      return data.taken || [];
+    } catch (error) {
+      console.error('Error fetching taken tests:', error);
+      return [];
+    }
+  }
   /**
    * Generate test questions based on skills and difficulty levels
    * @param {Object} payload - Skills configuration

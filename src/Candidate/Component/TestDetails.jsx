@@ -20,7 +20,17 @@ const TestDetails = () => {
   };
 
   const handleNext = () => {
-    navigate(`/Candidate-Dashboard/Examination/CameraCheck/${questionSetId}`);
+    // preserve any query params (e.g., job_id) when forwarding to CameraCheck
+    const search = window.location.search || '';
+    try {
+      const params = new URLSearchParams(search);
+      const jobId = params.get('job_id') || params.get('jobId') || params.get('jdId') || null;
+      if (jobId) {
+        // persist for downstream pages
+        sessionStorage.setItem('jobData', JSON.stringify({ job_id: jobId, questionSetId }));
+      }
+    } catch (e) {}
+    navigate(`/Candidate-Dashboard/Examination/CameraCheck/${questionSetId}${search}`);
   };
 
   const details = [
