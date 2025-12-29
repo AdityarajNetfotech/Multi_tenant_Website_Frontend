@@ -1,3 +1,129 @@
+// import React, { useState } from "react";
+// import img from "../assets/CandidateLogin.png";
+// import { useNavigate } from "react-router-dom";
+// import axios from "axios";
+
+// const CandidateLogin = () => {
+//     const [email, setEmail] = useState("");
+//     const [password, setPassword] = useState("");
+//     const [loading, setLoading] = useState(false);
+//     const [error, setError] = useState("");
+//     const navigate = useNavigate();
+
+//     const handleLogin = async () => {
+//         setLoading(true);
+//         setError("");
+
+//         if (!email || !password) {
+//             setError("Email and password are required");
+//             setLoading(false);
+//             return;
+//         }
+
+//         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+//         if (!emailRegex.test(email)) {
+//             setError("Please enter a valid email");
+//             setLoading(false);
+//             return;
+//         }
+
+//         try {
+//             const { data } = await axios.post(
+//                 "http://localhost:4000/api/candidate/login",
+//                 { email, password }
+//             );
+
+//             const cleanCandidate = {
+//                 id: data.candidate._id,
+//                 name: data.candidate.name,
+//                 email: data.candidate.email,
+//                 phone: data.candidate.phone,
+//                 hasLoggedIn: data.candidate.hasLoggedIn // include this field
+//             };
+
+//             localStorage.setItem("candidateToken", data.token);
+//             localStorage.setItem("candidate", JSON.stringify(cleanCandidate));
+//             sessionStorage.setItem("candidateData", JSON.stringify(cleanCandidate)); // For Examination.jsx
+//             console.log("Saved candidateData to sessionStorage:", cleanCandidate);
+
+//             setLoading(false);
+//             // If first login (hasLoggedIn is false), show Chatbot, else dashboard
+//             if (!data.candidate.hasLoggedIn) {
+//                 navigate("/Candidate-Chatbot");
+//             } else {
+//                 navigate("/Candidate-Dashboard");
+//             }
+//         } catch (err) {
+//             setError(err.response?.data?.error || "Invalid credentials");
+//             setLoading(false);
+//         }
+//     };
+
+//     return (
+//         <div className="min-h-screen bg-[#FFFFFF05]">
+//             <h1 className="text-3xl text-center md:text-4xl font-bold text-gray-900 mb-10 mt-5">
+//                 Welcome Back
+//             </h1>
+//             <div className="flex flex-col md:flex-row items-center justify-between max-w-6xl w-full">
+//                 <div className="flex-1 text-center md:text-left mb-10 md:mb-0">
+//                     <p className="text-2xl text-[#0496FF] text-center font-medium mb-8">
+//                         Login to Your AIRecruiter
+//                     </p>
+//                     <img
+//                         src={img}
+//                         alt="Illustration"
+//                         className="h-[400px] w-full md:w-auto mx-auto"
+//                     />
+//                 </div>
+
+//                 <div className="flex-1 bg-white rounded-2xl shadow-md border border-gray-100 p-8 max-w-md mx-auto">
+//                     <div className="mb-4">
+//                         <label className="block text-gray-800 font-medium mb-1">Email ID</label>
+//                         <input
+//                             type="email"
+//                             value={email}
+//                             onChange={(e) => setEmail(e.target.value)}
+//                             placeholder="Enter Email ID"
+//                             className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+//                         />
+//                     </div>
+
+//                     <div className="mb-6">
+//                         <label className="block text-gray-800 font-medium mb-1">Password</label>
+//                         <input
+//                             type="password"
+//                             value={password}
+//                             onChange={(e) => setPassword(e.target.value)}
+//                             placeholder="Enter Password"
+//                             className="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+//                         />
+//                     </div>
+
+//                     {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
+
+//                     <div className="flex justify-center">
+//                         <button
+//                             onClick={handleLogin}
+//                             disabled={loading}
+//                             className="w-[150px] bg-blue-500 text-white py-2 rounded-md font-medium hover:bg-blue-600 transition-colors mb-2 disabled:bg-blue-300"
+//                         >
+//                             {loading ? "Logging in..." : "Login"}
+//                         </button>
+//                     </div>
+
+//                     <p className="text-center text-sm text-gray-600">
+//                         Don't have an account?{" "}
+//                         <a href="#" className="text-blue-600 hover:underline">
+//                             Sign Up
+//                         </a>
+//                     </p>
+//                 </div>
+//             </div>
+//         </div>
+//     );
+// };
+
+// export default CandidateLogin;
 import React, { useState } from "react";
 import img from "../assets/CandidateLogin.png";
 import { useNavigate } from "react-router-dom";
@@ -38,21 +164,20 @@ const CandidateLogin = () => {
                 name: data.candidate.name,
                 email: data.candidate.email,
                 phone: data.candidate.phone,
-                hasLoggedIn: data.candidate.hasLoggedIn // include this field
+                // hasLoggedIn: data.candidate.hasLoggedIn
             };
 
             localStorage.setItem("candidateToken", data.token);
             localStorage.setItem("candidate", JSON.stringify(cleanCandidate));
-            sessionStorage.setItem("candidateData", JSON.stringify(cleanCandidate)); // For Examination.jsx
-            console.log("Saved candidateData to sessionStorage:", cleanCandidate);
+            navigate("/Candidate-Dashboard");
 
             setLoading(false);
-            // If first login (hasLoggedIn is false), show Chatbot, else dashboard
-            if (!data.candidate.hasLoggedIn) {
-                navigate("/Candidate-Chatbot");
-            } else {
-                navigate("/Candidate-Dashboard");
-            }
+
+            // if (!data.candidate.hasLoggedIn) {
+            //     navigate("/Candidate-Chatbot");
+            // } else {
+            //     navigate("/Candidate-Dashboard");
+            // }
         } catch (err) {
             setError(err.response?.data?.error || "Invalid credentials");
             setLoading(false);
@@ -60,25 +185,33 @@ const CandidateLogin = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#FFFFFF05]">
-            <h1 className="text-3xl text-center md:text-4xl font-bold text-gray-900 mb-10 mt-5">
+        <div className="min-h-screen bg-[#FFFFFF05] px-4 sm:px-6 lg:px-8">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl text-center font-bold text-gray-900 mb-8 mt-6">
                 Welcome Back
             </h1>
-            <div className="flex flex-col md:flex-row items-center justify-between max-w-6xl w-full">
-                <div className="flex-1 text-center md:text-left mb-10 md:mb-0">
-                    <p className="text-2xl text-[#0496FF] text-center font-medium mb-8">
+
+            <div className="flex flex-col md:flex-row items-center justify-center md:justify-between max-w-6xl mx-auto gap-10">
+                
+                {/* Left Section */}
+                <div className="flex-1 text-center md:text-left">
+                    <p className="text-xl sm:text-2xl text-[#0496FF] font-medium mb-6 text-center md:text-left">
                         Login to Your AIRecruiter
                     </p>
+
                     <img
                         src={img}
                         alt="Illustration"
-                        className="h-[400px] w-full md:w-auto mx-auto"
+                        className="h-[250px] sm:h-[300px] md:h-[400px] w-full object-contain mx-auto"
                     />
                 </div>
 
-                <div className="flex-1 bg-white rounded-2xl shadow-md border border-gray-100 p-8 max-w-md mx-auto">
+                {/* Right Section */}
+                <div className="flex-1 bg-white rounded-2xl shadow-md border border-gray-100 p-6 sm:p-8 max-w-md w-full mx-auto">
+                    
                     <div className="mb-4">
-                        <label className="block text-gray-800 font-medium mb-1">Email ID</label>
+                        <label className="block text-gray-800 font-medium mb-1">
+                            Email ID
+                        </label>
                         <input
                             type="email"
                             value={email}
@@ -89,7 +222,9 @@ const CandidateLogin = () => {
                     </div>
 
                     <div className="mb-6">
-                        <label className="block text-gray-800 font-medium mb-1">Password</label>
+                        <label className="block text-gray-800 font-medium mb-1">
+                            Password
+                        </label>
                         <input
                             type="password"
                             value={password}
@@ -99,19 +234,23 @@ const CandidateLogin = () => {
                         />
                     </div>
 
-                    {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
+                    {error && (
+                        <p className="text-red-500 text-sm mb-3 text-center">
+                            {error}
+                        </p>
+                    )}
 
                     <div className="flex justify-center">
                         <button
                             onClick={handleLogin}
                             disabled={loading}
-                            className="w-[150px] bg-blue-500 text-white py-2 rounded-md font-medium hover:bg-blue-600 transition-colors mb-2 disabled:bg-blue-300"
+                            className="w-full sm:w-[150px] bg-blue-500 text-white py-2 rounded-md font-medium hover:bg-blue-600 transition-colors mb-2 disabled:bg-blue-300"
                         >
                             {loading ? "Logging in..." : "Login"}
                         </button>
                     </div>
 
-                    <p className="text-center text-sm text-gray-600">
+                    <p className="text-center text-sm text-gray-600 mt-3">
                         Don't have an account?{" "}
                         <a href="#" className="text-blue-600 hover:underline">
                             Sign Up

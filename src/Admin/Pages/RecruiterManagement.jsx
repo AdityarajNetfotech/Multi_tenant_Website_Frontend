@@ -71,6 +71,8 @@ function RecruiterManagement() {
     fetchAllRecruiter();
   }, []);
 
+  
+
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -269,10 +271,10 @@ function RecruiterManagement() {
                     >
                       {showAddForm ? 'Hide Form' : 'Add New'}
                     </button>
-                    <button className="flex gap-1 px-6 py-2.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium">
+                    {/* <button className="flex gap-1 px-6 py-2.5 bg-black text-white rounded-lg hover:bg-gray-800 transition-colors font-medium">
                       <SlidersVertical />
                       Filter
-                    </button>
+                    </button> */}
                   </div>
                 </div>
               </div>
@@ -359,13 +361,10 @@ function RecruiterManagement() {
 
                 <div className="mt-4 text-sm text-gray-700 space-y-1">
                   <p>
-                    <span className="font-medium text-gray-800">ID :</span> {selectedRecruiter.registerId}
+                    <span className="font-medium text-gray-800">ID :</span> {selectedRecruiter.id}
                   </p>
                   <p>
                     <span className="font-medium text-gray-800">Register Date :</span> {selectedRecruiter.registerDate}
-                  </p>
-                  <p>
-                    <span className="font-medium text-gray-800">Last Login :</span> {selectedRecruiter.lastLogin}
                   </p>
                   <p>
                     <span className="font-medium text-gray-800">Role :</span> {selectedRecruiter.role}

@@ -67,7 +67,7 @@ import GiveTest from './Candidate/Pages/GiveTest';
 import ForgotPassword from './components/ForgotPassword';
 import ProtectedRoute from './components/ProtectedRoute';
 import { CompanyProvider } from './Context/companyContext';
-
+import CandidateRegister from './Candidate/CandidateRegister';
 const App = () => {
   return (
 
@@ -79,6 +79,7 @@ const App = () => {
           <Route path="/ForgotPassword" element={<ForgotPassword />} />
           <Route path="/SuperAdminLogin" element={<SuperAdminLogin />} />
           <Route path="/CandidateLogin" element={<CandidateLogin />} />
+          <Route path="/CandidateRegister" element={<CandidateRegister />} />
           <Route path="/Candidate-Chatbot" element={<Chatbot />} />
           <Route path="/Login" element={<UniversalLogin />} />
           <Route path="/SuperAdminRegister" element={<SuperAdminRegister />} />

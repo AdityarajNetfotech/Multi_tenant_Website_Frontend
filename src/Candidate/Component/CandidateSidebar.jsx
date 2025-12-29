@@ -33,7 +33,7 @@ const CandidateAdminSidebar = ({ isOpen, onToggle }) => {
   const handleLogout = () => {
     localStorage.removeItem('candidateToken');
     localStorage.removeItem('candidate');
-    navigate('/Login');
+    navigate('/Candidatelogin');
   };
 
   return (

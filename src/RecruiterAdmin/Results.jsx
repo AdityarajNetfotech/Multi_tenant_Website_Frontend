@@ -3,12 +3,14 @@ import { Search, Eye, Trash2 } from 'lucide-react';
 import Pagination from '../components/LandingPage/Pagination';
 import ViewResults from './ViewResults'; 
 
+
 function Results() {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [showViewResults, setShowViewResults] = useState(false);
   const [selectedJob, setSelectedJob] = useState(null);
   const [attemptsLoading, setAttemptsLoading] = useState(false);
+  const [loading ,setLoading] = useState(true);
   
   const rowsPerPage = 5;
 
@@ -48,6 +50,7 @@ function Results() {
     let mounted = true;
     async function loadFinalized() {
       try {
+        setLoading(true);
         const base = window.REACT_APP_BASE_URL || 'http://localhost:5000';
         const res = await fetch(`${base}/api/v1/finalise/finalized-tests`);
         if (!res.ok) return;
@@ -81,6 +84,8 @@ function Results() {
         if (mounted) setJobs(mapped);
       } catch (e) {
         console.error('Failed loading finalized tests', e);
+      }finally{
+        if(mounted) setLoading(false);
       }
     }
     loadFinalized();
@@ -244,6 +249,14 @@ function Results() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+      {loading && (
+  <div className="fixed inset-0 bg-white flex items-center justify-center z-50">
+    <div className="flex flex-col items-center gap-4">
+      <div className="h-12 w-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      <p className="text-gray-600 font-medium">Loading results...</p>
+    </div>
+  </div>
+)}
       <div className="max-w-7xl mx-auto">
         
         <div className="flex flex-col sm:flex-row justify-between items-stretch gap-6 mb-8">
@@ -449,3 +462,5 @@ function Results() {
 }
 
 export default Results;
+
+

@@ -178,7 +178,7 @@ function JDDetails() {
     });
 
     const getFilteredData = () => {
-        let data = mappedCandidates;
+        let data = mappedCandidates.filter(c => c.aiScore > 0);
 
         if (activeTab === "filtered") {
             data = data.filter(candidate => candidate.isFiltered === true);
@@ -197,8 +197,8 @@ function JDDetails() {
 
     const filteredCandidates = getFilteredData();
 
-    const filteredCount = mappedCandidates.filter(c => c.isFiltered === true).length;
-    const unfilteredCount = mappedCandidates.filter(c => c.isFiltered === false).length;
+    const filteredCount = mappedCandidates.filter(c => c.isFiltered === true && c.aiScore > 0).length;
+    const unfilteredCount = mappedCandidates.filter(c => c.isFiltered === false && c.aiScore > 0).length;
 
     const totalPagesTable1 = Math.ceil(pendingCandidates.length / itemsPerPageTable1);
     const startIndexTable1 = (currentPageTable1 - 1) * itemsPerPageTable1;
@@ -386,7 +386,7 @@ function JDDetails() {
                                         : "text-gray-500 hover:text-gray-700"
                                         }`}
                                 >
-                                    All ({mappedCandidates.length})
+                                    All ({filteredCount + unfilteredCount})
                                     {activeTab === "all" && (
                                         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-900"></div>
                                     )}

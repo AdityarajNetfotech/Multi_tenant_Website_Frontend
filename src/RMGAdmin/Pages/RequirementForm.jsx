@@ -456,7 +456,7 @@ function RequirementForm() {
 
             <hr />
 
-            <div>
+            {/* <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Attachments <span className="text-gray-400 font-normal">(Optional)</span>
               </label>
@@ -484,7 +484,7 @@ function RequirementForm() {
                   </div>
                 </label>
               </div>
-            </div>
+            </div> */}
 
             <div className="flex justify-center pt-4">
               <button

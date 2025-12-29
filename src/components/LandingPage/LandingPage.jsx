@@ -68,7 +68,6 @@ const LandingPage = () => {
     { name: 'Home', href: '#home' },
     { name: 'Features', href: '#features' },
     { name: 'How It Works', href: '#how-it-works' },
-    { name: 'Resources', href: '#resources' },
     { name: 'Contact', href: '#contact' },
   ];
 
@@ -277,11 +276,11 @@ const LandingPage = () => {
               <button className="border border-[#6D28D9] bg-[#6D28D9] text-white px-6 py-1 rounded-2xl font-medium">
                 Get Started
               </button>
-              <button className="border border-[#6D28D9] text-[#6D28D9] px-6 py-1 rounded-2xl font-medium">
-                Register
+              <button className="border border-[#6D28D9] text-[#6D28D9] px-6 py-1 rounded-2xl font-medium" onClick={() => navigate('/login')}>
+                Login
               </button>
               <button className="border border-[#6D28D9] text-[#6D28D9] px-6 py-1 rounded-2xl font-medium" onClick={() => navigate('/CandidateLogin')}>
-                Login
+                Login as a candidate
               </button>
             </div>
 

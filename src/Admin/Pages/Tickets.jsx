@@ -220,7 +220,7 @@ const Tickets = () => {
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
                                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
-                                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                        {/* <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th> */}
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
@@ -251,7 +251,7 @@ const Tickets = () => {
                                                 </td>
                                                 <td className="px-4 py-4 text-sm text-gray-500">{ticket.startDate}</td>
                                                 <td className="px-4 py-4 text-sm text-gray-500">{ticket.dueDate}</td>
-                                                <td className="px-4 py-4">
+                                                {/* <td className="px-4 py-4">
                                                     <button
                                                         className="p-1 rounded-sm hover:bg-red-100 transition-colors group border border-red-500"
                                                         onClick={(e) => {
@@ -260,7 +260,7 @@ const Tickets = () => {
                                                     >
                                                         <Trash2 className="w-4 h-4 text-red-500" />
                                                     </button>
-                                                </td>
+                                                </td> */}
                                             </tr>
                                         ))
                                     ) : (

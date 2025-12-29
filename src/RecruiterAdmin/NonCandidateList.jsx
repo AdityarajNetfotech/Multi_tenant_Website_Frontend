@@ -13,6 +13,7 @@ import {
 import Pagination from "../components/LandingPage/Pagination";
 import { useLocation } from "react-router-dom";
 import axios from "axios";
+import SpinLoader from "../components/SpinLoader"; 
 
 export default function NonCandidateList() {
     const [q, setQ] = useState("");
@@ -105,7 +106,7 @@ export default function NonCandidateList() {
             setSendingInvites(true);
             const candidateIds = Array.from(selectedIds);
             const res = await axios.post(
-                `http://localhost:4000/api/candidate/bulk-invite/${jdId}`,
+                `http://localhost:4000/api/candidate/send-email/${jdId}`,
                 { candidateIds },
                 {
                     headers: {
@@ -128,6 +129,18 @@ export default function NonCandidateList() {
 
     return (
         <div className="min-h-screen">
+            {sendingInvites && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                    <div className="bg-white rounded-2xl p-8 shadow-xl flex flex-col items-center gap-4">
+                        <SpinLoader />
+                        <p className="text-gray-700 font-medium">Sending invites...</p>
+                        <p className="text-sm text-gray-500">
+                            Please wait while we send invites to {selectedIds.size} candidate(s)
+                        </p>
+                    </div>
+                </div>
+            )}
+
             <div className="mx-auto w-full max-w-7xl">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <h1 className="text-2xl font-semibold text-gray-900">
@@ -196,7 +209,9 @@ export default function NonCandidateList() {
                             {loading ? (
                                 <tr>
                                     <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
-                                        Loading...
+                                        <div className="flex justify-center">
+                                            <SpinLoader />
+                                        </div>
                                     </td>
                                 </tr>
                             ) : currentItems.length > 0 ? (
@@ -256,23 +271,23 @@ export default function NonCandidateList() {
                                                     <Share2 size={18} />
                                                 </button>
 
-                                                <button
+                                                {/* <button
                                                     onClick={() => alert("View clicked")}
                                                     aria-label="View"
                                                     title="View"
                                                     className="rounded-lg border border-blue-200 bg-white p-2 text-blue-600 transition hover:bg-blue-50 hover:text-blue-900"
                                                 >
                                                     <Eye size={18} />
-                                                </button>
+                                                </button> */}
 
-                                                <button
+                                                {/* <button
                                                     onClick={() => alert("Delete clicked")}
                                                     aria-label="Delete"
                                                     title="Delete"
                                                     className="rounded-lg border border-red-200 bg-white p-2 text-red-600 transition hover:bg-red-50 hover:text-red-900"
                                                 >
                                                     <Trash2 size={18} />
-                                                </button>
+                                                </button> */}
                                             </div>
                                         </td>
                                     </tr>
@@ -305,13 +320,21 @@ export default function NonCandidateList() {
                             <button
                                 onClick={handleSendBulkInvite}
                                 disabled={sendingInvites}
-                                className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                className="rounded-lg bg-black px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
                             >
-                                {sendingInvites ? "Sending..." : "Send Invite"}
+                                {sendingInvites ? (
+                                    <>
+                                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        Sending...
+                                    </>
+                                ) : (
+                                    "Send Invite"
+                                )}
                             </button>
                             <button
                                 onClick={() => setSelectedIds(new Set())}
-                                className="text-sm text-red-600 hover:text-red-700"
+                                disabled={sendingInvites}
+                                className="text-sm text-red-600 hover:text-red-700 disabled:text-gray-400 disabled:cursor-not-allowed"
                             >
                                 Clear selection
                             </button>

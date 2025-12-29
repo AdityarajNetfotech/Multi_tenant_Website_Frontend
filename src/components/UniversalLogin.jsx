@@ -160,6 +160,15 @@ const UniversalLogin = () => {
                                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
                             </div>
+
+                            <div className="mb-4 text-right">
+    <span
+        onClick={() => navigate("/ForgotPassword")}
+        className="text-blue-600 cursor-pointer text-sm hover:underline"
+    >
+        Forgot Password?
+    </span>
+</div>
  
                             {error && (
                                 <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
